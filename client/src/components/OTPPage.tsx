@@ -18,7 +18,7 @@ const OTPPage: React.FC<OTPPageProps> = ({ onBack, onSuccess, phoneNumber }) => 
 
   const handleVerifyOTP = async () => {
     if (!validateOTP(otpCode)) {
-      setError('Please enter a valid 6-digit code');
+      setError('Please enter a valid 4-digit code');
       return;
     }
 
@@ -41,7 +41,7 @@ const OTPPage: React.FC<OTPPageProps> = ({ onBack, onSuccess, phoneNumber }) => 
   };
 
   const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+    const value = e.target.value.replace(/\D/g, '').slice(0, 4);
     setOtpCode(value);
     if (error) setError('');
   };
@@ -52,7 +52,7 @@ const OTPPage: React.FC<OTPPageProps> = ({ onBack, onSuccess, phoneNumber }) => 
         <div className="text-center mb-4 sm:mb-6">
           <Smartphone className="w-10 h-10 sm:w-12 sm:h-12 text-orange-500 mx-auto mb-3 sm:mb-4" />
           <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Verify OTP</h2>
-          <p className="text-sm sm:text-base text-gray-600 mt-2">Enter the 6-digit code sent to {phoneNumber}</p>
+          <p className="text-sm sm:text-base text-gray-600 mt-2">Enter the 4-digit code sent to {phoneNumber}</p>
         </div>
         
         <div className="space-y-3 sm:space-y-4">
@@ -64,12 +64,12 @@ const OTPPage: React.FC<OTPPageProps> = ({ onBack, onSuccess, phoneNumber }) => 
               type="text"
               value={otpCode}
               onChange={handleOtpChange}
-              placeholder="Enter 6-digit code"
+              placeholder="Enter 4-digit code"
               className={`w-full px-3 sm:px-4 py-2 sm:py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-center text-lg sm:text-2xl tracking-widest ${
                 error ? 'border-red-500' : 'border-gray-300'
               }`}
               disabled={isLoading}
-              maxLength={6}
+              maxLength={4}
               inputMode="numeric"
             />
             {error && (
@@ -79,7 +79,7 @@ const OTPPage: React.FC<OTPPageProps> = ({ onBack, onSuccess, phoneNumber }) => 
           
           <button 
             onClick={handleVerifyOTP}
-            disabled={otpCode.length !== 6 || isLoading}
+            disabled={otpCode.length !== 4 || isLoading}
             className="w-full bg-orange-500 text-white py-2 sm:py-3 rounded-lg text-sm sm:text-base font-semibold hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isLoading ? 'Verifying...' : 'Verify OTP'}

@@ -1,7 +1,8 @@
 // App.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import type { GameSession } from './types';
+import { ScavengerAPI } from './api';
 
 // Import all page components
 import LandingPage from './components/LandingPage';
@@ -12,7 +13,7 @@ import Dashboard from './components/Dashboard';
 import ScavengerHuntPage from './components/ScavengerHuntPage';
 import QRScannerPage from './components/QRScannerPage';
 import ProgressPage from './components/ProgressPage';
-import CompletionPage from './components/CompletionPage';
+
 import LeaderboardPage from './components/LeadrboardPage';
 
 // Context to share state across components
@@ -98,6 +99,11 @@ const DashboardWrapper: React.FC = () => {
   };
   
   const handleLogout = () => {
+    console.log('🔐 App: Logging out user...');
+    
+    // Call the API logout method to clear tokens properly
+    ScavengerAPI.logout();
+    
     // Clear all localStorage data
     localStorage.removeItem('talabat_phone_number');
     localStorage.removeItem('talabat_game_session');
@@ -105,6 +111,7 @@ const DashboardWrapper: React.FC = () => {
     localStorage.removeItem('talabat_current_checkpoint');
     localStorage.removeItem('talabat_user_progress');
     localStorage.removeItem('talabat_scavenger_progress');
+    localStorage.removeItem('jwt_token');
     
     // Reset all state
     setGameSession(null);
@@ -112,6 +119,7 @@ const DashboardWrapper: React.FC = () => {
     setGameCompletionData(null);
     setCurrentCheckpoint(null);
     
+    console.log('🔐 App: Logout completed, redirecting to registration');
     navigate('/');
   };
 
@@ -129,7 +137,8 @@ const ScavengerHuntPageWrapper: React.FC = () => {
   const { phoneNumber, gameSession } = React.useContext(AppContext);
   
   const handleGameComplete = () => {
-    navigate('/complete');
+    // Go directly back to dashboard instead of completion page
+    navigate('/dashboard');
   };
 
   const handleScanQR = (checkpointId: number) => {
@@ -141,16 +150,14 @@ const ScavengerHuntPageWrapper: React.FC = () => {
     return <Navigate to="/" replace />;
   }
 
-  // Create a default session if none exists but user is authenticated
-  const currentSession = gameSession || {
-    sessionId: `session_${Date.now()}`,
-    startTime: Date.now(),
-    phoneNumber: phoneNumber,
-    status: 'active'
-  };
+  // Check if session exists and is valid
+  if (!gameSession) {
+    // If no valid session, redirect to registration
+    return <Navigate to="/" replace />;
+  }
 
   return <ScavengerHuntPage 
-    session={currentSession}
+    session={gameSession}
     onGameComplete={handleGameComplete} 
     onScanQR={handleScanQR} 
   />;
@@ -190,25 +197,7 @@ const ProgressPageWrapper: React.FC = () => {
   />;
 };
 
-const CompletionPageWrapper: React.FC = () => {
-  const navigate = useNavigate();
-  
-  const handleViewLeaderboard = () => {
-    navigate('/leaderboard');
-  };
-  
-  const handlePlayAgain = () => {
-    navigate('/');
-  };
 
-  return <CompletionPage 
-    phoneNumber="+97412345678"
-    timeElapsed={1200}
-    scannedQRs={['qr1', 'qr2', 'qr3']}
-    onViewLeaderboard={handleViewLeaderboard}
-    onPlayAgain={handlePlayAgain}
-  />;
-};
 
 const LeaderboardPageWrapper: React.FC = () => {
   const navigate = useNavigate();
@@ -256,7 +245,7 @@ const AppContent: React.FC = () => {
       <Route path="/game" element={<ScavengerHuntPageWrapper />} />
       <Route path="/qr-scanner/:checkpointId" element={<QRScannerPageWrapper />} />
       <Route path="/progress" element={<ProgressPageWrapper />} />
-      <Route path="/complete" element={<CompletionPageWrapper />} />
+
       <Route path="/leaderboard" element={<LeaderboardPageWrapper />} />
       {/* Catch all route - redirect based on auth status */}
       <Route 
@@ -287,6 +276,68 @@ const App: React.FC = () => {
     const saved = localStorage.getItem('talabat_current_checkpoint');
     return saved ? JSON.parse(saved) : null;
   });
+  
+  const [userProgress, setUserProgress] = useState<any>(null);
+  const [isLoadingProgress, setIsLoadingProgress] = useState(false);
+
+  // Check authentication on app load
+  useEffect(() => {
+    const checkAuthentication = () => {
+      const token = localStorage.getItem('jwt_token');
+      const savedPhoneNumber = localStorage.getItem('talabat_phone_number');
+      
+      console.log('🔐 App: Checking authentication on load...');
+      console.log('🔐 App: Token exists:', !!token);
+      console.log('🔐 App: Phone number exists:', !!savedPhoneNumber);
+      
+      // If we have a token but no phone number, or vice versa, clear everything
+      if ((token && !savedPhoneNumber) || (!token && savedPhoneNumber)) {
+        console.log('🔐 App: Inconsistent authentication state, clearing all data');
+        localStorage.clear();
+        setPhoneNumber('');
+        setGameSession(null);
+        setGameCompletionData(null);
+        setCurrentCheckpoint(null);
+        return false;
+      }
+      
+      // If we have both token and phone number, verify they're valid
+      if (token && savedPhoneNumber) {
+        console.log('🔐 App: Authentication found, verifying...');
+        // The actual verification will happen when components try to use the token
+        return true;
+      }
+      
+      console.log('🔐 App: No authentication found');
+      return false;
+    };
+    
+    checkAuthentication();
+  }, []);
+
+  // Load user progress when authenticated
+  useEffect(() => {
+    const loadUserProgress = async () => {
+      if (phoneNumber && gameSession && !userProgress) {
+        setIsLoadingProgress(true);
+        try {
+          const response = await ScavengerAPI.getUserProgress();
+          if (response.success) {
+            setUserProgress(response.data);
+            console.log('User progress loaded:', response.data);
+          } else {
+            console.error('Failed to load user progress:', response.error);
+          }
+        } catch (error) {
+          console.error('Error loading user progress:', error);
+        } finally {
+          setIsLoadingProgress(false);
+        }
+      }
+    };
+
+    loadUserProgress();
+  }, [phoneNumber, gameSession, userProgress]);
 
   // Enhanced setters that persist to localStorage
   const setPhoneNumberWithPersistence = (phone: string) => {

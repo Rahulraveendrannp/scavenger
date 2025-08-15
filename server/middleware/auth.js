@@ -35,6 +35,8 @@ const createSendToken = (user, statusCode, res) => {
 };
 
 const authMiddleware = asyncHandler(async (req, res, next) => {
+  console.log('🔐 Auth Middleware: Checking authentication...');
+  
   // 1) Getting token and check if it's there
   let token;
   if (
@@ -42,22 +44,30 @@ const authMiddleware = asyncHandler(async (req, res, next) => {
     req.headers.authorization.startsWith('Bearer')
   ) {
     token = req.headers.authorization.split(' ')[1];
+    console.log('🔐 Auth Middleware: Token found in Authorization header');
   } else if (req.cookies.jwt) {
     token = req.cookies.jwt;
+    console.log('🔐 Auth Middleware: Token found in cookies');
   }
 
   if (!token) {
+    console.log('🔐 Auth Middleware: No token found');
     return next(
       new AppError('You are not logged in! Please log in to get access.', 401)
     );
   }
 
+  console.log('🔐 Auth Middleware: Token found, verifying...');
+  
   // 2) Verification token
   const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  console.log('🔐 Auth Middleware: Token decoded successfully:', { id: decoded.id, phoneNumber: decoded.phoneNumber });
 
   // 3) Check if user still exists
+  console.log('🔐 Auth Middleware: Looking for user with ID:', decoded.id);
   const currentUser = await User.findById(decoded.id);
   if (!currentUser) {
+    console.log('🔐 Auth Middleware: User not found with ID:', decoded.id);
     return next(
       new AppError(
         'The user belonging to this token does no longer exist.',
@@ -65,14 +75,22 @@ const authMiddleware = asyncHandler(async (req, res, next) => {
       )
     );
   }
+  console.log('🔐 Auth Middleware: User found:', currentUser.phoneNumber);
 
   // 4) Check if user is verified
   if (!currentUser.isVerified) {
+    console.log('🔐 Auth Middleware: User not verified');
     return next(new AppError('Please verify your phone number first.', 401));
   }
 
+  console.log('🔐 Auth Middleware: User verified, granting access');
+  
   // Grant access to protected route
-  req.user = currentUser;
+  req.user = {
+    _id: currentUser._id,
+    phoneNumber: decoded.phoneNumber || currentUser.phoneNumber,
+    isVerified: currentUser.isVerified
+  };
   next();
 });
 

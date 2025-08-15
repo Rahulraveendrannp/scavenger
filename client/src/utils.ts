@@ -23,7 +23,7 @@ export const validatePhoneNumber = (phone: string): boolean => {
 };
 
 export const validateOTP = (otp: string): boolean => {
-  return /^\d{6}$/.test(otp);
+  return /^\d{4}$/.test(otp);
 };
 
 export const maskPhoneNumber = (phone: string): string => {

@@ -1,5 +1,5 @@
 // components/ScavengerHuntPage.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ChevronDown, ChevronUp, Lightbulb, QrCode, CheckCircle } from 'lucide-react';
 import { ScavengerAPI } from '../api';
 import type { ClueItem, GameProgress } from '../types';
@@ -141,18 +141,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({ session, onGameCo
     loadProgress();
   }, []);
 
-  // Listen for QR scan success from other components
-  useEffect(() => {
-    const handleQRSuccess = (event: CustomEvent) => {
-      const { checkpointId } = event.detail;
-      markCheckpointComplete(checkpointId);
-    };
 
-    window.addEventListener('qr-scan-success', handleQRSuccess as EventListener);
-    return () => {
-      window.removeEventListener('qr-scan-success', handleQRSuccess as EventListener);
-    };
-  }, []);
 
   const loadProgress = async () => {
     try {
@@ -165,7 +154,51 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({ session, onGameCo
     }
   };
 
-  const markCheckpointComplete = (checkpointId: number) => {
+  // Show completion celebration
+  const showCompletionCelebration = (location: string) => {
+    // Create a temporary celebration element
+    const celebration = document.createElement('div');
+    celebration.innerHTML = `
+      <div style="
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: linear-gradient(135deg, #10B981, #059669);
+        color: white;
+        padding: 20px 30px;
+        border-radius: 15px;
+        font-size: 18px;
+        font-weight: bold;
+        z-index: 1000;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        animation: celebrationPop 2s ease-in-out;
+      ">
+        🎉 ${location} Found! ✓
+      </div>
+      <style>
+        @keyframes celebrationPop {
+          0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+          50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+          100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+        }
+      </style>
+    `;
+    
+    document.body.appendChild(celebration);
+    
+    // Remove after animation
+    setTimeout(() => {
+      if (celebration.parentNode) {
+        celebration.parentNode.removeChild(celebration);
+      }
+    }, 2000);
+  };
+
+  const markCheckpointComplete = useCallback(async (checkpointId: number) => {
+    const checkpoint = checkpoints.find(cp => cp.id === checkpointId);
+    if (!checkpoint || checkpoint.isCompleted) return;
+
     const updatedCheckpoints = checkpoints.map(cp => 
       cp.id === checkpointId ? { ...cp, isCompleted: true } : cp
     );
@@ -180,7 +213,36 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({ session, onGameCo
 
     // Save progress to localStorage
     saveProgressToStorage(updatedCheckpoints, hintCredits, revealedHints);
-  };
+
+    // Save progress to database
+    try {
+      const response = await ScavengerAPI.completeCheckpoint(checkpointId, checkpoint.location);
+      if (response.success) {
+        console.log('Checkpoint completed in database:', response.data);
+        
+        // Show success notification
+        showCompletionCelebration(checkpoint.location);
+      } else {
+        console.error('Failed to save checkpoint progress:', response.error);
+      }
+    } catch (error) {
+      console.error('Error saving checkpoint progress:', error);
+    }
+  }, [checkpoints, hintCredits, revealedHints, progress]);
+
+  // Listen for QR scan success from other components
+  useEffect(() => {
+    const handleQRSuccess = (event: CustomEvent) => {
+      const { checkpointId } = event.detail;
+      console.log('QR scan success event received for checkpoint:', checkpointId);
+      markCheckpointComplete(checkpointId);
+    };
+
+    window.addEventListener('qr-scan-success', handleQRSuccess as EventListener);
+    return () => {
+      window.removeEventListener('qr-scan-success', handleQRSuccess as EventListener);
+    };
+  }, [markCheckpointComplete]);
 
   const toggleExpanded = (id: number) => {
     setExpandedId(expandedId === id ? null : id);
@@ -197,7 +259,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({ session, onGameCo
     localStorage.setItem('talabat_scavenger_progress', JSON.stringify(progressData));
   };
 
-  const useHint = (checkpointId: number) => {
+  const useHint = useCallback(async (checkpointId: number) => {
     if (hintCredits <= 0 && !revealedHints.has(checkpointId)) {
       return; // Do nothing if no credits and hint not already revealed
     }
@@ -212,9 +274,21 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({ session, onGameCo
       
       // Save progress to localStorage
       saveProgressToStorage(checkpoints, newCredits, newRevealedHints);
+
+      // Save hint usage to database
+      try {
+        const response = await ScavengerAPI.useHint(checkpointId);
+        if (response.success) {
+          console.log('Hint used and saved to database:', response.data);
+        } else {
+          console.error('Failed to save hint usage:', response.error);
+        }
+      } catch (error) {
+        console.error('Error saving hint usage:', error);
+      }
     }
     // If already revealed, the hint will just be visible without any action needed
-  };
+  }, [hintCredits, revealedHints, checkpoints]);
 
   const scanQR = (checkpointId: number) => {
     onScanQR(checkpointId);
@@ -233,10 +307,22 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({ session, onGameCo
         <h1 className="text-2xl sm:text-3xl font-bold text-[#8B4513] mb-2">Scavenger Hunt</h1>
         <p className="text-[#8B4513] text-base sm:text-lg">You can do these in any order.</p>
         
-        {/* Hint Credits */}
-        <div className="flex items-center justify-center sm:justify-end mt-2">
-          <Lightbulb className="w-4 h-4 sm:w-5 sm:h-5 text-[#FF8C00] mr-2" />
-          <span className="text-sm sm:text-base text-[#8B4513] font-semibold">{hintCredits} hint credits</span>
+        {/* Progress and Hint Credits */}
+        <div className="flex flex-col sm:flex-row items-center justify-between mt-2 gap-2">
+          {/* Progress Counter */}
+          <div className="flex items-center">
+            <div className="bg-green-100 px-3 py-1 rounded-full">
+              <span className="text-sm sm:text-base text-green-700 font-bold">
+                {progress.totalFound}/{progress.totalCheckpoints} Completed
+              </span>
+            </div>
+          </div>
+          
+          {/* Hint Credits */}
+          <div className="flex items-center">
+            <Lightbulb className="w-4 h-4 sm:w-5 sm:h-5 text-[#FF8C00] mr-2" />
+            <span className="text-sm sm:text-base text-[#8B4513] font-semibold">{hintCredits} hint credits</span>
+          </div>
         </div>
       </div>
 
@@ -255,7 +341,12 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({ session, onGameCo
                 ) : (
                   <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-gray-300 rounded-full"></div>
                 )}
-                <span className="text-sm sm:text-base font-semibold text-[#8B4513]">{checkpoint.location}</span>
+                <span className={`text-sm sm:text-base font-semibold ${
+                  checkpoint.isCompleted ? 'text-green-600 line-through' : 'text-[#8B4513]'
+                }`}>
+                  {checkpoint.location}
+                  {checkpoint.isCompleted && ' ✓'}
+                </span>
               </div>
               {expandedId === checkpoint.id ? (
                 <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5 text-[#8B4513]" />
@@ -318,14 +409,30 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({ session, onGameCo
       {/* Progress Footer */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 sm:p-4">
         <div className="flex items-center justify-between">
-          <div className="text-sm sm:text-base text-[#8B4513] font-semibold">
-            Total found: {progress.totalFound}
+          <div className="flex items-center space-x-3">
+            <div className="text-sm sm:text-base text-[#8B4513] font-semibold">
+              Progress: {progress.totalFound}/{progress.totalCheckpoints}
+            </div>
+            {/* Progress Bar */}
+            <div className="w-20 sm:w-32 bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-green-500 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${(progress.totalFound / progress.totalCheckpoints) * 100}%` }}
+              ></div>
+            </div>
+            <span className="text-xs sm:text-sm text-gray-500">
+              {Math.round((progress.totalFound / progress.totalCheckpoints) * 100)}%
+            </span>
           </div>
           <button
             onClick={handleFinish}
-            className="bg-[#FF8C00] text-white px-4 sm:px-8 py-2 sm:py-3 rounded-lg text-sm sm:text-base font-semibold hover:bg-[#FF7F00] transition-colors"
+            className={`px-4 sm:px-8 py-2 sm:py-3 rounded-lg text-sm sm:text-base font-semibold transition-colors ${
+              progress.totalFound === progress.totalCheckpoints
+                ? 'bg-green-600 hover:bg-green-700 text-white'
+                : 'bg-[#FF8C00] hover:bg-[#FF7F00] text-white'
+            }`}
           >
-            Finish
+            {progress.totalFound === progress.totalCheckpoints ? '🎉 Complete!' : 'Finish Early'}
           </button>
         </div>
       </div>

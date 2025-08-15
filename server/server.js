@@ -12,6 +12,7 @@ require('dotenv').config();
 const authRoutes = require('./routes/auth');
 const gameRoutes = require('./routes/game');
 const userRoutes = require('./routes/user');
+const progressRoutes = require('./routes/progress');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -62,10 +63,20 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Test endpoint for debugging
+app.get('/test', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Test endpoint working',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/game', gameRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/progress', progressRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
@@ -97,6 +108,8 @@ const server = app.listen(PORT, () => {
   console.log(`🚀 Talabat Scavenger Hunt API running on port ${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`📍 Health check: http://localhost:${PORT}/health`);
+  console.log(`🔐 JWT_SECRET available: ${process.env.JWT_SECRET ? 'Yes' : 'No'}`);
+  console.log(`📱 SMS credentials available: ${process.env.SMS_USERNAME && process.env.SMS_API_KEY ? 'Yes' : 'No'}`);
 });
 
 module.exports = app;

@@ -9,11 +9,7 @@ const userSchema = new mongoose.Schema({
     unique: true,
     match: [/^(\+974|974)?[3456789]\d{7}$/, 'Please enter a valid Qatar phone number']
   },
-  firebaseUid: {
-    type: String,
-    unique: true,
-    sparse: true // Allows multiple null values
-  },
+
   isVerified: {
     type: Boolean,
     default: false

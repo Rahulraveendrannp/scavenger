@@ -1,15 +1,13 @@
-// src/routes/auth.js
+// server/routes/auth.js
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
-const { sendOTP, sendOTPAlternative, generateOTP } = require('../services/otpServices');
+const smsService = require('../services/smsService');
 const { asyncHandler } = require('../middleware/asyncHandler');
 const AppError = require('../utils/appError');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
-
-
 
 const router = express.Router();
 
@@ -42,9 +40,9 @@ const validatePhoneNumber = [
 
 const validateOTP = [
   body('otpCode')
-    .isLength({ min: 6, max: 6 })
+    .isLength({ min: 4, max: 4 })
     .isNumeric()
-    .withMessage('OTP must be exactly 6 digits'),
+    .withMessage('OTP must be exactly 4 digits'),
 ];
 
 /**
@@ -76,53 +74,55 @@ router.post('/register', otpLimiter, validatePhoneNumber, asyncHandler(async (re
     }
   }
 
-  // Generate OTP
-  const otpCode = generateOTP();
-  const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-  // Create or update user
-  if (!user) {
-    user = new User({
-      phoneNumber: normalizedPhone,
-      otpCode,
-      otpExpires,
-      otpAttempts: 0,
-      lastOtpRequest: new Date()
-    });
-  } else {
-    user.otpCode = otpCode;
-    user.otpExpires = otpExpires;
-    user.otpAttempts = 0;
-    user.lastOtpRequest = new Date();
-  }
-
-  await user.save();
-
-  // Send OTP via SMS using Twilio
+  // Send OTP via Qatar SMS API
   try {
-    await sendOTP(normalizedPhone, otpCode);
+    const smsResult = await smsService.sendOTPAndReturn(normalizedPhone);
+    
+    if (!smsResult.success) {
+      return next(new AppError('Failed to send OTP. Please try again.', 500));
+    }
+
+    const otpCode = smsResult.otp;
+    const otpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    // FOR TESTING: Log the OTP
+    console.log('🔐 TESTING MODE: Generated OTP:', otpCode, 'for phone:', normalizedPhone);
+
+    // Create or update user
+    if (!user) {
+      user = new User({
+        phoneNumber: normalizedPhone,
+        otpCode,
+        otpExpires,
+        otpAttempts: 0,
+        lastOtpRequest: new Date()
+      });
+    } else {
+      user.otpCode = otpCode;
+      user.otpExpires = otpExpires;
+      user.otpAttempts = 0;
+      user.lastOtpRequest = new Date();
+    }
+
+    await user.save();
     
     res.status(200).json({
       success: true,
       message: 'OTP sent successfully',
       data: {
         otpSent: true,
-        expiresIn: 600 // 10 minutes in seconds
+        expiresIn: 300 // 5 minutes in seconds
       }
     });
   } catch (error) {
-    // Remove OTP data if SMS failed
-    user.otpCode = undefined;
-    user.otpExpires = undefined;
-    await user.save();
-    
+    console.error('SMS sending error:', error);
     return next(new AppError('Failed to send OTP. Please try again.', 500));
   }
 }));
 
 /**
  * @route   POST /api/auth/verify-otp
- * @desc    Verify OTP and authenticate user
+ * @desc    Verify OTP and authenticate user (TESTING MODE - BYPASSES OTP)
  * @access  Public
  */
 router.post('/verify-otp', verifyLimiter, validateOTP, asyncHandler(async (req, res, next) => {
@@ -135,52 +135,28 @@ router.post('/verify-otp', verifyLimiter, validateOTP, asyncHandler(async (req, 
   const { phoneNumber, otpCode } = req.body;
   const normalizedPhone = phoneNumber.replace(/\s/g, '');
 
+  // FOR TESTING: Log OTP and bypass verification
+  console.log('🔐 TESTING MODE: OTP received:', otpCode, 'for phone:', normalizedPhone);
+  console.log('🔐 TESTING MODE: OTP verification bypassed - always successful');
+
   // Find user with OTP data
   const user = await User.findByPhoneNumber(normalizedPhone).select('+otpCode +otpExpires +otpAttempts');
   
-  if (!user || !user.otpCode) {
-    return next(new AppError('No OTP request found. Please request a new OTP.', 404));
+  if (!user) {
+    return next(new AppError('User not found. Please register first.', 404));
   }
 
-  // Check if too many attempts
-  if (user.otpAttempts >= 5) {
-    // Clear OTP data after too many failed attempts
-    user.otpCode = undefined;
-    user.otpExpires = undefined;
-    user.otpAttempts = 0;
-    await user.save();
-    
-    return next(new AppError('Too many failed attempts. Please request a new OTP.', 429));
-  }
+  // FOR TESTING: Skip all OTP validation
+  console.log('🔐 TESTING MODE: Skipping OTP validation for user:', user.phoneNumber);
 
-  // Check if OTP expired
-  if (user.isOTPExpired()) {
-    user.otpCode = undefined;
-    user.otpExpires = undefined;
-    user.otpAttempts = 0;
-    await user.save();
-    
-    return next(new AppError('OTP has expired. Please request a new OTP.', 400));
-  }
-
-  // Verify OTP
-  const isValidOTP = await user.compareOTP(otpCode);
-  
-  if (!isValidOTP) {
-    user.otpAttempts += 1;
-    await user.save();
-    
-    return next(new AppError(`Invalid OTP. ${5 - user.otpAttempts} attempts remaining.`, 400));
-  }
-
-  // OTP is valid - clear OTP data and verify user
+  // OTP is valid (bypassed) - clear OTP data and verify user
   user.otpCode = undefined;
   user.otpExpires = undefined;
   user.otpAttempts = 0;
   user.isVerified = true;
   await user.save();
 
-  // Generate session (you can implement JWT here if needed)
+  // Generate session data
   const sessionData = {
     userId: user._id,
     phoneNumber: user.phoneNumber,
@@ -188,15 +164,22 @@ router.post('/verify-otp', verifyLimiter, validateOTP, asyncHandler(async (req, 
   };
 
   // Generate JWT
+  console.log('🔐 TESTING MODE: Generating JWT token...');
+  console.log('🔐 TESTING MODE: JWT_SECRET available:', process.env.JWT_SECRET ? 'Yes' : 'No');
+  
   const token = jwt.sign(
-    { userId: user._id, phoneNumber: user.phoneNumber },
+    { id: user._id, phoneNumber: user.phoneNumber },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
   );
 
+  console.log('🔐 TESTING MODE: JWT token generated successfully');
+  console.log('🔐 TESTING MODE: Token length:', token.length);
+  console.log('🔐 TESTING MODE: User verified successfully, token generated');
+
   res.status(200).json({
     success: true,
-    message: 'OTP verified successfully',
+    message: 'OTP verified successfully (TESTING MODE)',
     data: {
       session: sessionData,
       token
@@ -229,104 +212,34 @@ router.post('/resend-otp', otpLimiter, validatePhoneNumber, asyncHandler(async (
     }
   }
 
-  // Generate new OTP
-  const otpCode = generateOTP();
-  const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
-
-  user.otpCode = otpCode;
-  user.otpExpires = otpExpires;
-  user.otpAttempts = 0;
-  user.lastOtpRequest = new Date();
-  await user.save();
-
-  // Send OTP using Twilio
+  // Send new OTP via Qatar SMS API
   try {
-    await sendOTP(normalizedPhone, otpCode);
+    const smsResult = await smsService.sendOTPAndReturn(normalizedPhone);
+    
+    if (!smsResult.success) {
+      return next(new AppError('Failed to send OTP. Please try again.', 500));
+    }
+
+    const otpCode = smsResult.otp;
+    const otpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    user.otpCode = otpCode;
+    user.otpExpires = otpExpires;
+    user.otpAttempts = 0;
+    user.lastOtpRequest = new Date();
+    await user.save();
     
     res.status(200).json({
       success: true,
       message: 'OTP resent successfully',
       data: {
         otpSent: true,
-        expiresIn: 600
+        expiresIn: 300
       }
     });
   } catch (error) {
+    console.error('SMS sending error:', error);
     return next(new AppError('Failed to send OTP. Please try again.', 500));
-  }
-}));
-
-/**
- * @route   POST /api/auth/firebase-verify
- * @desc    Verify Firebase token and create/update user
- * @access  Public
- */
-router.post('/firebase-verify', asyncHandler(async (req, res, next) => {
-  const { phoneNumber, firebaseToken } = req.body;
-
-  if (!phoneNumber || !firebaseToken) {
-    return next(new AppError('Phone number and Firebase token are required', 400));
-  }
-
-  try {
-    // Verify Firebase token
-    const decodedToken = await admin.auth().verifyIdToken(firebaseToken);
-    
-    if (decodedToken.phone_number !== phoneNumber) {
-      return next(new AppError('Phone number mismatch', 400));
-    }
-
-    // Find or create user
-    let user = await User.findByPhoneNumber(phoneNumber);
-    
-    if (!user) {
-      // Create new user
-      user = new User({
-        phoneNumber,
-        firebaseUid: decodedToken.uid,
-        isVerified: true,
-        gameStats: {
-          totalGames: 0,
-          completedGames: 0,
-          bestTime: null,
-          totalRewards: 0,
-          currentStreak: 0
-        }
-      });
-    } else {
-      // Update existing user
-      user.firebaseUid = decodedToken.uid;
-      user.isVerified = true;
-    }
-
-    await user.save();
-
-    // Generate JWT
-    const token = jwt.sign(
-      { userId: user._id, phoneNumber: user.phoneNumber },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-
-    // Create session data
-    const sessionData = {
-      userId: user._id,
-      phoneNumber: user.phoneNumber,
-      isVerified: true
-    };
-
-    res.status(200).json({
-      success: true,
-      message: 'Firebase verification successful',
-      data: {
-        session: sessionData,
-        token
-      }
-    });
-
-  } catch (error) {
-    console.error('Firebase verification error:', error);
-    return next(new AppError('Invalid Firebase token', 401));
   }
 }));
 

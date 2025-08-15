@@ -4,20 +4,300 @@ import type{ ApiResponse, OTPVerificationResponse, GameProgress } from './types'
 const API_BASE = 'http://localhost:5000/api';
 
 function setToken(token: string) {
+  console.log('🔐 setToken: Saving token to localStorage:', token ? 'Token provided' : 'No token');
   localStorage.setItem('jwt_token', token);
+  console.log('🔐 setToken: Token saved successfully');
 }
 function getToken(): string | null {
-  return localStorage.getItem('jwt_token');
+  const token = localStorage.getItem('jwt_token');
+  console.log('🔐 getToken: Retrieved token from localStorage:', token ? 'Token exists' : 'No token found');
+  return token;
 }
 function clearToken() {
+  console.log('🔐 clearToken: Clearing JWT token from localStorage');
   localStorage.removeItem('jwt_token');
+  localStorage.removeItem('talabat_game_session');
+  localStorage.removeItem('talabat_phone_number');
+  console.log('🔐 clearToken: All tokens cleared');
 }
 
 export class ScavengerAPI {
-  // Send OTP using Twilio (server-side)
+  // Health check method
+  static async healthCheck(): Promise<ApiResponse<any>> {
+    try {
+      console.log('Checking API health...');
+      const response = await fetch(`${API_BASE.replace('/api', '')}/health`);
+      const data = await response.json();
+      console.log('Health check response:', data);
+      return data;
+    } catch (error) {
+      console.error('Health check failed:', error);
+      return {
+        success: false,
+        error: 'API server is not accessible'
+      };
+    }
+  }
+  // User Progress Management
+  static async getUserProgress(): Promise<ApiResponse<any>> {
+    try {
+      console.log('🔍 getUserProgress: Attempting to get token...');
+      const token = getToken();
+      console.log('🔍 getUserProgress: Token result:', token ? 'Token found' : 'No token');
+      
+      if (!token) {
+        console.error('❌ getUserProgress: No authentication token found');
+        return {
+          success: false,
+          error: 'No authentication token found'
+        };
+      }
+
+      console.log('Fetching user progress...');
+
+      const response = await fetch(`${API_BASE}/progress`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      console.log('User progress response:', data);
+      
+      // Check if token is invalid
+      if (response.status === 401 || data.error?.includes('token')) {
+        // Clear invalid token and redirect to registration
+        clearToken();
+        return {
+          success: false,
+          error: 'Session expired. Please register again.'
+        };
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching user progress:', error);
+      return {
+        success: false,
+        error: 'Failed to fetch user progress'
+      };
+    }
+  }
+
+  static async completeDashboardGame(gameId: string, completionTime?: number): Promise<ApiResponse<any>> {
+    try {
+      const token = getToken();
+      if (!token) {
+        return {
+          success: false,
+          error: 'No authentication token found'
+        };
+      }
+
+      console.log('Completing dashboard game:', { gameId, completionTime });
+
+      const response = await fetch(`${API_BASE}/progress/dashboard/${gameId}/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ completionTime })
+      });
+
+      const data = await response.json();
+      console.log('Dashboard game completion response:', data);
+      return data;
+    } catch (error) {
+      console.error('Error completing dashboard game:', error);
+      return {
+        success: false,
+        error: 'Failed to complete game'
+      };
+    }
+  }
+
+  static async completeCheckpoint(checkpointId: number, location: string): Promise<ApiResponse<any>> {
+    try {
+      const token = getToken();
+      if (!token) {
+        console.log('❌ No authentication token found');
+        return {
+          success: false,
+          error: 'No authentication token found'
+        };
+      }
+
+      console.log('🔍 Completing checkpoint:', { checkpointId, location });
+      console.log('🔍 API URL:', `${API_BASE}/progress/scavenger/checkpoint/${checkpointId}/complete`);
+      console.log('🔍 Token available:', token ? 'Yes' : 'No');
+
+      const response = await fetch(`${API_BASE}/progress/scavenger/checkpoint/${checkpointId}/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ location })
+      });
+
+      console.log('🔍 Response status:', response.status);
+      console.log('🔍 Response ok:', response.ok);
+
+      const data = await response.json();
+      console.log('🔍 Checkpoint completion response:', data);
+      
+      // Check if token is invalid
+      if (response.status === 401 || data.error?.includes('token')) {
+        console.log('🔍 Token invalid, clearing and redirecting');
+        // Clear invalid token and redirect to registration
+        clearToken();
+        return {
+          success: false,
+          error: 'Session expired. Please register again.'
+        };
+      }
+      
+      if (!response.ok) {
+        console.log('🔍 Response not ok, returning error');
+        return {
+          success: false,
+          error: data.message || `HTTP ${response.status}: ${response.statusText}`
+        };
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('❌ Error completing checkpoint:', error);
+      return {
+        success: false,
+        error: 'Failed to complete checkpoint'
+      };
+    }
+  }
+
+  static async useHint(checkpointId: number): Promise<ApiResponse<any>> {
+    try {
+      const token = getToken();
+      if (!token) {
+        return {
+          success: false,
+          error: 'No authentication token found'
+        };
+      }
+
+      const response = await fetch(`${API_BASE}/progress/scavenger/checkpoint/${checkpointId}/hint`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error using hint:', error);
+      return {
+        success: false,
+        error: 'Failed to use hint'
+      };
+    }
+  }
+
+  static async updateCurrentState(currentPage: string, checkpoint?: number): Promise<ApiResponse<any>> {
+    try {
+      const token = getToken();
+      if (!token) {
+        console.log('❌ updateCurrentState: No authentication token found');
+        return {
+          success: false,
+          error: 'No authentication token found'
+        };
+      }
+
+      console.log('🔍 updateCurrentState: Updating current state:', { currentPage, checkpoint });
+      console.log('🔍 updateCurrentState: API URL:', `${API_BASE}/progress/state`);
+
+      const response = await fetch(`${API_BASE}/progress/state`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ currentPage, checkpoint })
+      });
+
+      console.log('🔍 updateCurrentState: Response status:', response.status);
+      console.log('🔍 updateCurrentState: Response ok:', response.ok);
+
+      const data = await response.json();
+      console.log('🔍 updateCurrentState: Update state response:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ updateCurrentState: Error updating state:', error);
+      return {
+        success: false,
+        error: 'Failed to update state'
+      };
+    }
+  }
+
+  static async completeGame(finalScore?: number, timeElapsed?: number): Promise<ApiResponse<any>> {
+    try {
+      const token = getToken();
+      if (!token) {
+        return {
+          success: false,
+          error: 'No authentication token found'
+        };
+      }
+
+      const response = await fetch(`${API_BASE}/progress/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ finalScore, timeElapsed })
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error completing game:', error);
+      return {
+        success: false,
+        error: 'Failed to complete game'
+      };
+    }
+  }
+
+  static async getLeaderboard(): Promise<ApiResponse<any>> {
+    try {
+      const response = await fetch(`${API_BASE}/progress/leaderboard`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching leaderboard:', error);
+      return {
+        success: false,
+        error: 'Failed to fetch leaderboard'
+      };
+    }
+  }
+  // Send OTP using Qatar SMS API
   static async registerUser(phoneNumber: string): Promise<ApiResponse<{ otpSent: boolean; isTestNumber?: boolean }>> {
     try {
-      console.log('Sending Twilio OTP to:', phoneNumber);
+      console.log('Sending SMS OTP to:', phoneNumber);
       
       const response = await fetch(`${API_BASE}/auth/register`, {
         method: 'POST',
@@ -28,7 +308,7 @@ export class ScavengerAPI {
       const data = await response.json();
       
       if (data.success) {
-        console.log('Twilio OTP sent successfully');
+        console.log('SMS OTP sent successfully');
         return {
           success: true,
           data: { 
@@ -43,7 +323,7 @@ export class ScavengerAPI {
         };
       }
     } catch (error) {
-      console.error('Twilio OTP error:', error);
+      console.error('SMS OTP error:', error);
       return {
         success: false,
         error: 'Network error. Please try again.'
@@ -51,10 +331,10 @@ export class ScavengerAPI {
     }
   }
 
-  // Verify OTP using Twilio (server-side)
+  // Verify OTP using Qatar SMS API
   static async verifyOTP(phoneNumber: string, otpCode: string): Promise<OTPVerificationResponse> {
     try {
-      console.log('Verifying Twilio OTP for:', phoneNumber, 'Code:', otpCode);
+      console.log('Verifying SMS OTP for:', phoneNumber, 'Code:', otpCode);
       
       const response = await fetch(`${API_BASE}/auth/verify-otp`, {
         method: 'POST',
@@ -63,9 +343,17 @@ export class ScavengerAPI {
       });
       
       const data = await response.json();
+      console.log('🔐 API: Server response data:', data);
+      console.log('🔐 API: Checking if token exists in response:', data.data?.token ? 'Token found' : 'No token in response');
       
       if (data.success && data.data?.token) {
+        console.log('🔐 API: Received token from server:', data.data.token);
         setToken(data.data.token);
+        console.log('🔐 API: Token saved to localStorage');
+        
+        // Verify token was saved
+        const savedToken = getToken();
+        console.log('🔐 API: Verified saved token:', savedToken ? 'Token exists' : 'No token found');
         
         // Create game session
         const gameSession = {
@@ -96,7 +384,7 @@ export class ScavengerAPI {
         };
       }
     } catch (error) {
-      console.error('Twilio verification error:', error);
+      console.error('SMS verification error:', error);
       return {
         success: false,
         error: 'Network error. Please try again.'
@@ -104,7 +392,7 @@ export class ScavengerAPI {
     }
   }
 
-  // Resend OTP using Twilio
+  // Resend OTP using Qatar SMS API
   static async resendOTP(phoneNumber: string): Promise<ApiResponse<{ otpSent: boolean }>> {
     try {
       const response = await fetch(`${API_BASE}/auth/resend-otp`, {
@@ -137,7 +425,13 @@ export class ScavengerAPI {
   // Logout
   static async logout() {
     try {
+      console.log('🔐 Logout: Clearing all authentication data...');
       clearToken();
+      // Clear all related localStorage items
+      localStorage.removeItem('talabat_game_session');
+      localStorage.removeItem('talabat_phone_number');
+      localStorage.removeItem('jwt_token');
+      console.log('🔐 Logout: All authentication data cleared successfully');
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -178,41 +472,18 @@ export class ScavengerAPI {
     }
   }
 
-  static async useHint(
-    checkpointId: number
-  ): Promise<ApiResponse<{ hint: string; hintCredits: number }>> {
-    try {
-      const token = getToken();
-      if (!token) {
-        return { success: false, error: 'Not authenticated' };
-      }
-
-      const response = await fetch(`${API_BASE}/game/use-hint`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ checkpointId }),
-      });
-
-      const json = await response.json();
-      if (!response.ok) {
-        return { success: false, error: json?.message || 'Failed to use hint' };
-      }
-
-      return { success: true, data: json.data };
-    } catch (error: any) {
-      return { success: false, error: error?.message || 'Network error' };
-    }
-  }
 
   static async getGameProgress(): Promise<ApiResponse<GameProgress>> {
     try {
       const token = getToken();
       if (!token) {
+        console.log('❌ getGameProgress: No authentication token found');
         return { success: false, error: 'Not authenticated' };
       }
+
+      console.log('🔍 getGameProgress: Fetching game progress...');
+      console.log('🔍 getGameProgress: API URL:', `${API_BASE}/game/progress`);
+      console.log('🔍 getGameProgress: Token available:', token ? 'Yes' : 'No');
 
       const response = await fetch(`${API_BASE}/game/progress`, {
         headers: {
@@ -220,18 +491,34 @@ export class ScavengerAPI {
         },
       });
 
+      console.log('🔍 getGameProgress: Response status:', response.status);
+      console.log('🔍 getGameProgress: Response ok:', response.ok);
+
       const json = await response.json();
+      console.log('🔍 getGameProgress: Game progress response:', json);
+      
+      // Check if token is invalid
+      if (response.status === 401 || json.error?.includes('token')) {
+        console.log('🔍 getGameProgress: Token invalid, clearing and redirecting');
+        // Clear invalid token and redirect to registration
+        clearToken();
+        return {
+          success: false,
+          error: 'Session expired. Please register again.'
+        };
+      }
+      
       if (!response.ok) {
+        console.log('🔍 getGameProgress: Response not ok, returning error');
         return { success: false, error: json?.message || 'Failed to load progress' };
       }
 
+      console.log('🔍 getGameProgress: Successfully loaded progress:', json.data);
       return { success: true, data: json.data };
     } catch (error: any) {
+      console.error('❌ getGameProgress: Error fetching game progress:', error);
       return { success: false, error: error?.message || 'Network error' };
     }
   }
 
-  static getLeaderboard() {
-    throw new Error('Method not implemented.');
-  }
 }
