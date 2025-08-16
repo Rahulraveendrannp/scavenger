@@ -1,7 +1,7 @@
 // api.ts - Twilio OTP Implementation
 import type{ ApiResponse, OTPVerificationResponse, GameProgress } from './types';
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:5000/api';
 
 function setToken(token: string) {
   console.log('🔐 setToken: Saving token to localStorage:', token ? 'Token provided' : 'No token');

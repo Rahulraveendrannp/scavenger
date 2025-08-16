@@ -2,13 +2,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ChevronDown, ChevronUp, Lightbulb, QrCode, CheckCircle } from 'lucide-react';
 import { ScavengerAPI } from '../api';
+import SimpleQRScanner from './SimpleQRScanner';
 import type { ClueItem, GameProgress } from '../types';
 
 interface ScavengerHuntPageProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   session: any;
   onGameComplete: (timeElapsed: number, scannedQRs: string[]) => void;
-  onScanQR: (checkpointId: number) => void;
+  onScanQR?: (checkpointId: number) => void;
 }
 
 const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({ session, onGameComplete, onScanQR }) => {
@@ -135,6 +136,9 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({ session, onGameCo
     };
   });
   const [expandedId, setExpandedId] = useState<number | null>(1);
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [scannerCheckpointId, setScannerCheckpointId] = useState<number | null>(null);
+  const [scannerError, setScannerError] = useState<string>('');
 
   useEffect(() => {
     // Load initial progress
@@ -230,6 +234,36 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({ session, onGameCo
     }
   }, [checkpoints, hintCredits, revealedHints, progress]);
 
+  // Map checkpoint -> expected QR code
+  const getExpectedQRCode = (id: number) => {
+    const qrCodes: { [key: number]: string } = {
+      1: 'TALABAT_HUNT_RECEPTION_DESK',
+      2: 'TALABAT_HUNT_CONFERENCE_ROOM',
+      3: 'TALABAT_HUNT_KITCHEN_AREA',
+      4: 'TALABAT_HUNT_SUPPLY_CLOSET',
+      5: 'TALABAT_HUNT_MANAGER_OFFICE',
+      6: 'TALABAT_HUNT_BREAK_ROOM',
+      7: 'TALABAT_HUNT_IT_DEPARTMENT',
+      8: 'TALABAT_HUNT_MAIN_WORKSPACE'
+    };
+    return qrCodes[id] || '';
+  };
+
+  const handleScannerResult = async (scannedText: string) => {
+    if (!scannerCheckpointId) return;
+    const expected = getExpectedQRCode(scannerCheckpointId);
+    const isMatch = scannedText.trim().toUpperCase() === expected.trim().toUpperCase();
+    if (!isMatch) {
+      setScannerError('Incorrect QR code for this checkpoint. Please try again.');
+      setTimeout(() => setScannerError(''), 2000);
+      return;
+    }
+
+    await markCheckpointComplete(scannerCheckpointId);
+    setShowQRScanner(false);
+    setScannerCheckpointId(null);
+  };
+
   // Listen for QR scan success from other components
   useEffect(() => {
     const handleQRSuccess = (event: CustomEvent) => {
@@ -291,7 +325,12 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({ session, onGameCo
   }, [hintCredits, revealedHints, checkpoints]);
 
   const scanQR = (checkpointId: number) => {
-    onScanQR(checkpointId);
+    // Open in-page scanner instead of navigating to a separate route
+    setScannerCheckpointId(checkpointId);
+    setShowQRScanner(true);
+    setScannerError('');
+    // Optionally notify parent
+    if (onScanQR) onScanQR(checkpointId);
   };
 
   const handleFinish = () => {
@@ -301,6 +340,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({ session, onGameCo
   };
 
   return (
+    <>
     <div className="min-h-screen bg-[#F5F5DC] p-2 sm:p-4">
       {/* Header */}
       <div className="text-center mb-4 sm:mb-6">
@@ -437,6 +477,26 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({ session, onGameCo
         </div>
       </div>
     </div>
+
+    {/* In-page QR Scanner Overlay */}
+    {showQRScanner && (
+      <SimpleQRScanner
+        title={`Scan QR for Checkpoint ${scannerCheckpointId ?? ''}`}
+        onScan={handleScannerResult}
+        onClose={() => {
+          setShowQRScanner(false);
+          setScannerCheckpointId(null);
+        }}
+      />
+    )}
+
+    {/* Scanner Error Toast */}
+    {scannerError && (
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm z-50">
+        {scannerError}
+      </div>
+    )}
+  </>
   );
 };
 

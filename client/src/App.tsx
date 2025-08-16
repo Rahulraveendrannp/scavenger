@@ -11,7 +11,7 @@ import RegistrationPage from './components/RegistrationPage';
 import OTPPage from './components/OTPPage';
 import Dashboard from './components/Dashboard';
 import ScavengerHuntPage from './components/ScavengerHuntPage';
-import QRScannerPage from './components/QRScannerPage';
+
 import ProgressPage from './components/ProgressPage';
 
 import LeaderboardPage from './components/LeadrboardPage';
@@ -156,26 +156,23 @@ const ScavengerHuntPageWrapper: React.FC = () => {
     return <Navigate to="/" replace />;
   }
 
+  // Guard: Only allow entering game if scavenger hunt has been unlocked from dashboard
+  try {
+    const progressRaw = localStorage.getItem('talabat_user_progress');
+    const progress = progressRaw ? JSON.parse(progressRaw) as Record<string, boolean> : {};
+    const unlocked = !!progress['scavenger-hunt'];
+    if (!unlocked) {
+      return <Navigate to="/dashboard" replace />;
+    }
+  } catch {}
+
   return <ScavengerHuntPage 
     session={gameSession}
-    onGameComplete={handleGameComplete} 
-    onScanQR={handleScanQR} 
+    onGameComplete={handleGameComplete}
   />;
 };
 
-const QRScannerPageWrapper: React.FC = () => {
-  const navigate = useNavigate();
-  
-  const handleBack = () => {
-    navigate('/game');
-  };
-  
-  const handleSuccess = () => {
-    navigate('/game');
-  };
 
-  return <QRScannerPage onBack={handleBack} onSuccess={handleSuccess} />;
-};
 
 const ProgressPageWrapper: React.FC = () => {
   const navigate = useNavigate();
@@ -243,7 +240,7 @@ const AppContent: React.FC = () => {
       />
       <Route path="/dashboard" element={<DashboardWrapper />} />
       <Route path="/game" element={<ScavengerHuntPageWrapper />} />
-      <Route path="/qr-scanner/:checkpointId" element={<QRScannerPageWrapper />} />
+
       <Route path="/progress" element={<ProgressPageWrapper />} />
 
       <Route path="/leaderboard" element={<LeaderboardPageWrapper />} />
@@ -278,7 +275,7 @@ const App: React.FC = () => {
   });
   
   const [userProgress, setUserProgress] = useState<any>(null);
-  const [isLoadingProgress, setIsLoadingProgress] = useState(false);
+
 
   // Check authentication on app load
   useEffect(() => {
@@ -319,7 +316,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const loadUserProgress = async () => {
       if (phoneNumber && gameSession && !userProgress) {
-        setIsLoadingProgress(true);
+
         try {
           const response = await ScavengerAPI.getUserProgress();
           if (response.success) {
@@ -330,8 +327,6 @@ const App: React.FC = () => {
           }
         } catch (error) {
           console.error('Error loading user progress:', error);
-        } finally {
-          setIsLoadingProgress(false);
         }
       }
     };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Gamepad2, Puzzle, Car, Search, QrCode, Star, Trophy } from 'lucide-react';
 import { ScavengerAPI } from '../api';
+import SimpleQRScanner from './SimpleQRScanner';
 
 interface Game {
   id: string;
@@ -218,7 +219,7 @@ const Dashboard: React.FC<DashboardProps> = ({ phoneNumber, onStartScavengerHunt
 
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
-  const [scanError, setScanError] = useState('');
+
   const [scanSuccess, setScanSuccess] = useState(false);
 
   const completedGames = games.filter(game => game.isCompleted).length;
@@ -292,7 +293,6 @@ const Dashboard: React.FC<DashboardProps> = ({ phoneNumber, onStartScavengerHunt
     if (game) {
       setSelectedGame(game);
       setShowQRScanner(true);
-      setScanError('');
     }
   };
 
@@ -353,18 +353,17 @@ const Dashboard: React.FC<DashboardProps> = ({ phoneNumber, onStartScavengerHunt
         
         // Close QR scanner immediately and return to dashboard
         setShowQRScanner(false);
-        setScanError('');
+
         setScanSuccess(false);
       }
     } else {
-      setScanError('Wrong QR code! Please scan the correct QR for this game.');
+      
     }
   };
 
   const closeQRScanner = () => {
     setShowQRScanner(false);
     setSelectedGame(null);
-    setScanError('');
     setScanSuccess(false);
   };
 
@@ -386,7 +385,6 @@ const Dashboard: React.FC<DashboardProps> = ({ phoneNumber, onStartScavengerHunt
         gameType={selectedGame?.type || 'offline'}
         onScanResult={handleQRScanResult}
         onClose={closeQRScanner}
-        error={scanError}
         isSuccess={scanSuccess}
       />
     );
@@ -534,23 +532,14 @@ const Dashboard: React.FC<DashboardProps> = ({ phoneNumber, onStartScavengerHunt
   );
 };
 
-// QR Scanner Modal Component
+// Simple QR Scanner Modal Component
 const QRScannerModal: React.FC<{
   gameName: string;
   gameType: 'offline' | 'scavenger';
   onScanResult: (qrData: string) => void;
   onClose: () => void;
-  error: string;
   isSuccess: boolean;
-}> = ({ gameName, gameType, onScanResult, onClose, error, isSuccess }) => {
-  const [manualCode, setManualCode] = useState('');
-
-  const handleManualSubmit = () => {
-    if (manualCode.trim()) {
-      onScanResult(manualCode.trim());
-      setManualCode('');
-    }
-  };
+}> = ({ gameName, gameType, onScanResult, onClose, isSuccess }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
@@ -575,66 +564,19 @@ const QRScannerModal: React.FC<{
                 : <>Scan the QR code for: <strong>{gameName}</strong></>
               }
             </p>
+            
+            {/* Direct QR Scanner - No intermediate button */}
+            <SimpleQRScanner
+              title={`Scan QR for ${gameName}`}
+              onScan={(scannedCode: string) => {
+                onScanResult(scannedCode);
+              }}
+              onClose={onClose}
+            />
           </>
         )}
-        
-        {!isSuccess && (
-          <>
-            {/* QR Scanner would go here - for now showing manual input */}
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-8 text-center mb-3 sm:mb-4">
-              <QrCode className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-2" />
-              <p className="text-sm sm:text-base text-gray-500">QR Scanner will be here</p>
-            </div>
 
-            {/* Manual Code Input for Testing */}
-            <div className="mb-3 sm:mb-4">
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                Manual Code Entry (for testing)
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={manualCode}
-                  onChange={(e) => setManualCode(e.target.value)}
-                  placeholder="Enter QR code"
-                  className="flex-1 px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm sm:text-base"
-                />
-                <button
-                  onClick={handleManualSubmit}
-                  className="bg-orange-500 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-orange-600 text-sm sm:text-base"
-                >
-                  Submit
-                </button>
-              </div>
-            </div>
 
-            {error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded mb-3 sm:mb-4 text-sm sm:text-base">
-                {error}
-              </div>
-            )}
-
-            <div className="flex gap-2">
-              <button
-                onClick={onClose}
-                className="flex-1 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600 text-sm sm:text-base"
-              >
-                Cancel
-              </button>
-            </div>
-
-            {/* Expected codes for testing */}
-            <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-500 mb-1">Expected codes for testing:</p>
-              <div className="text-xs space-y-1">
-                <p>Card Game: TALABAT_CARD_COMPLETE</p>
-                <p>Puzzle: TALABAT_PUZZLE_COMPLETE</p>
-                <p>Car Race: TALABAT_RACE_COMPLETE</p>
-                <p>Scavenger Hunt: TALABAT_SCAVENGER_ENTRY</p>
-              </div>
-            </div>
-          </>
-        )}
       </div>
     </div>
   );

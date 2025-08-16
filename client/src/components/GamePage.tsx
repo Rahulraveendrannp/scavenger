@@ -4,26 +4,23 @@ import { QrCode, MapPin, CheckCircle } from 'lucide-react';
 import { ScavengerAPI } from '../api';
 import type { GameSession } from '../types';
 import { formatTime } from '../utils';
+import SimpleQRScanner from './SimpleQRScanner';
 
 interface GamePageProps {
   session: GameSession;
   onGameComplete: (timeElapsed: number, scannedQRs: string[]) => void;
 }
 
-  const GamePage: React.FC<GamePageProps> = ({ session, onGameComplete }) => {
-    console.log('🔍 GamePage component rendered!'); // Test if component renders
-    const [timeElapsed, setTimeElapsed] = useState(0);
-    const [scannedQRs, setScannedQRs] = useState<string[]>([]);
-    const [currentClue, setCurrentClue] = useState(session.route[0]?.clue || '');
-    const [isScanning, setIsScanning] = useState(false);
-    const [scanError, setScanError] = useState('');
-    const [isCompleted, setIsCompleted] = useState(false);
-    const [showSuccessPopup, setShowSuccessPopup] = useState(false);
-    const [completedCheckpoint, setCompletedCheckpoint] = useState<string>('');
-    const [showQRScanner, setShowQRScanner] = useState(false);
-    const [qrInput, setQrInput] = useState('');
-    const [showQRScannerPage, setShowQRScannerPage] = useState(false);
-    const [showSuccessScreen, setShowSuccessScreen] = useState(false);
+const GamePage: React.FC<GamePageProps> = ({ session, onGameComplete }) => {
+  const [timeElapsed, setTimeElapsed] = useState(0);
+  const [scannedQRs, setScannedQRs] = useState<string[]>([]);
+  const [currentClue, setCurrentClue] = useState(session.route[0]?.clue || '');
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [completedCheckpoint, setCompletedCheckpoint] = useState<string>('');
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [showErrorPopup, setShowErrorPopup] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Load existing progress on mount
   useEffect(() => {
@@ -34,7 +31,6 @@ interface GamePageProps {
         
         // Check for token expiration
         if (!progressResponse.success && progressResponse.error?.includes('Session expired')) {
-          // Redirect to registration page
           window.location.href = '/';
           return;
         }
@@ -70,7 +66,6 @@ interface GamePageProps {
         try {
           console.log('Saving progress to database:', scannedQRs.length, 'checkpoints completed');
           
-          // Update current state to track progress
           const stateResponse = await ScavengerAPI.updateCurrentState('scavenger-hunt', scannedQRs.length);
           console.log('State update response:', stateResponse);
           
@@ -121,108 +116,86 @@ interface GamePageProps {
     return scannedQR.trim().toUpperCase() === expectedQR.trim().toUpperCase();
   };
 
-  const handleQRScan = async (scannedQRCode?: string) => {
-    console.log('🔍 handleQRScan called with:', scannedQRCode);
-    console.log('🔍 isScanning:', isScanning);
-    
-    if (isScanning) {
-      console.log('🔍 Already scanning, returning early');
-      return;
-    }
-    
-    console.log('🔍 Setting isScanning to true');
-    setIsScanning(true);
-    setScanError('');
-    
-    // Clear any previous error messages
-    setScanError('');
-
+  const handleQRScan = async (scannedQRCode: string) => {
     try {
       // Get the current checkpoint based on scanned count
       const currentCheckpoint = session.route[scannedQRs.length];
       if (!currentCheckpoint) {
-        setScanError('No more checkpoints available.');
-        setIsScanning(false);
+        setErrorMessage('No more checkpoints available.');
+        setShowErrorPopup(true);
+        setTimeout(() => setShowErrorPopup(false), 3000);
         return;
       }
 
-             const currentCheckpointId = scannedQRs.length + 1;
-       const expectedQRCode = getExpectedQRCode(currentCheckpointId);
-       
-       console.log('🔍 Starting QR scan for checkpoint:', currentCheckpointId);
-       console.log('🔍 Current checkpoint location:', currentCheckpoint.location);
-       console.log('🔍 Expected QR code:', expectedQRCode);
-       console.log('🔍 Scanned QR code:', scannedQRCode);
+      const currentCheckpointId = scannedQRs.length + 1;
+      const expectedQRCode = getExpectedQRCode(currentCheckpointId);
+      
+      // Validate QR code
+      if (!scannedQRCode || !validateQRCode(scannedQRCode, expectedQRCode)) {
+        setErrorMessage('Incorrect QR code! Please scan the correct QR code for this checkpoint.');
+        setShowErrorPopup(true);
+        setTimeout(() => setShowErrorPopup(false), 3000);
+        return;
+      }
 
-       if (!scannedQRCode || !validateQRCode(scannedQRCode, expectedQRCode)) {
-         console.log('❌ Invalid QR code scanned');
-         setScanError('Incorrect QR code! Please scan the correct QR code for this checkpoint.');
-         setIsScanning(false);
-         return;
-       }
-
-       console.log('✅ Valid QR code! Making API call to save progress...');
-
-       const response = await ScavengerAPI.completeCheckpoint(
-         currentCheckpointId,
-         currentCheckpoint.location
-       );
-
-      console.log('🔍 API Response:', response);
+      // Make API call to save progress
+      const response = await ScavengerAPI.completeCheckpoint(
+        currentCheckpointId,
+        currentCheckpoint.location
+      );
 
       // Check for token expiration
       if (!response.success && response.error?.includes('Session expired')) {
-        console.log('🔍 Session expired, redirecting to registration');
-        // Redirect to registration page
         window.location.href = '/';
         return;
       }
       
-             if (response.success) {
-         console.log('🔍 Checkpoint completed successfully!');
-         console.log('🔍 Response data:', response.data);
-         
-         const newScanned = [...scannedQRs, `qr-${currentCheckpointId}`];
-         setScannedQRs(newScanned);
-
-         console.log('🔍 Updated scannedQRs:', newScanned);
-         console.log('🔍 Progress should now show:', newScanned.length, '/', session.route.length);
-
-         // Show success popup and auto-close after 2 seconds
-         setCompletedCheckpoint(currentCheckpoint.location);
-         setShowSuccessPopup(true);
-         
-         // Clear QR scanner state
-         setShowQRScanner(false);
-         setShowQRScannerPage(false);
-         setQrInput('');
-         setScanError('');
-         
-         // Auto-close popup after 2 seconds
-         setTimeout(() => {
-           setShowSuccessPopup(false);
-         }, 2000);
+      if (response.success) {
+        // Show success popup and close QR scanner
+        setCompletedCheckpoint(currentCheckpoint.location);
+        setShowSuccessPopup(true);
+        setShowQRScanner(false); // Close QR scanner when success shows
+        
+        // Update progress
+        const newScanned = [...scannedQRs, `qr-${currentCheckpointId}`];
+        setScannedQRs(newScanned);
+        
+        console.log('📊 Progress update:', {
+          currentCheckpointId,
+          newScannedLength: newScanned.length,
+          totalCheckpoints: session.route.length,
+          isGameComplete: newScanned.length >= session.route.length
+        });
+        
+        // Auto-close popup after 2 seconds
+        setTimeout(() => {
+          setShowSuccessPopup(false);
+        }, 2000);
 
         // Check if game is complete
         if (newScanned.length >= session.route.length) {
+          // Game is 100% complete - all checkpoints done
           setIsCompleted(true);
-          console.log('🎉 Game completed! All checkpoints finished.');
+          console.log('🎉 Game completed! All checkpoints done.');
+          // Only call onGameComplete when ALL checkpoints are done
           onGameComplete(timeElapsed, newScanned);
-        } else if (session.route[newScanned.length]) {
-          // Set next clue from route
-          setCurrentClue(session.route[newScanned.length].clue);
-          console.log('🔍 Next clue set:', session.route[newScanned.length].clue);
+        } else {
+          // Game is NOT complete - continue hunting
+          console.log('🔍 Checkpoint completed, continuing hunt...');
+          // Update to next clue and stay in game
+          if (session.route[newScanned.length]) {
+            setCurrentClue(session.route[newScanned.length].clue);
+          }
         }
-             } else {
-         console.error('❌ Checkpoint completion failed:', response.error);
-         console.error('❌ Full response:', response);
-         setScanError(`Failed to complete checkpoint: ${response.error}`);
-       }
+      } else {
+        setErrorMessage(`Failed to complete checkpoint: ${response.error}`);
+        setShowErrorPopup(true);
+        setTimeout(() => setShowErrorPopup(false), 3000);
+      }
     } catch (error) {
-      console.error('❌ QR scan error:', error);
-      setScanError('Failed to validate QR code. Please try again.');
-    } finally {
-      setIsScanning(false);
+      setErrorMessage('Failed to validate QR code. Please try again.');
+      setShowErrorPopup(true);
+      setTimeout(() => setShowErrorPopup(false), 3000);
     }
   };
 
@@ -233,11 +206,6 @@ interface GamePageProps {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
-      {/* DEBUG INFO */}
-      <div className="bg-red-100 p-2 mb-4 text-red-800 text-xs">
-        DEBUG: Component rendered | isScanning: {isScanning.toString()} | qrInput: "{qrInput}" | Button disabled: {(isScanning || !qrInput.trim()).toString()}
-      </div>
-      
       <div className="max-w-md mx-auto">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-lg p-4 mb-4">
@@ -302,16 +270,16 @@ interface GamePageProps {
               <QrCode className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500 mb-4">Scan the QR code for checkpoint {scannedQRs.length + 1}</p>
               
-                             <button 
-                 onClick={() => {
-                   alert('Main Scan QR Code button clicked!'); // Simple test
-                   setShowQRScannerPage(true);
-                 }}
-                 disabled={isScanning}
-                 className="bg-orange-500 text-white px-6 py-2 rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-               >
-                 {isScanning ? 'Scanning...' : 'Scan QR Code'}
-               </button>
+              <button 
+                onClick={() => {
+                  console.log('🔍 Scan button clicked! Setting showQRScanner to true');
+                  setShowQRScanner(true);
+                  console.log('🔍 showQRScanner state set to:', true);
+                }}
+                className="bg-orange-500 text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+              >
+                📷 Scan QR Code
+              </button>
             </div>
           </div>
         )}
@@ -343,115 +311,63 @@ interface GamePageProps {
             </div>
           )}
         </div>
-             </div>
+      </div>
 
-       {/* Success Popup */}
-       {showSuccessPopup && (
-         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-           <div className="bg-white rounded-xl p-6 max-w-md w-full text-center">
-             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-               <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-               </svg>
-             </div>
-             <h3 className="text-xl font-bold text-green-600 mb-2">Task Completed!</h3>
-             <p className="text-gray-600 mb-4">
-               <strong>{completedCheckpoint}</strong> checkpoint completed successfully!
-             </p>
-           </div>
-         </div>
-       )}
-
-       {/* QR Scanner Page */}
-        {showQRScannerPage && (
-          <div className="fixed inset-0 bg-gray-900 z-50">
-            <div className="min-h-screen p-4">
-              <div className="max-w-md mx-auto">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                  <button
-                    onClick={() => setShowQRScannerPage(false)}
-                    className="text-white hover:text-gray-300 transition-colors"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                  </button>
-                  <h2 className="text-lg font-bold text-white">{completedCheckpoint || `Checkpoint ${scannedQRs.length + 1}`}</h2>
-                  <div className="w-6"></div>
-                </div>
-
-                                 {/* Scanner Content */}
-                 <div className="space-y-6">
-                   <p className="text-white text-center">Scan QR code of this checkpoint</p>
-                   
-                   {/* Camera Button */}
-                   <div className="text-center">
-                                           <button
-                        onClick={() => {
-                          alert('Camera button clicked!'); // Simple test
-                          console.log('🔍 Camera button clicked!');
-                          const expectedQR = getExpectedQRCode(scannedQRs.length + 1);
-                          console.log('🔍 Expected QR for camera:', expectedQR);
-                          handleQRScan(expectedQR);
-                        }}
-                        disabled={isScanning}
-                        className="bg-green-500 text-white px-8 py-4 rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-lg"
-                      >
-                        {isScanning ? 'Scanning...' : '📷 Open Camera'}
-                      </button>
-                   </div>
-
-                                       {/* Manual Input */}
-                    <div className="space-y-2">
-                      <p className="text-center text-gray-300">Or enter QR code:</p>
-                      <input
-                        type="text"
-                        value={qrInput}
-                        onChange={(e) => setQrInput(e.target.value)}
-                        placeholder="Enter QR code here..."
-                        className="w-full px-3 py-2 border border-gray-600 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-                      />
-                      
-                      {/* Test Button */}
-                      <button
-                        onClick={() => {
-                          alert('TEST BUTTON WORKING!');
-                          console.log('🔍 TEST BUTTON CLICKED!');
-                        }}
-                        className="w-full bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
-                      >
-                        TEST BUTTON
-                      </button>
-                      
-                      <button
-                        onClick={() => {
-                          alert('Button clicked!'); // Simple test
-                          console.log('🔍 Validate QR Code button clicked!');
-                          console.log('🔍 qrInput value:', qrInput);
-                          console.log('🔍 isScanning:', isScanning);
-                          console.log('🔍 qrInput.trim():', qrInput.trim());
-                          console.log('🔍 Button disabled:', isScanning || !qrInput.trim());
-                          handleQRScan(qrInput);
-                        }}
-                        disabled={isScanning || !qrInput.trim()}
-                        className="w-full bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {isScanning ? 'Validating...' : 'Validate QR Code'}
-                      </button>
-                    </div>
-
-                   {/* Error Display */}
-                   {scanError && (
-                     <div className="p-3 bg-red-900 border border-red-500 rounded-lg">
-                       <p className="text-red-300 text-sm">{scanError}</p>
-                     </div>
-                   )}
-                 </div>
-              </div>
+      {/* Success Popup */}
+      {showSuccessPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full text-center">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
             </div>
+            <h3 className="text-xl font-bold text-green-600 mb-2">Task Completed!</h3>
+            <p className="text-gray-600 mb-4">
+              <strong>{completedCheckpoint}</strong> checkpoint completed successfully!
+            </p>
           </div>
-        )}
+        </div>
+      )}
+
+      {/* Error Popup */}
+      {showErrorPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-red-600 mb-2">Error!</h3>
+            <p className="text-gray-600 mb-4">
+              {errorMessage}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* QR Scanner - Direct Camera Access */}
+      {showQRScanner && (
+        <SimpleQRScanner
+          title={`Checkpoint ${scannedQRs.length + 1}`}
+          onScan={(scannedCode: string) => {
+            console.log('🔍 QR Code scanned:', scannedCode);
+            handleQRScan(scannedCode);
+            // Don't close scanner automatically - let the success popup handle it
+            // setShowQRScanner(false); // Remove this line
+          }}
+          onClose={() => {
+            console.log('🔍 QR Scanner closing');
+            setShowQRScanner(false);
+          }}
+        />
+      )}
+      
+      {/* Debug Info */}
+      <div className="fixed bottom-4 right-4 bg-black bg-opacity-75 text-white p-2 rounded text-xs">
+        Debug: showQRScanner = {showQRScanner.toString()}
+      </div>
     </div>
   );
 };
