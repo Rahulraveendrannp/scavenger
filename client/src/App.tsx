@@ -1,20 +1,27 @@
 // App.tsx
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import type { GameSession } from './types';
-import { ScavengerAPI } from './api';
+import React, { useState, useEffect } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+} from "react-router-dom";
+import type { GameSession } from "./types";
+import { ScavengerAPI } from "./api";
 
 // Import all page components
-import LandingPage from './components/LandingPage';
-import InstructionsPage from './components/InstructionsPage';
-import RegistrationPage from './components/RegistrationPage';
-import OTPPage from './components/OTPPage';
-import Dashboard from './components/Dashboard';
-import ScavengerHuntPage from './components/ScavengerHuntPage';
+import LandingPage from "./components/LandingPage";
+import InstructionsPage from "./components/InstructionsPage";
+import RegistrationPage from "./components/RegistrationPage";
+import OTPPage from "./components/OTPPage";
+import Dashboard from "./components/Dashboard";
+import ScavengerHuntPage from "./components/ScavengerHuntPage";
 
-import ProgressPage from './components/ProgressPage';
+import ProgressPage from "./components/ProgressPage";
 
-import LeaderboardPage from './components/LeadrboardPage';
+import LeaderboardPage from "./components/LeadrboardPage";
+import ScavengerHuntIntro from "./components/ScavengerHuntIntro";
 
 // Context to share state across components
 const AppContext = React.createContext<{
@@ -23,11 +30,13 @@ const AppContext = React.createContext<{
   gameSession: GameSession | null;
   setGameSession: (session: GameSession | null) => void;
   gameCompletionData: { timeElapsed: number; scannedQRs: string[] } | null;
-  setGameCompletionData: (data: { timeElapsed: number; scannedQRs: string[] } | null) => void;
+  setGameCompletionData: (
+    data: { timeElapsed: number; scannedQRs: string[] } | null
+  ) => void;
   currentCheckpoint: number | null;
   setCurrentCheckpoint: (id: number | null) => void;
 }>({
-  phoneNumber: '',
+  phoneNumber: "",
   setPhoneNumber: () => {},
   gameSession: null,
   setGameSession: () => {},
@@ -40,9 +49,9 @@ const AppContext = React.createContext<{
 // Wrapper components for each route
 const LandingPageWrapper: React.FC = () => {
   const navigate = useNavigate();
-  
+
   const handleStartHunt = () => {
-    navigate('/instructions');
+    navigate("/instructions");
   };
 
   return <LandingPage onStartHunt={handleStartHunt} />;
@@ -50,9 +59,9 @@ const LandingPageWrapper: React.FC = () => {
 
 const InstructionsPageWrapper: React.FC = () => {
   const navigate = useNavigate();
-  
+
   const handleStart = () => {
-    navigate('/register');
+    navigate("/register");
   };
 
   return <InstructionsPage onStart={handleStart} />;
@@ -61,14 +70,14 @@ const InstructionsPageWrapper: React.FC = () => {
 const RegistrationPageWrapper: React.FC = () => {
   const navigate = useNavigate();
   const { setPhoneNumber } = React.useContext(AppContext);
-  
+
   const handleBack = () => {
     // No back action since this is the first page
   };
-  
+
   const handleSuccess = (phoneNumber: string) => {
     setPhoneNumber(phoneNumber);
-    navigate('/verify-otp');
+    navigate("/verify-otp");
   };
 
   return <RegistrationPage onBack={handleBack} onSuccess={handleSuccess} />;
@@ -77,54 +86,63 @@ const RegistrationPageWrapper: React.FC = () => {
 const OTPPageWrapper: React.FC = () => {
   const navigate = useNavigate();
   const { phoneNumber, setGameSession } = React.useContext(AppContext);
-  
+
   const handleBack = () => {
-    navigate('/register');
-  };
-  
-  const handleSuccess = (session: GameSession) => {
-    setGameSession(session);
-    navigate('/dashboard');
+    navigate("/register");
   };
 
-  return <OTPPage onBack={handleBack} onSuccess={handleSuccess} phoneNumber={phoneNumber} />;
+  const handleSuccess = (session: GameSession) => {
+    setGameSession(session);
+    navigate("/dashboard");
+  };
+
+  return (
+    <OTPPage
+      onBack={handleBack}
+      onSuccess={handleSuccess}
+      phoneNumber={phoneNumber}
+    />
+  );
 };
 
 const DashboardWrapper: React.FC = () => {
   const navigate = useNavigate();
-  const { phoneNumber, setGameSession, setPhoneNumber, setGameCompletionData, setCurrentCheckpoint } = React.useContext(AppContext);
-  
+  const {
+    phoneNumber,
+    setGameSession,
+    setPhoneNumber,
+    setGameCompletionData,
+    setCurrentCheckpoint,
+  } = React.useContext(AppContext);
+
   const handleStartScavengerHunt = () => {
-    navigate('/game');
+    navigate("/game");
   };
-  
+
   const handleLogout = () => {
-    console.log('🔐 App: Logging out user...');
-    
+    console.log("🔐 App: Logging out user...");
     // Call the API logout method to clear tokens properly
     ScavengerAPI.logout();
-    
     // Clear all localStorage data
-    localStorage.removeItem('talabat_phone_number');
-    localStorage.removeItem('talabat_game_session');
-    localStorage.removeItem('talabat_completion_data');
-    localStorage.removeItem('talabat_current_checkpoint');
-    localStorage.removeItem('talabat_user_progress');
-    localStorage.removeItem('talabat_scavenger_progress');
-    localStorage.removeItem('jwt_token');
-    
+    localStorage.removeItem("talabat_phone_number");
+    localStorage.removeItem("talabat_game_session");
+    localStorage.removeItem("talabat_completion_data");
+    localStorage.removeItem("talabat_current_checkpoint");
+    localStorage.removeItem("talabat_user_progress");
+    localStorage.removeItem("talabat_scavenger_progress");
+    localStorage.removeItem("jwt_token");
+    localStorage.removeItem("readScavengerRules");
     // Reset all state
     setGameSession(null);
-    setPhoneNumber('');
+    setPhoneNumber("");
     setGameCompletionData(null);
     setCurrentCheckpoint(null);
-    
-    console.log('🔐 App: Logout completed, redirecting to registration');
-    navigate('/');
+    console.log("🔐 App: Logout completed, redirecting to registration");
+    navigate("/");
   };
 
   return (
-    <Dashboard 
+    <Dashboard
       phoneNumber={phoneNumber}
       onStartScavengerHunt={handleStartScavengerHunt}
       onLogout={handleLogout}
@@ -135,10 +153,24 @@ const DashboardWrapper: React.FC = () => {
 const ScavengerHuntPageWrapper: React.FC = () => {
   const navigate = useNavigate();
   const { phoneNumber, gameSession } = React.useContext(AppContext);
-  
+  // Track if rules have been read for this session
+  const [isReadScavengerRulesRed, setIsReadScavengerRulesRed] = useState(
+    () => localStorage.getItem("readScavengerRules") === "true"
+  );
+
+  // Handler for "Start" button in intro
+  const handleStartScavengerHuntIntro = () => {
+    localStorage.setItem("readScavengerRules", "true");
+    setIsReadScavengerRulesRed(true);
+  };
+
+  // Handler for game completion
   const handleGameComplete = () => {
+    // Reset rules for next session
+    localStorage.removeItem("readScavengerRules");
+    setIsReadScavengerRulesRed(false);
     // Go directly back to dashboard instead of completion page
-    navigate('/dashboard');
+    navigate("/dashboard");
   };
 
   const handleScanQR = (checkpointId: number) => {
@@ -158,85 +190,107 @@ const ScavengerHuntPageWrapper: React.FC = () => {
 
   // Guard: Only allow entering game if scavenger hunt has been unlocked from dashboard
   try {
-    const progressRaw = localStorage.getItem('talabat_user_progress');
-    const progress = progressRaw ? JSON.parse(progressRaw) as Record<string, boolean> : {};
-    const unlocked = !!progress['scavenger-hunt'];
+    const progressRaw = localStorage.getItem("talabat_user_progress");
+    const progress = progressRaw
+      ? (JSON.parse(progressRaw) as Record<string, boolean>)
+      : {};
+    const unlocked = !!progress["scavenger-hunt"];
     if (!unlocked) {
       return <Navigate to="/dashboard" replace />;
     }
   } catch {}
 
-  return <ScavengerHuntPage 
-    session={gameSession}
-    onGameComplete={handleGameComplete}
-  />;
+  return (
+    <>
+      {!isReadScavengerRulesRed ? (
+        <ScavengerHuntIntro onStart={handleStartScavengerHuntIntro} />
+      ) : (
+        <ScavengerHuntPage
+          session={gameSession}
+          onGameComplete={handleGameComplete}
+        />
+      )}
+    </>
+  );
 };
-
-
 
 const ProgressPageWrapper: React.FC = () => {
   const navigate = useNavigate();
-  
+
   const handleContinueHunt = () => {
-    navigate('/game');
+    navigate("/game");
   };
-  
+
   const handleClaimPrize = () => {
-    navigate('/complete');
+    navigate("/complete");
   };
 
-  return <ProgressPage 
-    totalFound={3} 
-    totalCheckpoints={8} 
-    currentTier="Bronze"
-    onContinueHunt={handleContinueHunt}
-    onClaimPrize={handleClaimPrize}
-  />;
+  return (
+    <ProgressPage
+      totalFound={3}
+      totalCheckpoints={8}
+      currentTier="Bronze"
+      onContinueHunt={handleContinueHunt}
+      onClaimPrize={handleClaimPrize}
+    />
+  );
 };
-
-
 
 const LeaderboardPageWrapper: React.FC = () => {
   const navigate = useNavigate();
-  
+
   const handlePlayAgain = () => {
-    navigate('/');
+    navigate("/");
   };
 
-  return <LeaderboardPage 
-    currentUserPhone="+97412345678"
-    onPlayAgain={handlePlayAgain}
-  />;
+  return (
+    <LeaderboardPage
+      currentUserPhone="+97412345678"
+      onPlayAgain={handlePlayAgain}
+    />
+  );
 };
 
 // Main App Component
 const AppContent: React.FC = () => {
   const { phoneNumber, gameSession } = React.useContext(AppContext);
-  
+
   // If user has a game session, they should be on dashboard or game pages
   const isAuthenticated = phoneNumber && gameSession;
-  
+
   return (
     <Routes>
-      <Route 
-        path="/" 
+      <Route
+        path="/"
         element={
-          isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegistrationPageWrapper />
-        } 
+          isAuthenticated ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <RegistrationPageWrapper />
+          )
+        }
       />
       <Route path="/landing" element={<LandingPageWrapper />} />
       <Route path="/instructions" element={<InstructionsPageWrapper />} />
-      <Route 
-        path="/register" 
+      <Route
+        path="/register"
         element={
-          isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegistrationPageWrapper />
-        } 
+          isAuthenticated ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <RegistrationPageWrapper />
+          )
+        }
       />
-      <Route 
-        path="/verify-otp" 
+      <Route
+        path="/verify-otp"
         element={
-          isAuthenticated ? <Navigate to="/dashboard" replace /> : <OTPPageWrapper />
-        } 
+          isAuthenticated ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <OTPPageWrapper />
+          )
+        }
       />
       <Route path="/dashboard" element={<DashboardWrapper />} />
       <Route path="/game" element={<ScavengerHuntPageWrapper />} />
@@ -245,9 +299,9 @@ const AppContent: React.FC = () => {
 
       <Route path="/leaderboard" element={<LeaderboardPageWrapper />} />
       {/* Catch all route - redirect based on auth status */}
-      <Route 
-        path="*" 
-        element={<Navigate to={isAuthenticated ? "/dashboard" : "/"} replace />} 
+      <Route
+        path="*"
+        element={<Navigate to={isAuthenticated ? "/dashboard" : "/"} replace />}
       />
     </Routes>
   );
@@ -256,59 +310,62 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   // Initialize state from localStorage or defaults
   const [phoneNumber, setPhoneNumber] = useState(() => {
-    return localStorage.getItem('talabat_phone_number') || '';
+    return localStorage.getItem("talabat_phone_number") || "";
   });
   const [gameSession, setGameSession] = useState<GameSession | null>(() => {
-    const saved = localStorage.getItem('talabat_game_session');
+    const saved = localStorage.getItem("talabat_game_session");
     return saved ? JSON.parse(saved) : null;
   });
   const [gameCompletionData, setGameCompletionData] = useState<{
     timeElapsed: number;
     scannedQRs: string[];
   } | null>(() => {
-    const saved = localStorage.getItem('talabat_completion_data');
+    const saved = localStorage.getItem("talabat_completion_data");
     return saved ? JSON.parse(saved) : null;
   });
-  const [currentCheckpoint, setCurrentCheckpoint] = useState<number | null>(() => {
-    const saved = localStorage.getItem('talabat_current_checkpoint');
-    return saved ? JSON.parse(saved) : null;
-  });
-  
-  const [userProgress, setUserProgress] = useState<any>(null);
+  const [currentCheckpoint, setCurrentCheckpoint] = useState<number | null>(
+    () => {
+      const saved = localStorage.getItem("talabat_current_checkpoint");
+      return saved ? JSON.parse(saved) : null;
+    }
+  );
 
+  const [userProgress, setUserProgress] = useState<any>(null);
 
   // Check authentication on app load
   useEffect(() => {
     const checkAuthentication = () => {
-      const token = localStorage.getItem('jwt_token');
-      const savedPhoneNumber = localStorage.getItem('talabat_phone_number');
-      
-      console.log('🔐 App: Checking authentication on load...');
-      console.log('🔐 App: Token exists:', !!token);
-      console.log('🔐 App: Phone number exists:', !!savedPhoneNumber);
-      
+      const token = localStorage.getItem("jwt_token");
+      const savedPhoneNumber = localStorage.getItem("talabat_phone_number");
+
+      console.log("🔐 App: Checking authentication on load...");
+      console.log("🔐 App: Token exists:", !!token);
+      console.log("🔐 App: Phone number exists:", !!savedPhoneNumber);
+
       // If we have a token but no phone number, or vice versa, clear everything
       if ((token && !savedPhoneNumber) || (!token && savedPhoneNumber)) {
-        console.log('🔐 App: Inconsistent authentication state, clearing all data');
+        console.log(
+          "🔐 App: Inconsistent authentication state, clearing all data"
+        );
         localStorage.clear();
-        setPhoneNumber('');
+        setPhoneNumber("");
         setGameSession(null);
         setGameCompletionData(null);
         setCurrentCheckpoint(null);
         return false;
       }
-      
+
       // If we have both token and phone number, verify they're valid
       if (token && savedPhoneNumber) {
-        console.log('🔐 App: Authentication found, verifying...');
+        console.log("🔐 App: Authentication found, verifying...");
         // The actual verification will happen when components try to use the token
         return true;
       }
-      
-      console.log('🔐 App: No authentication found');
+
+      console.log("🔐 App: No authentication found");
       return false;
     };
-    
+
     checkAuthentication();
   }, []);
 
@@ -316,17 +373,16 @@ const App: React.FC = () => {
   useEffect(() => {
     const loadUserProgress = async () => {
       if (phoneNumber && gameSession && !userProgress) {
-
         try {
           const response = await ScavengerAPI.getUserProgress();
           if (response.success) {
             setUserProgress(response.data);
-            console.log('User progress loaded:', response.data);
+            console.log("User progress loaded:", response.data);
           } else {
-            console.error('Failed to load user progress:', response.error);
+            console.error("Failed to load user progress:", response.error);
           }
         } catch (error) {
-          console.error('Error loading user progress:', error);
+          console.error("Error loading user progress:", error);
         }
       }
     };
@@ -338,50 +394,57 @@ const App: React.FC = () => {
   const setPhoneNumberWithPersistence = (phone: string) => {
     setPhoneNumber(phone);
     if (phone) {
-      localStorage.setItem('talabat_phone_number', phone);
+      localStorage.setItem("talabat_phone_number", phone);
     } else {
-      localStorage.removeItem('talabat_phone_number');
+      localStorage.removeItem("talabat_phone_number");
     }
   };
 
   const setGameSessionWithPersistence = (session: GameSession | null) => {
     setGameSession(session);
     if (session) {
-      localStorage.setItem('talabat_game_session', JSON.stringify(session));
+      localStorage.setItem("talabat_game_session", JSON.stringify(session));
     } else {
-      localStorage.removeItem('talabat_game_session');
+      localStorage.removeItem("talabat_game_session");
     }
   };
 
-  const setGameCompletionDataWithPersistence = (data: { timeElapsed: number; scannedQRs: string[] } | null) => {
+  const setGameCompletionDataWithPersistence = (
+    data: { timeElapsed: number; scannedQRs: string[] } | null
+  ) => {
     setGameCompletionData(data);
     if (data) {
-      localStorage.setItem('talabat_completion_data', JSON.stringify(data));
+      localStorage.setItem("talabat_completion_data", JSON.stringify(data));
     } else {
-      localStorage.removeItem('talabat_completion_data');
+      localStorage.removeItem("talabat_completion_data");
     }
   };
 
   const setCurrentCheckpointWithPersistence = (checkpoint: number | null) => {
     setCurrentCheckpoint(checkpoint);
     if (checkpoint !== null) {
-      localStorage.setItem('talabat_current_checkpoint', JSON.stringify(checkpoint));
+      localStorage.setItem(
+        "talabat_current_checkpoint",
+        JSON.stringify(checkpoint)
+      );
     } else {
-      localStorage.removeItem('talabat_current_checkpoint');
+      localStorage.removeItem("talabat_current_checkpoint");
     }
   };
 
   return (
-    <AppContext.Provider value={{
-      phoneNumber,
-      setPhoneNumber: setPhoneNumberWithPersistence,
-      gameSession,
-      setGameSession: setGameSessionWithPersistence,
-      gameCompletionData,
-      setGameCompletionData: setGameCompletionDataWithPersistence,
-      currentCheckpoint,
-      setCurrentCheckpoint: setCurrentCheckpointWithPersistence,
-    }}>
+    <AppContext.Provider
+      value={{
+        phoneNumber,
+        setPhoneNumber: setPhoneNumberWithPersistence,
+        gameSession,
+        setGameSession: setGameSessionWithPersistence,
+        gameCompletionData,
+        setGameCompletionData: setGameCompletionDataWithPersistence,
+        currentCheckpoint,
+        setCurrentCheckpoint: setCurrentCheckpointWithPersistence,
+      }}
+    >
       <Router>
         <AppContent />
       </Router>
