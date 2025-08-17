@@ -425,8 +425,10 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
             >
               {/* Checkpoint Header */}
               <div
-                className="flex items-center justify-between p-3 sm:p-4 cursor-pointer"
-                onClick={() => toggleExpanded(checkpoint.id)}
+                className={`flex items-center justify-between p-3 sm:p-4 ${
+                  checkpoint.isCompleted ? '' : 'cursor-pointer'
+                }`}
+                onClick={() => !checkpoint.isCompleted && toggleExpanded(checkpoint.id)}
               >
                 <div className="flex items-center space-x-2 sm:space-x-3">
                   {checkpoint.isCompleted ? (
@@ -445,10 +447,15 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
                     {checkpoint.isCompleted && " ✓"}
                   </span>
                 </div>
-                {expandedId === checkpoint.id ? (
-                  <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5 text-[#8B4513]" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-[#8B4513]" />
+                {/* Only show expand/collapse icons for incomplete checkpoints */}
+                {!checkpoint.isCompleted && (
+                  <>
+                    {expandedId === checkpoint.id ? (
+                      <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5 text-[#8B4513]" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-[#8B4513]" />
+                )}
+                  </>
                 )}
               </div>
 

@@ -24,12 +24,6 @@ class SMSService {
   async sendOTP(phoneNumber, otp) {
     try {
 
-      return {
-        success: true,
-        message: 'OTP sent successfully',
-        otp: otp,
-        response: 'success'
-      };
       // Format phone number (remove + if present)
       const formattedPhone = phoneNumber.replace('+', '');
       
@@ -48,9 +42,7 @@ class SMSService {
       
       console.log('SMS API Response:', responseText);
       
-      // Check if SMS was sent successfully
-      // The API returns different responses, we'll check for common success indicators
-      if (response.ok && responseText.includes('success')) {
+      if (response.ok && (responseText.includes('ORDERID:') || responseText.includes('success'))) {
         return {
           success: true,
           message: 'OTP sent successfully',
