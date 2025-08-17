@@ -1,14 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { Gamepad2, Puzzle, Car, Search, QrCode, Star, Trophy } from 'lucide-react';
-import { ScavengerAPI } from '../api';
-import SimpleQRScanner from './SimpleQRScanner';
+import React, { useState, useEffect } from "react";
+import {
+  Gamepad2,
+  Puzzle,
+  Car,
+  Search,
+  QrCode,
+  Star,
+  Trophy,
+} from "lucide-react";
+import { ScavengerAPI } from "../api";
+import SimpleQRScanner from "./SimpleQRScanner";
 
 interface Game {
   id: string;
   title: string;
   description: string;
   icon: React.ReactNode;
-  type: 'offline' | 'scavenger';
+  type: "offline" | "scavenger";
   isCompleted: boolean;
   isUnlocked?: boolean;
 }
@@ -19,30 +27,36 @@ interface DashboardProps {
   onLogout: () => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ phoneNumber, onStartScavengerHunt, onLogout }) => {
+const Dashboard: React.FC<DashboardProps> = ({
+  phoneNumber,
+  onStartScavengerHunt,
+  onLogout,
+}) => {
   const [games, setGames] = useState<Game[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Check authentication on mount
   useEffect(() => {
     const checkAuthentication = () => {
-      const token = localStorage.getItem('jwt_token');
-      const phoneNumber = localStorage.getItem('talabat_phone_number');
-      
-      console.log('🔐 Dashboard: Checking authentication...');
-      console.log('🔐 Dashboard: Token exists:', !!token);
-      console.log('🔐 Dashboard: Phone number exists:', !!phoneNumber);
-      
+      const token = localStorage.getItem("jwt_token");
+      const phoneNumber = localStorage.getItem("talabat_phone_number");
+
+      console.log("🔐 Dashboard: Checking authentication...");
+      console.log("🔐 Dashboard: Token exists:", !!token);
+      console.log("🔐 Dashboard: Phone number exists:", !!phoneNumber);
+
       if (!token || !phoneNumber) {
-        console.log('🔐 Dashboard: No authentication found, redirecting to registration');
-        window.location.href = '/';
+        console.log(
+          "🔐 Dashboard: No authentication found, redirecting to registration"
+        );
+        window.location.href = "/";
         return false;
       }
-      
-      console.log('🔐 Dashboard: Authentication verified');
+
+      console.log("🔐 Dashboard: Authentication verified");
       return true;
     };
-    
+
     if (!checkAuthentication()) {
       return;
     }
@@ -54,162 +68,182 @@ const Dashboard: React.FC<DashboardProps> = ({ phoneNumber, onStartScavengerHunt
       setIsLoading(true);
       try {
         const healthResponse = await ScavengerAPI.healthCheck();
-        console.log('🔍 Dashboard: API health check:', healthResponse);
-        
+        console.log("🔍 Dashboard: API health check:", healthResponse);
+
         if (!healthResponse.success) {
-          console.error('❌ Dashboard: API server is not accessible:', healthResponse.error);
+          console.error(
+            "❌ Dashboard: API server is not accessible:",
+            healthResponse.error
+          );
           // Continue with fallback data
         }
-        
-        const [progressResponse, scavengerProgressResponse] = await Promise.all([
-          ScavengerAPI.getUserProgress(),
-          ScavengerAPI.getGameProgress()
-        ]);
-        
-        console.log('📊 Dashboard: Progress responses:', {
+
+        const [progressResponse, scavengerProgressResponse] = await Promise.all(
+          [ScavengerAPI.getUserProgress(), ScavengerAPI.getGameProgress()]
+        );
+
+        console.log("📊 Dashboard: Progress responses:", {
           userProgress: progressResponse,
-          scavengerProgress: scavengerProgressResponse
+          scavengerProgress: scavengerProgressResponse,
         });
-        
+
         // Check for token expiration
-        if (!progressResponse.success && progressResponse.error?.includes('Session expired')) {
+        if (
+          !progressResponse.success &&
+          progressResponse.error?.includes("Session expired")
+        ) {
           // Redirect to registration page
-          window.location.href = '/';
+          window.location.href = "/";
           return;
         }
-        
-        if (!scavengerProgressResponse.success && scavengerProgressResponse.error?.includes('Session expired')) {
+
+        if (
+          !scavengerProgressResponse.success &&
+          scavengerProgressResponse.error?.includes("Session expired")
+        ) {
           // Redirect to registration page
-          window.location.href = '/';
+          window.location.href = "/";
           return;
         }
-        
+
         const defaultGames = [
           {
-            id: 'card-game',
-            title: 'Card Game',
-            description: 'Complete the offline card game and scan QR',
+            id: "card-game",
+            title: "Card Game",
+            description: "Complete the offline card game and scan QR",
             icon: <Gamepad2 className="w-8 h-8" />,
-            type: 'offline' as const,
-            isCompleted: false
+            type: "offline" as const,
+            isCompleted: false,
           },
           {
-            id: 'puzzle',
-            title: 'Puzzle',
-            description: 'Solve the puzzle and scan QR to complete',
+            id: "puzzle",
+            title: "Puzzle",
+            description: "Solve the puzzle and scan QR to complete",
             icon: <Puzzle className="w-8 h-8" />,
-            type: 'offline' as const,
-            isCompleted: false
+            type: "offline" as const,
+            isCompleted: false,
           },
           {
-            id: 'car-race',
-            title: 'Car Race',
-            description: 'Finish the car race and scan QR',
+            id: "car-race",
+            title: "Car Race",
+            description: "Finish the car race and scan QR",
             icon: <Car className="w-8 h-8" />,
-            type: 'offline' as const,
-            isCompleted: false
+            type: "offline" as const,
+            isCompleted: false,
           },
           {
-            id: 'scavenger-hunt',
-            title: 'Scavenger Hunt',
-            description: 'Scan QR to enter the treasure hunt',
+            id: "scavenger-hunt",
+            title: "Scavenger Hunt",
+            description: "Scan QR to enter the treasure hunt",
             icon: <Search className="w-8 h-8" />,
-            type: 'scavenger' as const,
-            isCompleted: false
-          }
+            type: "scavenger" as const,
+            isCompleted: false,
+          },
         ];
 
         // Update games based on database progress
-        const updatedGames: Game[] = defaultGames.map(game => {
-          if (game.id === 'scavenger-hunt') {
+        const updatedGames: Game[] = defaultGames.map((game) => {
+          if (game.id === "scavenger-hunt") {
             // For scavenger hunt, check if all 8 checkpoints are completed
-            const scavengerCompleted = scavengerProgressResponse.success && 
-              scavengerProgressResponse.data && 
+            const scavengerCompleted =
+              scavengerProgressResponse.success &&
+              scavengerProgressResponse.data &&
               scavengerProgressResponse.data.totalFound >= 8;
-            const completedCount = scavengerProgressResponse.success && scavengerProgressResponse.data 
-              ? scavengerProgressResponse.data.totalFound || 0 
-              : 0;
-            
+            const completedCount =
+              scavengerProgressResponse.success &&
+              scavengerProgressResponse.data
+                ? scavengerProgressResponse.data.totalFound || 0
+                : 0;
+
             // Check if scavenger hunt has been unlocked (QR scanned)
-            const scavengerUnlocked = progressResponse.success && 
-              progressResponse.data?.progress?.dashboardGames?.scavengerHunt?.isCompleted;
-            
-            return { 
-              ...game, 
+            const scavengerUnlocked =
+              progressResponse.success &&
+              progressResponse.data?.progress?.dashboardGames?.scavengerHunt
+                ?.isCompleted;
+
+            return {
+              ...game,
               isCompleted: scavengerCompleted || false,
               isUnlocked: scavengerUnlocked || false,
-              description: scavengerCompleted 
+              description: scavengerCompleted
                 ? `Find all 8 checkpoints (${completedCount}/8 completed)`
-                : scavengerUnlocked 
+                : scavengerUnlocked
                 ? `Start your adventure! (${completedCount}/8 completed)`
-                : `Scan QR to enter the treasure hunt`
+                : `Scan QR to enter the treasure hunt`,
             };
           } else {
             // For other games, check dashboard progress from UserProgress model
-            const dashboardGames = progressResponse.success && progressResponse.data?.progress?.dashboardGames;
+            const dashboardGames =
+              progressResponse.success &&
+              progressResponse.data?.progress?.dashboardGames;
             let isCompleted = false;
-            
+
             if (dashboardGames) {
               switch (game.id) {
-                case 'card-game':
+                case "card-game":
                   isCompleted = dashboardGames.cardGame?.isCompleted || false;
                   break;
-                case 'puzzle':
+                case "puzzle":
                   isCompleted = dashboardGames.puzzle?.isCompleted || false;
                   break;
-                case 'car-race':
+                case "car-race":
                   isCompleted = dashboardGames.carRace?.isCompleted || false;
                   break;
               }
             }
-            
+
             return { ...game, isCompleted: isCompleted || false };
           }
         });
 
         setGames(updatedGames);
-        console.log('✅ Dashboard: Progress loaded successfully');
-        console.log('📊 Dashboard: Final games state:', updatedGames);
-        console.log('📊 Dashboard: Completed games count:', updatedGames.filter(g => g.isCompleted).length);
+        console.log("✅ Dashboard: Progress loaded successfully");
+        console.log("📊 Dashboard: Final games state:", updatedGames);
+        console.log(
+          "📊 Dashboard: Completed games count:",
+          updatedGames.filter((g) => g.isCompleted).length
+        );
       } catch (error) {
-        console.error('❌ Dashboard: Error loading progress:', error);
+        console.error("❌ Dashboard: Error loading progress:", error);
         // Fallback to default games
         setGames([
           {
-            id: 'card-game',
-            title: 'Card Game',
-            description: 'Complete the offline card game and scan QR',
+            id: "card-game",
+            title: "Card Game",
+            description: "Complete the offline card game and scan QR",
             icon: <Gamepad2 className="w-8 h-8" />,
-            type: 'offline' as const,
-            isCompleted: false
+            type: "offline" as const,
+            isCompleted: false,
           },
           {
-            id: 'puzzle',
-            title: 'Puzzle',
-            description: 'Solve the puzzle and scan QR to complete',
+            id: "puzzle",
+            title: "Puzzle",
+            description: "Solve the puzzle and scan QR to complete",
             icon: <Puzzle className="w-8 h-8" />,
-            type: 'offline' as const,
-            isCompleted: false
+            type: "offline" as const,
+            isCompleted: false,
           },
           {
-            id: 'car-race',
-            title: 'Car Race',
-            description: 'Finish the car race and scan QR',
+            id: "car-race",
+            title: "Car Race",
+            description: "Finish the car race and scan QR",
             icon: <Car className="w-8 h-8" />,
-            type: 'offline' as const,
-            isCompleted: false
+            type: "offline" as const,
+            isCompleted: false,
           },
           {
-            id: 'scavenger-hunt',
-            title: 'Scavenger Hunt',
-            description: 'Scan QR to enter the treasure hunt',
+            id: "scavenger-hunt",
+            title: "Scavenger Hunt",
+            description: "Scan QR to enter the treasure hunt",
             icon: <Search className="w-8 h-8" />,
-            type: 'scavenger' as const,
-            isCompleted: false
-          }
+            type: "scavenger" as const,
+            isCompleted: false,
+          },
         ]);
       } finally {
-        console.log('🏁 Dashboard: Loading completed, setting isLoading to false');
+        console.log(
+          "🏁 Dashboard: Loading completed, setting isLoading to false"
+        );
         setIsLoading(false);
       }
     };
@@ -222,36 +256,51 @@ const Dashboard: React.FC<DashboardProps> = ({ phoneNumber, onStartScavengerHunt
 
   const [scanSuccess, setScanSuccess] = useState(false);
 
-  const completedGames = games.filter(game => game.isCompleted).length;
+  const completedGames = games.filter((game) => game.isCompleted).length;
   const progressPercentage = (completedGames / games.length) * 100;
+
+  // NEW: Function to get expected QR code for each game
+  const getExpectedQRCode = (gameId: string): string => {
+    const expectedQRCodes = {
+      "card-game": "TALABAT_CARD_COMPLETE",
+      puzzle: "TALABAT_PUZZLE_COMPLETE",
+      "car-race": "TALABAT_RACE_COMPLETE",
+      "scavenger-hunt": "TALABAT_SCAVENGER_ENTRY",
+    };
+
+    return expectedQRCodes[gameId as keyof typeof expectedQRCodes] || "";
+  };
 
   // Save dashboard game progress to database
   const saveDashboardGameProgress = async (gameId: string) => {
     try {
-      console.log('Calling completeDashboardGame for:', gameId);
+      console.log("Calling completeDashboardGame for:", gameId);
       const response = await ScavengerAPI.completeDashboardGame(gameId);
-      
-      console.log('completeDashboardGame response:', response);
-      
+
+      console.log("completeDashboardGame response:", response);
+
       if (response.success) {
-        console.log('Dashboard game progress saved:', response.data);
-        
+        console.log("Dashboard game progress saved:", response.data);
+
         // Show completion celebration
         showGameCompletionCelebration(gameId);
       } else {
-        console.error('Failed to save dashboard game progress:', response.error);
+        console.error(
+          "Failed to save dashboard game progress:",
+          response.error
+        );
       }
     } catch (error) {
-      console.error('Error saving dashboard game progress:', error);
+      console.error("Error saving dashboard game progress:", error);
     }
   };
 
   // Show completion celebration for dashboard games
   const showGameCompletionCelebration = (gameId: string) => {
-    const game = games.find(g => g.id === gameId);
+    const game = games.find((g) => g.id === gameId);
     if (!game) return;
 
-    const celebration = document.createElement('div');
+    const celebration = document.createElement("div");
     celebration.innerHTML = `
       <div style="
         position: fixed;
@@ -278,9 +327,9 @@ const Dashboard: React.FC<DashboardProps> = ({ phoneNumber, onStartScavengerHunt
         }
       </style>
     `;
-    
+
     document.body.appendChild(celebration);
-    
+
     setTimeout(() => {
       if (celebration.parentNode) {
         celebration.parentNode.removeChild(celebration);
@@ -289,7 +338,7 @@ const Dashboard: React.FC<DashboardProps> = ({ phoneNumber, onStartScavengerHunt
   };
 
   const handleScanQR = (gameId: string) => {
-    const game = games.find(g => g.id === gameId);
+    const game = games.find((g) => g.id === gameId);
     if (game) {
       setSelectedGame(game);
       setShowQRScanner(true);
@@ -299,65 +348,65 @@ const Dashboard: React.FC<DashboardProps> = ({ phoneNumber, onStartScavengerHunt
   const handleQRScanResult = (qrData: string) => {
     if (!selectedGame) return;
 
-    // Expected QR codes for each game
-    const expectedQRCodes = {
-      'card-game': 'TALABAT_CARD_COMPLETE',
-      'puzzle': 'TALABAT_PUZZLE_COMPLETE', 
-      'car-race': 'TALABAT_RACE_COMPLETE',
-      'scavenger-hunt': 'TALABAT_SCAVENGER_ENTRY'
-    };
+    console.log("QR Scan Result:", qrData);
+    console.log("Expected QR Code:", getExpectedQRCode(selectedGame.id));
 
-    const expectedCode = expectedQRCodes[selectedGame.id as keyof typeof expectedQRCodes];
+    // The validation is now handled inside SimpleQRScanner
+    // This function will only be called if the QR code is valid
 
-    if (qrData === expectedCode) {
-      if (selectedGame.type === 'scavenger') {
-        // For scavenger hunt, mark as unlocked and start the game
-        const updatedGames = games.map(game => 
-          game.id === selectedGame.id 
-            ? { ...game, isUnlocked: true, description: 'Start your adventure! (0/8 completed)' }
-            : game
-        );
-        setGames(updatedGames);
-        
-        // Save progress to localStorage  
-        const progressData = updatedGames.reduce((acc, game) => {
-          acc[game.id] = game.isCompleted || (game.isUnlocked || false);
-          return acc;
-        }, {} as Record<string, boolean>);
-        localStorage.setItem('talabat_user_progress', JSON.stringify(progressData));
-        
-        // Save to database
-        console.log('Saving dashboard game progress for:', selectedGame.id);
-        saveDashboardGameProgress(selectedGame.id);
-        
-        setShowQRScanner(false);
-        onStartScavengerHunt();
-      } else {
-        // For offline games, mark as completed and return to dashboard immediately
-        const updatedGames = games.map(game => 
-          game.id === selectedGame.id 
-            ? { ...game, isCompleted: true }
-            : game
-        );
-        setGames(updatedGames);
-        
-        // Save progress to localStorage
-        const progressData = updatedGames.reduce((acc, game) => {
-          acc[game.id] = game.isCompleted;
-          return acc;
-        }, {} as Record<string, boolean>);
-        localStorage.setItem('talabat_user_progress', JSON.stringify(progressData));
-        
-        // Save progress to database
-        saveDashboardGameProgress(selectedGame.id);
-        
-        // Close QR scanner immediately and return to dashboard
-        setShowQRScanner(false);
+    if (selectedGame.type === "scavenger") {
+      // For scavenger hunt, mark as unlocked and start the game
+      const updatedGames = games.map((game) =>
+        game.id === selectedGame.id
+          ? {
+              ...game,
+              isUnlocked: true,
+              description: "Start your adventure! (0/8 completed)",
+            }
+          : game
+      );
+      setGames(updatedGames);
 
-        setScanSuccess(false);
-      }
+      // Save progress to localStorage
+      const progressData = updatedGames.reduce((acc, game) => {
+        acc[game.id] = game.isCompleted || game.isUnlocked || false;
+        return acc;
+      }, {} as Record<string, boolean>);
+      localStorage.setItem(
+        "talabat_user_progress",
+        JSON.stringify(progressData)
+      );
+
+      // Save to database
+      console.log("Saving dashboard game progress for:", selectedGame.id);
+      saveDashboardGameProgress(selectedGame.id);
+
+      setShowQRScanner(false);
+      onStartScavengerHunt();
     } else {
-      
+      // For offline games, mark as completed and return to dashboard immediately
+      const updatedGames = games.map((game) =>
+        game.id === selectedGame.id ? { ...game, isCompleted: true } : game
+      );
+      setGames(updatedGames);
+
+      // Save progress to localStorage
+      const progressData = updatedGames.reduce((acc, game) => {
+        acc[game.id] = game.isCompleted;
+        return acc;
+      }, {} as Record<string, boolean>);
+      localStorage.setItem(
+        "talabat_user_progress",
+        JSON.stringify(progressData)
+      );
+
+      // Save progress to database
+      saveDashboardGameProgress(selectedGame.id);
+
+      // Close QR scanner immediately and return to dashboard
+      setShowQRScanner(false);
+
+      setScanSuccess(false);
     }
   };
 
@@ -381,8 +430,9 @@ const Dashboard: React.FC<DashboardProps> = ({ phoneNumber, onStartScavengerHunt
   if (showQRScanner) {
     return (
       <QRScannerModal
-        gameName={selectedGame?.title || ''}
-        gameType={selectedGame?.type || 'offline'}
+        gameName={selectedGame?.title || ""}
+        gameType={selectedGame?.type || "offline"}
+        expectedQRCode={getExpectedQRCode(selectedGame?.id || "")}
         onScanResult={handleQRScanResult}
         onClose={closeQRScanner}
         isSuccess={scanSuccess}
@@ -396,23 +446,31 @@ const Dashboard: React.FC<DashboardProps> = ({ phoneNumber, onStartScavengerHunt
       <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-orange-600">Talabat</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-orange-600">
+              Talabat
+            </h1>
             <p className="text-sm sm:text-base text-gray-600">Gaming Hub</p>
           </div>
           <div className="text-right">
             <p className="text-xs sm:text-sm text-gray-500">Welcome</p>
-            <p className="text-sm sm:text-base font-semibold text-gray-700 truncate max-w-[120px] sm:max-w-none">{phoneNumber}</p>
+            <p className="text-sm sm:text-base font-semibold text-gray-700 truncate max-w-[120px] sm:max-w-none">
+              {phoneNumber}
+            </p>
           </div>
         </div>
-        
+
         {/* Progress Bar */}
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs sm:text-sm font-medium text-gray-700">Overall Progress</span>
-            <span className="text-xs sm:text-sm text-gray-500">{completedGames}/{games.length} completed</span>
+            <span className="text-xs sm:text-sm font-medium text-gray-700">
+              Overall Progress
+            </span>
+            <span className="text-xs sm:text-sm text-gray-500">
+              {completedGames}/{games.length} completed
+            </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3">
-            <div 
+            <div
               className="bg-green-500 h-2 sm:h-3 rounded-full transition-all duration-500"
               style={{ width: `${progressPercentage}%` }}
             ></div>
@@ -428,7 +486,9 @@ const Dashboard: React.FC<DashboardProps> = ({ phoneNumber, onStartScavengerHunt
           </div>
           <div className="flex items-center gap-1">
             <Star className="w-3 h-3 sm:w-4 sm:h-4 text-blue-500" />
-            <span className="hidden sm:inline">{games.length - completedGames} Remaining</span>
+            <span className="hidden sm:inline">
+              {games.length - completedGames} Remaining
+            </span>
             <span className="sm:hidden">{games.length - completedGames}</span>
           </div>
         </div>
@@ -437,19 +497,21 @@ const Dashboard: React.FC<DashboardProps> = ({ phoneNumber, onStartScavengerHunt
       {/* Game Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6">
         {games.map((game) => (
-          <div 
+          <div
             key={game.id}
             className={`bg-white rounded-xl shadow-lg p-4 sm:p-6 transition-all duration-300 hover:shadow-xl ${
-              game.isCompleted ? 'ring-2 ring-green-500' : ''
+              game.isCompleted ? "ring-2 ring-green-500" : ""
             }`}
           >
             <div className="flex items-start justify-between mb-3 sm:mb-4">
-              <div className={`p-2 sm:p-3 rounded-xl ${
-                game.isCompleted ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'
-              }`}>
-                <div className="w-6 h-6 sm:w-8 sm:h-8">
-                  {game.icon}
-                </div>
+              <div
+                className={`p-2 sm:p-3 rounded-xl ${
+                  game.isCompleted
+                    ? "bg-green-100 text-green-600"
+                    : "bg-orange-100 text-orange-600"
+                }`}
+              >
+                <div className="w-6 h-6 sm:w-8 sm:h-8">{game.icon}</div>
               </div>
               {game.isCompleted && (
                 <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
@@ -457,13 +519,20 @@ const Dashboard: React.FC<DashboardProps> = ({ phoneNumber, onStartScavengerHunt
                 </div>
               )}
             </div>
-            
-            <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">{game.title}</h3>
-            <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">{game.description}</p>
-            
+
+            <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">
+              {game.title}
+            </h3>
+            <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">
+              {game.description}
+            </p>
+
             <button
               onClick={() => {
-                if (game.type === 'scavenger' && (game.isUnlocked || game.isCompleted)) {
+                if (
+                  game.type === "scavenger" &&
+                  (game.isUnlocked || game.isCompleted)
+                ) {
                   // If scavenger hunt is unlocked or completed, go directly to hunt
                   onStartScavengerHunt();
                 } else {
@@ -471,45 +540,45 @@ const Dashboard: React.FC<DashboardProps> = ({ phoneNumber, onStartScavengerHunt
                   handleScanQR(game.id);
                 }
               }}
-              disabled={game.isCompleted && game.type !== 'scavenger'}
+              disabled={game.isCompleted && game.type !== "scavenger"}
               className={`w-full py-2 sm:py-3 px-3 sm:px-4 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base ${
-                game.isCompleted && game.type !== 'scavenger'
-                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                  : game.type === 'scavenger' && (game.isUnlocked || game.isCompleted)
-                  ? 'bg-green-500 hover:bg-green-600 text-white'
-                  : game.type === 'scavenger'
-                  ? 'bg-purple-500 hover:bg-purple-600 text-white'
-                  : 'bg-orange-500 hover:bg-orange-600 text-white'
+                game.isCompleted && game.type !== "scavenger"
+                  ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                  : game.type === "scavenger" &&
+                    (game.isUnlocked || game.isCompleted)
+                  ? "bg-green-500 hover:bg-green-600 text-white"
+                  : game.type === "scavenger"
+                  ? "bg-purple-500 hover:bg-purple-600 text-white"
+                  : "bg-orange-500 hover:bg-orange-600 text-white"
               }`}
             >
-              {game.type === 'scavenger' && (game.isUnlocked || game.isCompleted) ? (
+              {game.type === "scavenger" &&
+              (game.isUnlocked || game.isCompleted) ? (
                 <Search className="w-4 h-4 sm:w-5 sm:h-5" />
               ) : (
                 <QrCode className="w-4 h-4 sm:w-5 sm:h-5" />
               )}
               <span className="hidden sm:inline">
-                {game.isCompleted && game.type !== 'scavenger'
-                  ? 'Completed' 
-                  : game.type === 'scavenger' && game.isCompleted
-                  ? 'Continue Hunt'
-                  : game.type === 'scavenger' && game.isUnlocked
-                  ? 'Resume Hunt'
-                  : game.type === 'scavenger' 
-                  ? 'Scan to Enter Hunt' 
-                  : 'Scan to Complete'
-                }
+                {game.isCompleted && game.type !== "scavenger"
+                  ? "Completed"
+                  : game.type === "scavenger" && game.isCompleted
+                  ? "Continue Hunt"
+                  : game.type === "scavenger" && game.isUnlocked
+                  ? "Resume Hunt"
+                  : game.type === "scavenger"
+                  ? "Scan to Enter Hunt"
+                  : "Scan to Complete"}
               </span>
               <span className="sm:hidden">
-                {game.isCompleted && game.type !== 'scavenger'
-                  ? 'Done' 
-                  : game.type === 'scavenger' && game.isCompleted
-                  ? 'Continue'
-                  : game.type === 'scavenger' && game.isUnlocked
-                  ? 'Resume'
-                  : game.type === 'scavenger' 
-                  ? 'Enter Hunt' 
-                  : 'Complete'
-                }
+                {game.isCompleted && game.type !== "scavenger"
+                  ? "Done"
+                  : game.type === "scavenger" && game.isCompleted
+                  ? "Continue"
+                  : game.type === "scavenger" && game.isUnlocked
+                  ? "Resume"
+                  : game.type === "scavenger"
+                  ? "Enter Hunt"
+                  : "Complete"}
               </span>
             </button>
           </div>
@@ -532,42 +601,71 @@ const Dashboard: React.FC<DashboardProps> = ({ phoneNumber, onStartScavengerHunt
   );
 };
 
-// Simple QR Scanner Modal Component
+// Updated QR Scanner Modal Component
 const QRScannerModal: React.FC<{
   gameName: string;
-  gameType: 'offline' | 'scavenger';
+  gameType: "offline" | "scavenger";
+  expectedQRCode: string;
   onScanResult: (qrData: string) => void;
   onClose: () => void;
   isSuccess: boolean;
-}> = ({ gameName, gameType, onScanResult, onClose, isSuccess }) => {
-
+}> = ({
+  gameName,
+  gameType,
+  expectedQRCode,
+  onScanResult,
+  onClose,
+  isSuccess,
+}) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
       <div className="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
         {isSuccess ? (
           <div className="text-center">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="w-8 h-8 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             </div>
-            <h3 className="text-lg sm:text-xl font-bold text-green-600 mb-2">Success!</h3>
-            <p className="text-sm sm:text-base text-gray-600 mb-4">{gameName} completed successfully!</p>
-            <div className="text-sm text-gray-500">Returning to dashboard...</div>
+            <h3 className="text-lg sm:text-xl font-bold text-green-600 mb-2">
+              Success!
+            </h3>
+            <p className="text-sm sm:text-base text-gray-600 mb-4">
+              {gameName} completed successfully!
+            </p>
+            <div className="text-sm text-gray-500">
+              Returning to dashboard...
+            </div>
           </div>
         ) : (
           <>
-            <h3 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Scan QR Code</h3>
+            <h3 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
+              Scan QR Code
+            </h3>
             <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">
-              {gameType === 'scavenger' 
-                ? `Scan the QR code to enter the ${gameName} adventure!`
-                : <>Scan the QR code for: <strong>{gameName}</strong></>
-              }
+              {gameType === "scavenger" ? (
+                `Scan the specific checkpoint QR code to enter the ${gameName} adventure!`
+              ) : (
+                <>
+                  Scan the checkpoint QR code for: <strong>{gameName}</strong>
+                </>
+              )}
             </p>
-            
-            {/* Direct QR Scanner - No intermediate button */}
+
+            {/* Direct QR Scanner with expected QR code validation */}
             <SimpleQRScanner
               title={`Scan QR for ${gameName}`}
+              expectedQRCode={expectedQRCode}
               onScan={(scannedCode: string) => {
                 onScanResult(scannedCode);
               }}
@@ -575,8 +673,6 @@ const QRScannerModal: React.FC<{
             />
           </>
         )}
-
-
       </div>
     </div>
   );
