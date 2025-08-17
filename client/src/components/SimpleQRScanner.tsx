@@ -16,8 +16,6 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
 }) => {
   const [error, setError] = useState<string>("");
   const [isCameraReady, setIsCameraReady] = useState(false);
-  const [showManualInput, setShowManualInput] = useState(false);
-  const [manualCode, setManualCode] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<string>("");
   const [isProcessingQR, setIsProcessingQR] = useState(false);
@@ -83,26 +81,17 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
     }
   };
 
-  // Initialize camera when component mounts or when switching from manual input
+  // Initialize camera when component mounts
   useEffect(() => {
-    console.log(
-      "🔄 useEffect [showManualInput] triggered, showManualInput:",
-      showManualInput
-    );
-
-    if (!showManualInput) {
-      console.log("📷 Starting camera initialization...");
-      initializeCamera();
-    } else {
-      console.log("⌨️ Manual input mode, not starting camera");
-    }
+    console.log("📷 Starting camera initialization...");
+    initializeCamera();
 
     // Cleanup function for this effect
     return () => {
-      console.log("🔴 useEffect [showManualInput] cleanup running");
+      console.log("🔴 useEffect cleanup running");
       cleanup();
     };
-  }, [showManualInput]);
+  }, []);
 
   const initializeCamera = async () => {
     try {
@@ -415,47 +404,9 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
     }, 100);
   };
 
-  const handleManualSubmit = () => {
-    if (manualCode.trim()) {
-      console.log("Manual QR code entered:", manualCode.trim());
 
-      // NEW: Validate manual input as well
-      const isValidQR = validateQRCode(manualCode.trim());
 
-      if (isValidQR) {
-        onScan(manualCode.trim());
-        setManualCode("");
-        setInvalidQRMessage(""); // Clear any invalid message
-      } else {
-        setInvalidQRMessage(
-          `❌ Invalid QR code! This is not the correct checkpoint QR.`
-        );
-        // Clear the invalid message after 3 seconds
-        setTimeout(() => {
-          setInvalidQRMessage("");
-        }, 3000);
-      }
-    }
-  };
 
-  const toggleManualInput = () => {
-    console.log(
-      "🔄 Toggling manual input, current showManualInput:",
-      showManualInput
-    );
-
-    if (!showManualInput) {
-      // Switching TO manual input - cleanup camera immediately
-      console.log("🔴 Switching to manual input - cleaning up camera");
-      cleanup();
-    }
-
-    setShowManualInput(!showManualInput);
-    setError("");
-    setScanResult("");
-    setIsProcessingQR(false);
-    setInvalidQRMessage(""); // Clear invalid QR message when toggling
-  };
 
   const handleRetry = () => {
     setError("");
@@ -464,11 +415,9 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
     setInvalidQRMessage(""); // Clear invalid QR message
     cleanup();
 
-    if (!showManualInput) {
-      setTimeout(() => {
-        initializeCamera();
-      }, 100);
-    }
+    setTimeout(() => {
+      initializeCamera();
+    }, 100);
   };
 
   // Handle component unmount and cleanup
@@ -625,29 +574,7 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
           </p>
         </div>
 
-        {/* Camera/Manual Input Toggle */}
-        <div className="flex gap-2 mb-4">
-          <button
-            onClick={() => !showManualInput || toggleManualInput()}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              !showManualInput
-                ? "bg-orange-500 text-white"
-                : "bg-gray-700 text-gray-300"
-            }`}
-          >
-            📷 Camera
-          </button>
-          <button
-            onClick={() => showManualInput || toggleManualInput()}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              showManualInput
-                ? "bg-orange-500 text-white"
-                : "bg-gray-700 text-gray-300"
-            }`}
-          >
-            ⌨️ Manual
-          </button>
-        </div>
+
 
         {/* NEW: Invalid QR Message Display */}
         {invalidQRMessage && (
@@ -674,7 +601,6 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
         )}
 
         {/* Camera View with Viewfinder */}
-        {!showManualInput && (
           <div className="relative mb-4">
             <div
               className="relative bg-gray-900 rounded-lg overflow-hidden"
@@ -823,38 +749,8 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
               </div>
             )}
           </div>
-        )}
 
-        {/* Manual Input */}
-        {showManualInput && (
-          <div className="mb-4">
-            <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center bg-gray-800">
-              <div className="text-4xl mb-4">⌨️</div>
-              <p className="text-gray-300 mb-4">
-                Enter the specific checkpoint QR code
-              </p>
-              <input
-                type="text"
-                value={manualCode}
-                onChange={(e) => {
-                  setManualCode(e.target.value);
-                  setInvalidQRMessage(""); // Clear invalid message when typing
-                }}
-                onKeyPress={(e) => e.key === "Enter" && handleManualSubmit()}
-                placeholder="Enter QR code data here..."
-                className="w-full px-4 py-3 border border-gray-600 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                autoFocus
-              />
-              <button
-                onClick={handleManualSubmit}
-                disabled={!manualCode.trim()}
-                className="mt-4 bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
-              >
-                Validate QR Code
-              </button>
-            </div>
-          </div>
-        )}
+
 
         {/* Error Display */}
         {error && (
@@ -867,87 +763,19 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
               >
                 Retry
               </button>
-              <button
-                onClick={() => setShowManualInput(true)}
-                className="bg-gray-600 text-white px-4 py-2 rounded text-sm hover:bg-gray-700"
-              >
-                Use Manual Input
-              </button>
+
             </div>
           </div>
         )}
 
         {/* Instructions */}
         <div className="text-center text-gray-400 text-sm">
-          {showManualInput ? (
-            <>
-              <p>⌨️ Type the checkpoint QR code data</p>
-              <p>🎯 Only the correct QR will be accepted</p>
-              <p className="text-xs mt-2">💡 Press Enter to validate quickly</p>
-            </>
-          ) : (
-            <>
-              <p>📱 Point camera at the checkpoint QR code</p>
-              <p>🎯 Only the correct QR will show success</p>
-              <p className="text-orange-400 mt-2">
-                💡 Invalid QRs will be rejected
-              </p>
-            </>
-          )}
+          <p>📱 Point camera at the checkpoint QR code</p>
+          <p>🎯 Only the correct QR will show success</p>
+          <p className="text-orange-400 mt-2">
+            💡 Invalid QRs will be rejected
+          </p>
         </div>
-
-        {/* Test QR Codes for Development - Updated with expected code highlighted */}
-        {showManualInput && (
-          <div className="mt-4 p-3 bg-gray-800 rounded-lg">
-            <p className="text-xs text-gray-400 mb-2">Quick test codes:</p>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <button
-                onClick={() => setManualCode("TALABAT_CARD_COMPLETE")}
-                className={`p-2 rounded text-left hover:bg-gray-600 transition-colors ${
-                  expectedQRCode === "TALABAT_CARD_COMPLETE"
-                    ? "bg-green-700 border border-green-500"
-                    : "bg-gray-700"
-                }`}
-              >
-                Card Game {expectedQRCode === "TALABAT_CARD_COMPLETE" && "✓"}
-              </button>
-              <button
-                onClick={() => setManualCode("TALABAT_PUZZLE_COMPLETE")}
-                className={`p-2 rounded text-left hover:bg-gray-600 transition-colors ${
-                  expectedQRCode === "TALABAT_PUZZLE_COMPLETE"
-                    ? "bg-green-700 border border-green-500"
-                    : "bg-gray-700"
-                }`}
-              >
-                Puzzle {expectedQRCode === "TALABAT_PUZZLE_COMPLETE" && "✓"}
-              </button>
-              <button
-                onClick={() => setManualCode("TALABAT_RACE_COMPLETE")}
-                className={`p-2 rounded text-left hover:bg-gray-600 transition-colors ${
-                  expectedQRCode === "TALABAT_RACE_COMPLETE"
-                    ? "bg-green-700 border border-green-500"
-                    : "bg-gray-700"
-                }`}
-              >
-                Car Race {expectedQRCode === "TALABAT_RACE_COMPLETE" && "✓"}
-              </button>
-              <button
-                onClick={() => setManualCode("TALABAT_SCAVENGER_ENTRY")}
-                className={`p-2 rounded text-left hover:bg-gray-600 transition-colors ${
-                  expectedQRCode === "TALABAT_SCAVENGER_ENTRY"
-                    ? "bg-green-700 border border-green-500"
-                    : "bg-gray-700"
-                }`}
-              >
-                Scavenger Hunt{" "}
-                {expectedQRCode === "TALABAT_SCAVENGER_ENTRY" && "✓"}
-              </button>
-            </div>
-            <p className="text-xs text-green-400 mt-2">
-              ✓ = Expected QR for this checkpoint
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );
