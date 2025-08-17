@@ -11,12 +11,13 @@ import type { GameSession } from "./types";
 import { ScavengerAPI } from "./api";
 
 // Import all page components
-import LandingPage from "./components/LandingPage";
-import InstructionsPage from "./components/InstructionsPage";
-import RegistrationPage from "./components/RegistrationPage";
-import OTPPage from "./components/OTPPage";
-import Dashboard from "./components/Dashboard";
-import ScavengerHuntPage from "./components/ScavengerHuntPage";
+import LandingPage from './components/LandingPage';
+import InstructionsPage from './components/InstructionsPage';
+import RegistrationPage from './components/RegistrationPage';
+import OTPPage from './components/OTPPage';
+import Dashboard from './components/Dashboard';
+import ScavengerHuntPage from './components/ScavengerHuntPage';
+import AdminPanel from './components/AdminPanel';
 
 import ProgressPage from "./components/ProgressPage";
 
@@ -150,6 +151,10 @@ const DashboardWrapper: React.FC = () => {
   );
 };
 
+const AdminPanelWrapper: React.FC = () => {
+  return <AdminPanel />;
+};
+
 const ScavengerHuntPageWrapper: React.FC = () => {
   const navigate = useNavigate();
   const { phoneNumber, gameSession } = React.useContext(AppContext);
@@ -173,9 +178,7 @@ const ScavengerHuntPageWrapper: React.FC = () => {
     navigate("/dashboard");
   };
 
-  const handleScanQR = (checkpointId: number) => {
-    navigate(`/qr-scanner/${checkpointId}`);
-  };
+
 
   // Redirect if not authenticated at all
   if (!phoneNumber) {
@@ -293,6 +296,7 @@ const AppContent: React.FC = () => {
         }
       />
       <Route path="/dashboard" element={<DashboardWrapper />} />
+      <Route path="/admin" element={<AdminPanelWrapper />} />
       <Route path="/game" element={<ScavengerHuntPageWrapper />} />
 
       <Route path="/progress" element={<ProgressPageWrapper />} />

@@ -521,4 +521,60 @@ export class ScavengerAPI {
     }
   }
 
+  // Admin API methods (no auth required)
+  static async getAllUsers(): Promise<ApiResponse<any[]>> {
+    try {
+      console.log('📊 API: Getting all users...');
+
+      const response = await fetch(`${API_BASE}/admin/users`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+      console.log('📊 API: Get all users response:', data);
+
+      if (!response.ok) {
+        return { success: false, error: data?.message || 'Failed to load users' };
+      }
+
+      return { success: true, data: data.users };
+    } catch (error: any) {
+      console.error('Failed to load users:', error);
+      return { success: false, error: error?.message || 'Network error' };
+    }
+  }
+
+  static async updatePrizeClaim(userId: string, prizeType: string, claimed: boolean): Promise<ApiResponse<any>> {
+    try {
+      console.log('🏆 API: Updating prize claim...', { userId, prizeType, claimed });
+
+      const response = await fetch(`${API_BASE}/admin/prize-claim`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          userId,
+          prizeType,
+          claimed
+        })
+      });
+
+      const data = await response.json();
+      console.log('🏆 API: Update prize claim response:', data);
+
+      if (!response.ok) {
+        return { success: false, error: data?.message || 'Failed to update prize claim' };
+      }
+
+      return { success: true, data: data };
+    } catch (error: any) {
+      console.error('Failed to update prize claim:', error);
+      return { success: false, error: error?.message || 'Network error' };
+    }
+  }
+
 }

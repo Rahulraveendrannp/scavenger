@@ -85,8 +85,9 @@ router.post('/register', otpLimiter, validatePhoneNumber, asyncHandler(async (re
     const otpCode = smsResult.otp;
     const otpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-    // FOR TESTING: Log the OTP
-    console.log('🔐 TESTING MODE: Generated OTP:', otpCode, 'for phone:', normalizedPhone);
+    // FOR TESTING: Log the OTP to console (instead of sending SMS)
+    console.log('📱 Generated OTP:', otpCode, 'for phone:', normalizedPhone);
+    console.log('📱 OTP expires at:', otpExpires);
 
     // Create or update user
     if (!user) {
@@ -122,7 +123,7 @@ router.post('/register', otpLimiter, validatePhoneNumber, asyncHandler(async (re
 
 /**
  * @route   POST /api/auth/verify-otp
- * @desc    Verify OTP and authenticate user (TESTING MODE - BYPASSES OTP)
+ * @desc    Verify OTP and authenticate user
  * @access  Public
  */
 router.post('/verify-otp', verifyLimiter, validateOTP, asyncHandler(async (req, res, next) => {
@@ -135,9 +136,7 @@ router.post('/verify-otp', verifyLimiter, validateOTP, asyncHandler(async (req, 
   const { phoneNumber, otpCode } = req.body;
   const normalizedPhone = phoneNumber.replace(/\s/g, '');
 
-  // FOR TESTING: Log OTP and bypass verification
-  console.log('🔐 TESTING MODE: OTP received:', otpCode, 'for phone:', normalizedPhone);
-  console.log('🔐 TESTING MODE: OTP verification bypassed - always successful');
+  console.log('🔐 OTP verification request for:', normalizedPhone, 'Code:', otpCode);
 
   // Find user with OTP data
   const user = await User.findByPhoneNumber(normalizedPhone).select('+otpCode +otpExpires +otpAttempts');
@@ -146,10 +145,39 @@ router.post('/verify-otp', verifyLimiter, validateOTP, asyncHandler(async (req, 
     return next(new AppError('User not found. Please register first.', 404));
   }
 
-  // FOR TESTING: Skip all OTP validation
-  console.log('🔐 TESTING MODE: Skipping OTP validation for user:', user.phoneNumber);
+  // Check if OTP exists
+  if (!user.otpCode) {
+    return next(new AppError('No OTP found. Please request a new OTP.', 400));
+  }
 
-  // OTP is valid (bypassed) - clear OTP data and verify user
+  // Check if OTP has expired
+  if (user.isOTPExpired()) {
+    return next(new AppError('OTP has expired. Please request a new OTP.', 400));
+  }
+
+  // Check attempt limit (max 5 attempts)
+  if (user.otpAttempts >= 5) {
+    return next(new AppError('Too many failed attempts. Please request a new OTP.', 429));
+  }
+
+  // Validate OTP using hash comparison
+  const isOTPValid = await user.compareOTP(otpCode);
+  if (!isOTPValid) {
+    // Increment failed attempts
+    user.otpAttempts += 1;
+    await user.save();
+    
+    const remainingAttempts = 5 - user.otpAttempts;
+    if (remainingAttempts > 0) {
+      return next(new AppError(`Invalid OTP. ${remainingAttempts} attempts remaining.`, 400));
+    } else {
+      return next(new AppError('Too many failed attempts. Please request a new OTP.', 429));
+    }
+  }
+
+  console.log('✅ OTP verified successfully for user:', user.phoneNumber);
+
+  // OTP is valid - clear OTP data and verify user
   user.otpCode = undefined;
   user.otpExpires = undefined;
   user.otpAttempts = 0;
@@ -164,8 +192,7 @@ router.post('/verify-otp', verifyLimiter, validateOTP, asyncHandler(async (req, 
   };
 
   // Generate JWT
-  console.log('🔐 TESTING MODE: Generating JWT token...');
-  console.log('🔐 TESTING MODE: JWT_SECRET available:', process.env.JWT_SECRET ? 'Yes' : 'No');
+  console.log('🔐 Generating JWT token...');
   
   const token = jwt.sign(
     { id: user._id, phoneNumber: user.phoneNumber },
@@ -173,13 +200,11 @@ router.post('/verify-otp', verifyLimiter, validateOTP, asyncHandler(async (req, 
     { expiresIn: '7d' }
   );
 
-  console.log('🔐 TESTING MODE: JWT token generated successfully');
-  console.log('🔐 TESTING MODE: Token length:', token.length);
-  console.log('🔐 TESTING MODE: User verified successfully, token generated');
+  console.log('✅ JWT token generated successfully for user:', user.phoneNumber);
 
   res.status(200).json({
     success: true,
-    message: 'OTP verified successfully (TESTING MODE)',
+    message: 'OTP verified successfully',
     data: {
       session: sessionData,
       token

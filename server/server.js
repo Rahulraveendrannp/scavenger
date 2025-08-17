@@ -13,6 +13,7 @@ const authRoutes = require('./routes/auth');
 const gameRoutes = require('./routes/game');
 const userRoutes = require('./routes/user');
 const progressRoutes = require('./routes/progress');
+const adminRoutes = require('./routes/admin');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -92,6 +93,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/game', gameRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/progress', progressRoutes);
+app.use('/api/admin', adminRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
