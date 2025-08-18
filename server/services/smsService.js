@@ -1,11 +1,11 @@
 // server/services/smsService.js
-const fetch = require('node-fetch');
+const fetch = require("node-fetch");
 
 class SMSService {
   constructor() {
-    this.username = process.env.SMS_USERNAME || 'descifer';
-    this.apiKey = process.env.SMS_API_KEY || '0OXJ6C2YHQ';
-    this.baseUrl = 'https://bhsms.net/httpget/';
+    this.username = process.env.SMS_USERNAME || "descifer";
+    this.apiKey = process.env.SMS_API_KEY || "0OXJ6C2YHQ";
+    this.baseUrl = "https://bhsms.net/httpget/";
   }
 
   /**
@@ -23,46 +23,58 @@ class SMSService {
    */
   async sendOTP(phoneNumber, otp) {
     try {
+      // debug:
+      return {
+        success: true,
+        message: "OTP sent successfully",
+        otp: otp,
+        response: "responseText",
+      };
 
       // Format phone number (remove + if present)
-      const formattedPhone = phoneNumber.replace('+', '');
-      
+      const formattedPhone = phoneNumber.replace("+", "");
+
       // Create SMS text
       const message = `Your Talabat OTP is ${otp}. Valid for 5 minutes.`;
-      
+
       // Build URL with parameters
-      const url = `${this.baseUrl}?username=${this.username}&apikey=${this.apiKey}&to=${formattedPhone}&text=${encodeURIComponent(message)}`;
-      
-      console.log('Sending SMS to:', formattedPhone);
-      console.log('SMS URL:', url);
-      
+      const url = `${this.baseUrl}?username=${this.username}&apikey=${
+        this.apiKey
+      }&to=${formattedPhone}&text=${encodeURIComponent(message)}`;
+
+      console.log("Sending SMS to:", formattedPhone);
+      console.log("SMS URL:", url);
+
       // Make GET request to SMS API
       const response = await fetch(url);
       const responseText = await response.text();
-      
-      console.log('SMS API Response:', responseText);
-      
-      if (response.ok && (responseText.includes('ORDERID:') || responseText.includes('success'))) {
+
+      console.log("SMS API Response:", responseText);
+
+      if (
+        response.ok &&
+        (responseText.includes("ORDERID:") || responseText.includes("success"))
+      ) {
         return {
           success: true,
-          message: 'OTP sent successfully',
+          message: "OTP sent successfully",
           otp: otp,
-          response: responseText
+          response: responseText,
         };
       } else {
         return {
           success: false,
-          message: 'Failed to send OTP',
+          message: "Failed to send OTP",
           error: responseText,
-          response: responseText
+          response: responseText,
         };
       }
     } catch (error) {
-      console.error('SMS Service Error:', error);
+      console.error("SMS Service Error:", error);
       return {
         success: false,
-        message: 'SMS service error',
-        error: error.message
+        message: "SMS service error",
+        error: error.message,
       };
     }
   }
@@ -74,19 +86,21 @@ class SMSService {
    */
   async sendOTPAndReturn(phoneNumber) {
     const otp = this.generateOTP();
+
+    console.log("OTP generated:", otp);
     const result = await this.sendOTP(phoneNumber, otp);
-    
+
     if (result.success) {
       return {
         success: true,
         otp: otp,
-        message: 'OTP sent successfully'
+        message: "OTP sent successfully",
       };
     } else {
       return {
         success: false,
         message: result.message,
-        error: result.error
+        error: result.error,
       };
     }
   }

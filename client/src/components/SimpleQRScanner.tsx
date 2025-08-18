@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import jsQR from "jsqr";
 
@@ -5,7 +6,7 @@ interface SimpleQRScannerProps {
   onScan: (result: string) => void;
   onClose: () => void;
   title: string;
-  expectedQRCode: string; // NEW: The exact QR code data we expect
+  expectedQRCode: string;
 }
 
 const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
@@ -19,7 +20,8 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<string>("");
   const [isProcessingQR, setIsProcessingQR] = useState(false);
-  const [invalidQRMessage, setInvalidQRMessage] = useState<string>(""); // NEW: Invalid QR message
+  const [invalidQRMessage, setInvalidQRMessage] = useState<string>("");
+  const [isMobile, setIsMobile] = useState(false); // NEW: Mobile detection
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -27,11 +29,36 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
   const scanIntervalRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
+  // NEW: Detect if device is mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const mobileKeywords = [
+        "mobile",
+        "android",
+        "iphone",
+        "ipad",
+        "ipod",
+        "blackberry",
+        "windows phone",
+      ];
+      const isMobileUA = mobileKeywords.some((keyword) =>
+        userAgent.includes(keyword)
+      );
+      const isTouchDevice =
+        "ontouchstart" in window || navigator.maxTouchPoints > 0;
+      const isSmallScreen = window.innerWidth <= 768;
+
+      return isMobileUA || isTouchDevice || isSmallScreen;
+    };
+
+    setIsMobile(checkMobile());
+  }, []);
+
   // Utility function to check for active media streams
   const checkActiveStreams = () => {
     console.log("🔍 Checking for active media streams...");
 
-    // Check if there are any active media streams globally
     if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
       navigator.mediaDevices
         .enumerateDevices()
@@ -46,7 +73,6 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
         });
     }
 
-    // Check video element
     if (videoRef.current) {
       const video = videoRef.current;
       console.log("🎥 Video element state:", {
@@ -68,7 +94,6 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
       }
     }
 
-    // Check streamRef
     if (streamRef.current) {
       console.log(
         "📡 StreamRef tracks:",
@@ -81,12 +106,10 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
     }
   };
 
-  // Initialize camera when component mounts
   useEffect(() => {
     console.log("📷 Starting camera initialization...");
     initializeCamera();
 
-    // Cleanup function for this effect
     return () => {
       console.log("🔴 useEffect cleanup running");
       cleanup();
@@ -97,22 +120,23 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
     try {
       setError("");
       setIsCameraReady(false);
-      setInvalidQRMessage(""); // Clear invalid QR message
+      setInvalidQRMessage("");
 
-      // Check if mediaDevices is available
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error("Camera not supported by this browser");
       }
 
-      // Request camera permission with rear camera preference
-      const stream = await navigator.mediaDevices.getUserMedia({
+      // Enhanced constraints for better mobile performance
+      const constraints = {
         video: {
-          facingMode: { ideal: "environment" }, // Prefer rear camera
-          width: { ideal: 1280, min: 640 },
-          height: { ideal: 720, min: 480 },
+          facingMode: { ideal: "environment" },
+          width: { ideal: isMobile ? 1920 : 1280, min: 640 }, // Higher resolution for mobile
+          height: { ideal: isMobile ? 1080 : 720, min: 480 },
+          frameRate: { ideal: 30, min: 15 }, // Better frame rate
         },
-      });
+      };
 
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
 
       if (videoRef.current) {
@@ -159,7 +183,6 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
       );
     } else if (err.name === "OverconstrainedError") {
       setError("Camera constraints not supported. Trying fallback...");
-      // Try again with less strict constraints
       retryWithFallbackConstraints();
     } else {
       setError("Failed to access camera. Try manual input instead.");
@@ -169,7 +192,7 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
   const retryWithFallbackConstraints = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: true, // Simple constraint as fallback
+        video: true,
       });
 
       streamRef.current = stream;
@@ -179,7 +202,7 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
         videoRef.current.play().then(() => {
           setIsCameraReady(true);
           setIsScanning(true);
-          setError(""); // Clear error
+          setError("");
           startQRDetection();
         });
       }
@@ -189,7 +212,6 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
     }
   };
 
-  // NEW: Validate if scanned QR matches expected QR
   const validateQRCode = (scannedData: string): boolean => {
     return scannedData === expectedQRCode;
   };
@@ -208,14 +230,31 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
         const context = canvas.getContext("2d");
 
         if (context && video.readyState === video.HAVE_ENOUGH_DATA) {
-          // Set canvas dimensions to match video
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
+          // NEW: Resize canvas to smaller dimensions for faster processing (optimized for mobile)
+          const maxDimension = isMobile ? 640 : 1024;
+          let canvasWidth = video.videoWidth;
+          let canvasHeight = video.videoHeight;
+          const aspectRatio = video.videoWidth / video.videoHeight;
 
-          // Draw current video frame to canvas
+          if (canvasWidth > maxDimension || canvasHeight > maxDimension) {
+            if (aspectRatio > 1) {
+              // Landscape
+              canvasWidth = maxDimension;
+              canvasHeight = Math.round(maxDimension / aspectRatio);
+            } else {
+              // Portrait
+              canvasHeight = maxDimension;
+              canvasWidth = Math.round(maxDimension * aspectRatio);
+            }
+          }
+
+          canvas.width = canvasWidth;
+          canvas.height = canvasHeight;
+
+          // Draw the resized video frame onto the canvas
           context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-          // Get image data from canvas
+          // Get image data from the full resized canvas (no region needed)
           const imageData = context.getImageData(
             0,
             0,
@@ -223,68 +262,66 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
             canvas.height
           );
 
-          // Detect QR code
+          // Detect QR with inversion attempts for better robustness
           const qrCode = jsQR(
             imageData.data,
             imageData.width,
             imageData.height,
             {
-              inversionAttempts: "dontInvert",
+              inversionAttempts: "attemptBoth", // Try both normal and inverted for varied QR appearances
             }
           );
 
           if (qrCode && qrCode.data) {
             console.log("QR Code detected:", qrCode.data);
             console.log("Expected QR Code:", expectedQRCode);
+            console.log("Detected in resized frame");
 
-            // NEW: Validate the QR code
             const isValidQR = validateQRCode(qrCode.data);
             console.log("QR Code validation result:", isValidQR);
 
             if (isValidQR) {
-              // Valid QR - proceed with success
-              setIsScanning(false); // Stop scanning immediately
+              setIsScanning(false);
               setIsProcessingQR(true);
               setScanResult(qrCode.data);
-              setInvalidQRMessage(""); // Clear any invalid message
+              setInvalidQRMessage("");
 
-              // Stop camera stream
               cleanup();
 
-              // Add a small delay to show the scan result before calling onScan
               setTimeout(() => {
                 onScan(qrCode.data);
               }, 1000);
 
-              return; // Stop scanning
+              return;
             } else {
-              // Invalid QR - show error but continue scanning
               console.log("❌ Invalid QR code scanned:", qrCode.data);
               setInvalidQRMessage(
                 `❌ Invalid QR code! Expected specific checkpoint QR.`
               );
 
-              // Clear the invalid message after 3 seconds and continue scanning
               setTimeout(() => {
                 setInvalidQRMessage("");
               }, 3000);
-
-              // Continue scanning (don't return)
             }
           }
         }
       }
 
-      // Continue scanning
       if (isScanning) {
         animationFrameRef.current = requestAnimationFrame(detectQR);
       }
     };
 
     detectQR();
-  }, [isCameraReady, isScanning, isProcessingQR, expectedQRCode, onScan]);
+  }, [
+    isCameraReady,
+    isScanning,
+    isProcessingQR,
+    expectedQRCode,
+    onScan,
+    isMobile,
+  ]);
 
-  // Start QR detection when camera is ready
   useEffect(() => {
     if (isCameraReady && isScanning) {
       startQRDetection();
@@ -303,34 +340,28 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
     setIsCameraReady(false);
     setIsProcessingQR(false);
 
-    // Cancel animation frame first
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
       console.log("✅ Animation frame cancelled");
     }
 
-    // Clear any intervals
     if (scanIntervalRef.current) {
       clearInterval(scanIntervalRef.current);
       scanIntervalRef.current = null;
       console.log("✅ Scan interval cleared");
     }
 
-    // CRITICAL: Stop video element completely
     if (videoRef.current) {
       console.log("🔴 Stopping video element...");
       const video = videoRef.current;
 
-      // Pause the video
       video.pause();
       console.log("✅ Video paused");
 
-      // Remove event listeners
       video.onloadedmetadata = null;
       video.onerror = null;
 
-      // Get the current stream from video
       const videoStream = video.srcObject as MediaStream;
       if (videoStream) {
         console.log("🔴 Found stream in video element, stopping tracks...");
@@ -349,16 +380,13 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
         });
       }
 
-      // Clear srcObject
       video.srcObject = null;
       console.log("✅ Video srcObject cleared");
 
-      // Force video to load empty source
       video.load();
       console.log("✅ Video element reloaded with no source");
     }
 
-    // Stop stream reference tracks
     if (streamRef.current) {
       console.log("🔴 Stopping streamRef tracks...");
       streamRef.current.getTracks().forEach((track, index) => {
@@ -379,7 +407,6 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
       console.log("✅ StreamRef cleared");
     }
 
-    // Force garbage collection hint (only in some dev environments)
     if ((window as any).gc) {
       (window as any).gc();
       console.log("✅ Forced garbage collection");
@@ -387,7 +414,6 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
 
     console.log("🔴 QR Scanner cleanup completed - Camera should be OFF");
 
-    // Additional verification after a short delay
     setTimeout(() => {
       console.log("🔍 Verifying camera shutdown...");
       if (videoRef.current && videoRef.current.srcObject) {
@@ -404,15 +430,11 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
     }, 100);
   };
 
-
-
-
-
   const handleRetry = () => {
     setError("");
     setScanResult("");
     setIsProcessingQR(false);
-    setInvalidQRMessage(""); // Clear invalid QR message
+    setInvalidQRMessage("");
     cleanup();
 
     setTimeout(() => {
@@ -420,22 +442,18 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
     }, 100);
   };
 
-  // Handle component unmount and cleanup
   useEffect(() => {
     console.log("🔄 Component mounted - QR Scanner initialized");
 
-    // Cleanup function that runs when component unmounts
     return () => {
       console.log(
         "🔴 QR Scanner component unmounting - forcing camera cleanup"
       );
 
-      // More aggressive unmount cleanup
       if (videoRef.current) {
         const video = videoRef.current;
         video.pause();
 
-        // Get stream from video element directly
         const stream = video.srcObject as MediaStream;
         if (stream) {
           console.log("🔴 UNMOUNT: Stopping tracks from video element...");
@@ -450,10 +468,9 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
         }
 
         video.srcObject = null;
-        video.load(); // Force reload
+        video.load();
       }
 
-      // Also stop from streamRef
       if (streamRef.current) {
         console.log("🔴 UNMOUNT: Stopping tracks from streamRef...");
         streamRef.current.getTracks().forEach((track) => {
@@ -468,17 +485,14 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
         streamRef.current = null;
       }
 
-      // Run regular cleanup as well
       cleanup();
     };
   }, []);
 
-  // Emergency cleanup on window unload and visibility change
   useEffect(() => {
     const emergencyCleanup = () => {
       console.log("🚨 EMERGENCY: Stopping all camera activity");
 
-      // Stop all tracks from video element
       if (videoRef.current && videoRef.current.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
         stream.getTracks().forEach((track) => {
@@ -488,7 +502,6 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
         videoRef.current.srcObject = null;
       }
 
-      // Stop all tracks from streamRef
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => {
           console.log("🚨 EMERGENCY: Stopping streamRef track:", track.kind);
@@ -520,6 +533,21 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
     };
   }, []);
 
+  // NEW: Dynamic viewfinder size based on device type
+  const getViewfinderSize = () => {
+    if (isMobile) {
+      return "w-64 h-64"; // Much larger for mobile (256px x 256px)
+    }
+    return "w-48 h-48"; // Original size for desktop (192px x 192px)
+  };
+
+  const getViewfinderRadius = () => {
+    if (isMobile) {
+      return "25%"; // Larger radius for mobile
+    }
+    return "35%"; // Original radius for desktop
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-95 z-50 flex items-center justify-center">
       <div className="bg-black text-white rounded-xl p-4 max-w-md w-full mx-4 relative">
@@ -529,19 +557,12 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
           <button
             onClick={() => {
               console.log("🔴 Close button clicked - cleaning up camera");
-
-              // Check current state before cleanup
               checkActiveStreams();
-
-              cleanup(); // Stop camera when closing
-
-              // Check state after cleanup
+              cleanup();
               setTimeout(() => {
                 console.log("🔍 Post-cleanup verification:");
                 checkActiveStreams();
               }, 200);
-
-              // Small delay to ensure cleanup completes
               setTimeout(() => {
                 onClose();
               }, 300);
@@ -564,19 +585,19 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
           </button>
         </div>
 
-        {/* Expected QR Info */}
+        {/* Expected QR Info with Mobile Enhancement Notice */}
         <div className="mb-4 p-3 bg-blue-900 border border-blue-600 rounded-lg">
           <p className="text-blue-200 text-sm font-semibold">
             🎯 Looking for specific checkpoint QR
           </p>
           <p className="text-blue-300 text-xs mt-1">
-            Only the correct QR code will be accepted
+            {isMobile
+              ? "📱 Enhanced mobile scanning - larger detection area active"
+              : "🖥️ Desktop scanning mode active"}
           </p>
         </div>
 
-
-
-        {/* NEW: Invalid QR Message Display */}
+        {/* Invalid QR Message Display */}
         {invalidQRMessage && (
           <div className="mb-4 p-3 bg-red-900 border border-red-600 rounded-lg animate-pulse">
             <p className="text-red-200 text-sm font-semibold">
@@ -588,7 +609,7 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
           </div>
         )}
 
-        {/* Scan Result Display - Only for Valid QRs */}
+        {/* Scan Result Display */}
         {scanResult && (
           <div className="mb-4 p-3 bg-green-900 border border-green-600 rounded-lg">
             <p className="text-green-200 text-sm font-semibold">
@@ -600,157 +621,179 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
           </div>
         )}
 
-        {/* Camera View with Viewfinder */}
-          <div className="relative mb-4">
-            <div
-              className="relative bg-gray-900 rounded-lg overflow-hidden"
-              style={{ aspectRatio: "4/3" }}
-            >
-              {/* Video Element */}
-              <video
-                ref={videoRef}
-                className="w-full h-full object-cover"
-                playsInline
-                muted
-                style={{
-                  display: isCameraReady ? "block" : "none",
-                  position: "relative",
-                  zIndex: 1,
-                }}
-              />
+        {/* Camera View with Enhanced Mobile Viewfinder */}
+        <div className="relative mb-4">
+          <div
+            className="relative bg-gray-900 rounded-lg overflow-hidden"
+            style={{ aspectRatio: "4/3" }}
+          >
+            {/* Video Element */}
+            <video
+              ref={videoRef}
+              className="w-full h-full object-cover"
+              playsInline
+              muted
+              style={{
+                display: isCameraReady ? "block" : "none",
+                position: "relative",
+                zIndex: 1,
+              }}
+            />
 
-              {/* Loading State */}
-              {!isCameraReady && !error && (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-800 z-10">
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-2"></div>
-                    <p className="text-gray-400 text-sm">
-                      Initializing camera...
-                    </p>
-                  </div>
+            {/* Loading State */}
+            {!isCameraReady && !error && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-800 z-10">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-2"></div>
+                  <p className="text-gray-400 text-sm">
+                    Initializing camera...
+                  </p>
                 </div>
-              )}
-
-              {/* Viewfinder Overlay */}
-              {isCameraReady && !isProcessingQR && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  {/* Viewfinder Frame - positioned over video */}
-                  <div className="relative z-10">
-                    <div className="w-48 h-48 relative">
-                      {/* Dimmed overlay with cut-out center */}
-                      <div
-                        className="absolute inset-0"
-                        style={{
-                          background:
-                            "radial-gradient(circle at center, transparent 35%, rgba(0,0,0,0.6) 45%)",
-                        }}
-                      ></div>
-
-                      {/* Corner brackets - Change color based on invalid QR */}
-                      <div
-                        className={`absolute top-0 left-0 w-8 h-8 border-l-4 border-t-4 drop-shadow-lg ${
-                          invalidQRMessage ? "border-red-500" : "border-white"
-                        }`}
-                      ></div>
-                      <div
-                        className={`absolute top-0 right-0 w-8 h-8 border-r-4 border-t-4 drop-shadow-lg ${
-                          invalidQRMessage ? "border-red-500" : "border-white"
-                        }`}
-                      ></div>
-                      <div
-                        className={`absolute bottom-0 left-0 w-8 h-8 border-l-4 border-b-4 drop-shadow-lg ${
-                          invalidQRMessage ? "border-red-500" : "border-white"
-                        }`}
-                      ></div>
-                      <div
-                        className={`absolute bottom-0 right-0 w-8 h-8 border-r-4 border-b-4 drop-shadow-lg ${
-                          invalidQRMessage ? "border-red-500" : "border-white"
-                        }`}
-                      ></div>
-
-                      {/* Scanning line animation */}
-                      {isScanning && (
-                        <div className="absolute inset-0 overflow-hidden">
-                          <div
-                            className={`absolute w-full h-0.5 ${
-                              invalidQRMessage ? "bg-red-500" : "bg-orange-500"
-                            }`}
-                            style={{
-                              top: "50%",
-                              boxShadow: invalidQRMessage
-                                ? "0 0 20px rgba(239, 68, 68, 0.8)"
-                                : "0 0 20px rgba(249, 115, 22, 0.8)",
-                              animation: "scanLine 2s ease-in-out infinite",
-                            }}
-                          ></div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* CSS Animation for scan line */}
-              <style>{`
-                @keyframes scanLine {
-                  0% { transform: translateY(-100px); opacity: 0; }
-                  50% { opacity: 1; }
-                  100% { transform: translateY(100px); opacity: 0; }
-                }
-              `}</style>
-
-              {/* Processing Overlay - Only for Valid QRs */}
-              {isProcessingQR && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-80 z-20">
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-                      <svg
-                        className="w-8 h-8 text-white"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    </div>
-                    <p className="text-green-400 font-semibold text-lg">
-                      Valid QR Code Scanned!
-                    </p>
-                    <p className="text-gray-300 text-sm">
-                      Processing checkpoint...
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Hidden canvas for QR processing */}
-              <canvas ref={canvasRef} className="hidden" />
-            </div>
-
-            {/* Scanning Status */}
-            {isCameraReady && !isProcessingQR && (
-              <div className="text-center mt-2">
-                <p
-                  className={`text-sm font-medium ${
-                    invalidQRMessage ? "text-red-400" : "text-orange-400"
-                  }`}
-                >
-                  {isScanning
-                    ? invalidQRMessage
-                      ? "🔴 Scanning... (Invalid QR detected)"
-                      : "📷 Scanning for checkpoint QR..."
-                    : "⏸️ Scanning paused"}
-                </p>
               </div>
             )}
+
+            {/* Enhanced Viewfinder Overlay */}
+            {isCameraReady && !isProcessingQR && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="relative z-10">
+                  <div className={`${getViewfinderSize()} relative`}>
+                    {/* Enhanced dimmed overlay with larger cut-out for mobile */}
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background: `radial-gradient(circle at center, transparent ${getViewfinderRadius()}, rgba(0,0,0,0.7) ${
+                          parseInt(getViewfinderRadius()) + 10
+                        }%)`,
+                      }}
+                    ></div>
+
+                    {/* Larger corner brackets for mobile */}
+                    <div
+                      className={`absolute top-0 left-0 ${
+                        isMobile
+                          ? "w-12 h-12 border-l-4 border-t-4"
+                          : "w-8 h-8 border-l-4 border-t-4"
+                      } drop-shadow-lg ${
+                        invalidQRMessage ? "border-red-500" : "border-white"
+                      }`}
+                    ></div>
+                    <div
+                      className={`absolute top-0 right-0 ${
+                        isMobile
+                          ? "w-12 h-12 border-r-4 border-t-4"
+                          : "w-8 h-8 border-r-4 border-t-4"
+                      } drop-shadow-lg ${
+                        invalidQRMessage ? "border-red-500" : "border-white"
+                      }`}
+                    ></div>
+                    <div
+                      className={`absolute bottom-0 left-0 ${
+                        isMobile
+                          ? "w-12 h-12 border-l-4 border-b-4"
+                          : "w-8 h-8 border-l-4 border-b-4"
+                      } drop-shadow-lg ${
+                        invalidQRMessage ? "border-red-500" : "border-white"
+                      }`}
+                    ></div>
+                    <div
+                      className={`absolute bottom-0 right-0 ${
+                        isMobile
+                          ? "w-12 h-12 border-r-4 border-b-4"
+                          : "w-8 h-8 border-r-4 border-b-4"
+                      } drop-shadow-lg ${
+                        invalidQRMessage ? "border-red-500" : "border-white"
+                      }`}
+                    ></div>
+
+                    {/* Scanning line animation */}
+                    {isScanning && (
+                      <div className="absolute inset-0 overflow-hidden">
+                        <div
+                          className={`absolute w-full ${
+                            isMobile ? "h-1" : "h-0.5"
+                          } ${
+                            invalidQRMessage ? "bg-red-500" : "bg-orange-500"
+                          }`}
+                          style={{
+                            top: "50%",
+                            boxShadow: invalidQRMessage
+                              ? "0 0 20px rgba(239, 68, 68, 0.8)"
+                              : "0 0 20px rgba(249, 115, 22, 0.8)",
+                            animation: "scanLine 2s ease-in-out infinite",
+                          }}
+                        ></div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* CSS Animation for scan line */}
+            <style>{`
+              @keyframes scanLine {
+                0% { transform: translateY(-${
+                  isMobile ? "120px" : "100px"
+                }); opacity: 0; }
+                50% { opacity: 1; }
+                100% { transform: translateY(${
+                  isMobile ? "120px" : "100px"
+                }); opacity: 0; }
+              }
+            `}</style>
+
+            {/* Processing Overlay */}
+            {isProcessingQR && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-80 z-20">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                    <svg
+                      className="w-8 h-8 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  </div>
+                  <p className="text-green-400 font-semibold text-lg">
+                    Valid QR Code Scanned!
+                  </p>
+                  <p className="text-gray-300 text-sm">
+                    Processing checkpoint...
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Hidden canvas for QR processing */}
+            <canvas ref={canvasRef} className="hidden" />
           </div>
 
-
+          {/* Enhanced Scanning Status */}
+          {isCameraReady && !isProcessingQR && (
+            <div className="text-center mt-2">
+              <p
+                className={`text-sm font-medium ${
+                  invalidQRMessage ? "text-red-400" : "text-orange-400"
+                }`}
+              >
+                {isScanning
+                  ? invalidQRMessage
+                    ? "🔴 Scanning... (Invalid QR detected)"
+                    : `📷 Scanning for checkpoint QR... ${
+                        isMobile ? "(Enhanced Mobile Mode)" : "(Desktop Mode)"
+                      }`
+                  : "⏸️ Scanning paused"}
+              </p>
+            </div>
+          )}
+        </div>
 
         {/* Error Display */}
         {error && (
@@ -763,18 +806,23 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
               >
                 Retry
               </button>
-
             </div>
           </div>
         )}
 
-        {/* Instructions */}
+        {/* Enhanced Instructions */}
         <div className="text-center text-gray-400 text-sm">
           <p>📱 Point camera at the checkpoint QR code</p>
           <p>🎯 Only the correct QR will show success</p>
-          <p className="text-orange-400 mt-2">
-            💡 Invalid QRs will be rejected
-          </p>
+          {isMobile ? (
+            <p className="text-green-400 mt-2">
+              📱 Mobile optimized: Large scanning area active
+            </p>
+          ) : (
+            <p className="text-orange-400 mt-2">
+              💡 Invalid QRs will be rejected
+            </p>
+          )}
         </div>
       </div>
     </div>
