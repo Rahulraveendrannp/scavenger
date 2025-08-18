@@ -96,7 +96,7 @@ const CompletionPage: React.FC<CompletionPageProps> = ({
           </button>
           
           <div className="text-center">
-            <p className="text-sm text-gray-600 mb-2">Redeem your rewards at the Talabat booth!</p>
+            <p className="text-sm text-gray-600 mb-2">Redeem your rewards at the talabat booth!</p>
             <div className="bg-orange-100 text-orange-800 px-4 py-2 rounded-lg text-sm font-medium">
               Reward Token: {rewardToken}
             </div>

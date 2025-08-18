@@ -1,4 +1,4 @@
-# Git Setup Instructions for Talabat Scavenger Hunt
+# Git Setup Instructions for talabat Scavenger Hunt
 
 ## Step 1: Remove node_modules from Git Tracking (if already added)
 
@@ -36,7 +36,7 @@ git status
 ## Step 4: Commit Your Changes
 
 ```bash
-git commit -m "Initial commit: Talabat Scavenger Hunt Game
+git commit -m "Initial commit: talabat Scavenger Hunt Game
 
 - Added responsive React frontend with authentication
 - Added Node.js backend server
