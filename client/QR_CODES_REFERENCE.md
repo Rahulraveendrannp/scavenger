@@ -1,4 +1,4 @@
-# QR Codes Reference - Talabat Gaming Hub
+# QR Codes Reference - talabat Gaming Hub
 
 ## First 3 Games (Dashboard)
 

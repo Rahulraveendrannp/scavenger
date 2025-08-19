@@ -78,9 +78,18 @@ const Dashboard: React.FC<DashboardProps> = ({
           // Continue with fallback data
         }
 
-        const [progressResponse, scavengerProgressResponse] = await Promise.all(
-          [ScavengerAPI.getUserProgress(), ScavengerAPI.getGameProgress()],
-        );
+        const phoneNumber = localStorage.getItem("talabat_phone_number");
+        
+        const [progressResponse, scavengerProgressResponse, claimResponse] = await Promise.all([
+          ScavengerAPI.getUserProgress(), 
+          ScavengerAPI.getGameProgress(),
+          phoneNumber ? ScavengerAPI.checkUserClaimed(phoneNumber) : Promise.resolve({ success: false, data: { isClaimed: false } })
+        ]);
+
+        // Check if user is claimed
+        if (claimResponse.success && claimResponse.data?.isClaimed) {
+          setIsClaimed(true);
+        }
 
         console.log("📊 Dashboard: Progress responses:", {
           userProgress: progressResponse,
@@ -141,36 +150,36 @@ const Dashboard: React.FC<DashboardProps> = ({
           },
         ];
 
-        // Update games based on database progress
-        const updatedGames: Game[] = defaultGames.map((game) => {
-          if (game.id === "scavenger-hunt") {
-            // For scavenger hunt, check if all 8 checkpoints are completed
-            const scavengerCompleted =
-              scavengerProgressResponse.success &&
-              scavengerProgressResponse.data &&
-              scavengerProgressResponse.data.totalFound >= 8;
-            const completedCount =
-              scavengerProgressResponse.success &&
-              scavengerProgressResponse.data
-                ? scavengerProgressResponse.data.totalFound || 0
-                : 0;
+                 // Update games based on database progress
+         const updatedGames: Game[] = defaultGames.map((game) => {
+           if (game.id === "scavenger-hunt") {
+             // For scavenger hunt, check if all 8 checkpoints are completed
+             const scavengerCompleted =
+               scavengerProgressResponse.success &&
+               scavengerProgressResponse.data &&
+               scavengerProgressResponse.data.totalFound >= 8;
+             const completedCount =
+               scavengerProgressResponse.success &&
+                 scavengerProgressResponse.data
+                 ? scavengerProgressResponse.data.totalFound || 0
+                 : 0;
 
-            // Check if scavenger hunt has been unlocked (QR scanned)
-            const scavengerUnlocked =
-              progressResponse.success &&
-              progressResponse.data?.progress?.dashboardGames?.scavengerHunt
-                ?.isCompleted;
+             // Check if scavenger hunt has been started (QR scanned)
+             const scavengerStarted =
+               progressResponse.success &&
+               progressResponse.data?.progress?.dashboardGames?.scavengerHunt
+                 ?.isStarted;
 
-            return {
-              ...game,
-              isCompleted: scavengerCompleted || false,
-              isUnlocked: scavengerUnlocked || false,
-              description: scavengerCompleted
-                ? `Find all 8 checkpoints (${completedCount}/8 completed)`
-                : scavengerUnlocked
-                  ? `Start your adventure! (${completedCount}/8 completed)`
-                  : `Scan QR to enter the treasure hunt`,
-            };
+             return {
+               ...game,
+               isCompleted: scavengerCompleted || false,
+               isUnlocked: scavengerStarted || false,
+               description: scavengerCompleted
+                 ? `Find all 8 checkpoints (${completedCount}/8 completed)`
+                 : scavengerStarted
+                   ? `Start your adventure! (${completedCount}/8 completed)`
+                   : `Scan QR to enter the treasure hunt`,
+             };
           } else {
             // For other games, check dashboard progress from UserProgress model
             const dashboardGames =
@@ -253,8 +262,9 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
-
   const [scanSuccess, setScanSuccess] = useState(false);
+  const [showClaimQR, setShowClaimQR] = useState(false);
+  const [isClaimed, setIsClaimed] = useState(false);
 
   const completedGames = games.filter((game) => game.isCompleted).length;
   const progressPercentage = (completedGames / games.length) * 100;
@@ -269,6 +279,34 @@ const Dashboard: React.FC<DashboardProps> = ({
     };
 
     return expectedQRCodes[gameId as keyof typeof expectedQRCodes] || "";
+  };
+
+  // Generate claim QR code
+  const generateClaimQRCode = async (): Promise<string> => {
+    const phoneNumber = localStorage.getItem("talabat_phone_number");
+    if (!phoneNumber) {
+      throw new Error("Phone number not found");
+    }
+
+    try {
+      const response = await ScavengerAPI.generateClaimQR(phoneNumber);
+      if (response.success && response.data?.qrCode) {
+        return response.data.qrCode;
+      } else {
+        throw new Error(response.error || "Failed to generate QR code");
+      }
+    } catch (error) {
+      console.error("Error generating QR code:", error);
+      throw error;
+    }
+  };
+
+  const handleClaimClick = () => {
+    setShowClaimQR(true);
+  };
+
+  const closeClaimQR = () => {
+    setShowClaimQR(false);
   };
 
   // Save dashboard game progress to database
@@ -373,53 +411,47 @@ const Dashboard: React.FC<DashboardProps> = ({
     // The validation is now handled inside SimpleQRScanner
     // This function will only be called if the QR code is valid
 
-    if (selectedGame.type === "scavenger") {
-      // For scavenger hunt, mark as unlocked and start the game
-      const updatedGames = games.map((game) =>
-        game.id === selectedGame.id
-          ? {
-              ...game,
-              isUnlocked: true,
-              description: "Start your adventure! (0/8 completed)",
-            }
-          : game,
-      );
-      setGames(updatedGames);
+         if (selectedGame.type === "scavenger") {
+       // For scavenger hunt, mark as started (not completed)
+       const updatedGames = games.map((game) =>
+         game.id === selectedGame.id
+           ? {
+             ...game,
+             isUnlocked: true,
+             description: "Start your adventure! (0/8 completed)",
+           }
+           : game
+       );
+       setGames(updatedGames);
 
-      // Save progress to localStorage
-      const progressData = updatedGames.reduce(
-        (acc, game) => {
-          acc[game.id] = game.isCompleted || game.isUnlocked || false;
-          return acc;
-        },
-        {} as Record<string, boolean>,
-      );
-      localStorage.setItem(
-        "talabat_user_progress",
-        JSON.stringify(progressData),
-      );
+       // Save progress to localStorage  
+       const progressData = updatedGames.reduce((acc, game) => {
+         acc[game.id] = game.isCompleted || game.isUnlocked || false;
+         return acc;
+       }, {} as Record<string, boolean>);
+       localStorage.setItem(
+         "talabat_user_progress",
+         JSON.stringify(progressData)
+       );
 
-      // Save to database
-      console.log("Saving dashboard game progress for:", selectedGame.id);
-      saveDashboardGameProgress(selectedGame.id);
+       // Save to database - mark as started, not completed
+       console.log("Saving dashboard game progress for:", selectedGame.id);
+       saveDashboardGameProgress(selectedGame.id);
 
-      setShowQRScanner(false);
-      onStartScavengerHunt();
+       setShowQRScanner(false);
+       onStartScavengerHunt();
     } else {
       // For offline games, mark as completed and return to dashboard immediately
       const updatedGames = games.map((game) =>
-        game.id === selectedGame.id ? { ...game, isCompleted: true } : game,
+        game.id === selectedGame.id ? { ...game, isCompleted: true } : game
       );
       setGames(updatedGames);
 
       // Save progress to localStorage
-      const progressData = updatedGames.reduce(
-        (acc, game) => {
-          acc[game.id] = game.isCompleted;
-          return acc;
-        },
-        {} as Record<string, boolean>,
-      );
+      const progressData = updatedGames.reduce((acc, game) => {
+        acc[game.id] = game.isCompleted;
+        return acc;
+      }, {} as Record<string, boolean>);
       localStorage.setItem(
         "talabat_user_progress",
         JSON.stringify(progressData),
@@ -465,6 +497,14 @@ const Dashboard: React.FC<DashboardProps> = ({
     );
   }
 
+  if (showClaimQR) {
+    return (
+      <ClaimQRModal
+        onClose={closeClaimQR}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-400 to-red-500 p-2 sm:p-4">
       {/* Header */}
@@ -472,7 +512,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-orange-600">
-              Talabat
+              talabat
             </h1>
             <p className="text-sm sm:text-base text-gray-600">Gaming Hub</p>
           </div>
@@ -490,9 +530,22 @@ const Dashboard: React.FC<DashboardProps> = ({
             <span className="text-xs sm:text-sm font-medium text-gray-700">
               Overall Progress
             </span>
-            <span className="text-xs sm:text-sm text-gray-500">
-              {completedGames}/{games.length} completed
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs sm:text-sm text-gray-500">
+                {completedGames}/{games.length} completed
+              </span>
+              <button
+                onClick={handleClaimClick}
+                disabled={isClaimed}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                  isClaimed
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-orange-500 hover:bg-orange-600 text-white"
+                }`}
+              >
+                {isClaimed ? "CLAIMED" : "CLAIM"}
+              </button>
+            </div>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3">
             <div
@@ -524,23 +577,22 @@ const Dashboard: React.FC<DashboardProps> = ({
         {games.map((game) => (
           <div
             key={game.id}
-            className={`bg-white rounded-xl shadow-lg p-4 sm:p-6 transition-all duration-300 hover:shadow-xl ${
-              game.isCompleted ? "ring-2 ring-green-500" : ""
-            }`}
+            className={`bg-white rounded-xl shadow-lg p-4 sm:p-6 transition-all duration-300 hover:shadow-xl ${game.isCompleted ? "ring-2 ring-green-500" : ""
+              }`}
           >
             <div className="flex items-start justify-between mb-3 sm:mb-4">
               <div
-                className={`p-2 sm:p-3 rounded-xl ${
-                  game.isCompleted
+                className={`p-2 sm:p-3 rounded-xl ${game.isCompleted
                     ? "bg-green-100 text-green-600"
                     : "bg-orange-100 text-orange-600"
-                }`}
+                  }`}
               >
                 <div className="w-6 h-6 sm:w-8 sm:h-8">{game.icon}</div>
               </div>
               {game.isCompleted && (
                 <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                  ✓ COMPLETED
+                  <span className="hidden sm:inline">✓ COMPLETED</span>
+                  <span className="sm:hidden">✓</span>
                 </div>
               )}
             </div>
@@ -552,33 +604,32 @@ const Dashboard: React.FC<DashboardProps> = ({
               {game.description}
             </p>
 
-            <button
-              onClick={() => {
-                if (
-                  game.type === "scavenger" &&
-                  (game.isUnlocked || game.isCompleted)
-                ) {
-                  // If scavenger hunt is unlocked or completed, go directly to hunt
-                  onStartScavengerHunt();
-                } else if (!game.isCompleted) {
-                  // Only show QR scanner if game is not completed
-                  handleScanQR(game.id);
-                }
-              }}
-              disabled={game.isCompleted}
-              className={`w-full py-2 sm:py-3 px-3 sm:px-4 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base ${
-                game.isCompleted
+                         <button
+               onClick={() => {
+                 if (
+                   game.type === "scavenger" &&
+                   (game.isUnlocked || game.isCompleted)
+                 ) {
+                   // If scavenger hunt is unlocked or completed, go directly to hunt
+                   onStartScavengerHunt();
+                 } else if (!game.isCompleted) {
+                   // Only show QR scanner if game is not completed
+                   handleScanQR(game.id);
+                 }
+               }}
+               disabled={game.isCompleted || isClaimed}
+              className={`w-full py-2 sm:py-3 px-3 sm:px-4 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base ${game.isCompleted
                   ? "bg-gray-200 text-gray-500 cursor-not-allowed"
                   : game.type === "scavenger" &&
-                      (game.isUnlocked || game.isCompleted)
+                    (game.isUnlocked || game.isCompleted)
                     ? "bg-green-500 hover:bg-green-600 text-white"
                     : game.type === "scavenger"
                       ? "bg-purple-500 hover:bg-purple-600 text-white"
                       : "bg-orange-500 hover:bg-orange-600 text-white"
-              }`}
+                }`}
             >
               {game.type === "scavenger" &&
-              (game.isUnlocked || game.isCompleted) ? (
+                (game.isUnlocked || game.isCompleted) ? (
                 <Search className="w-4 h-4 sm:w-5 sm:h-5" />
               ) : (
                 <QrCode className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -638,62 +689,229 @@ const QRScannerModal: React.FC<{
   onClose,
   isSuccess,
 }) => {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+        <div className="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+          {isSuccess ? (
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg
+                  className="w-8 h-8 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-lg sm:text-xl font-bold text-green-600 mb-2">
+                Success!
+              </h3>
+              <p className="text-sm sm:text-base text-gray-600 mb-4">
+                {gameName} completed successfully!
+              </p>
+              <div className="text-sm text-gray-500">
+                Returning to dashboard...
+              </div>
+            </div>
+          ) : (
+            <>
+              <h3 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
+                Scan QR Code
+              </h3>
+              <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">
+                {gameType === "scavenger" ? (
+                  `Scan the specific checkpoint QR code to enter the ${gameName} adventure!`
+                ) : (
+                  <>
+                    Scan the checkpoint QR code for: <strong>{gameName}</strong>
+                  </>
+                )}
+              </p>
+
+              {/* Direct QR Scanner with expected QR code validation */}
+              <SimpleQRScanner
+                title={`Scan QR for ${gameName}`}
+                expectedQRCode={expectedQRCode}
+                onScan={(scannedCode: string) => {
+                  onScanResult(scannedCode);
+                }}
+                onClose={onClose}
+              />
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+// Claim QR Modal Component
+const ClaimQRModal: React.FC<{
+  onClose: () => void;
+}> = ({ onClose }) => {
+  const [qrCodeImage, setQrCodeImage] = useState<string>("");
+  const [isGenerating, setIsGenerating] = useState(true);
+  const [qrCode, setQrCode] = useState<string>("");
+  const [error, setError] = useState<string>("");
+  const [gameStatus, setGameStatus] = useState<any>(null);
+
+  useEffect(() => {
+    const generateClaimQR = async () => {
+      try {
+        setIsGenerating(true);
+        setError("");
+        
+        const phoneNumber = localStorage.getItem("talabat_phone_number");
+        if (!phoneNumber) {
+          throw new Error("Phone number not found");
+        }
+
+        // Get game progress and generate QR code in parallel
+        const [progressResponse, scavengerProgressResponse, qrResponse] = await Promise.all([
+          ScavengerAPI.getUserProgress(),
+          ScavengerAPI.getGameProgress(),
+          ScavengerAPI.generateClaimQR(phoneNumber)
+        ]);
+
+        console.log('ClaimQRModal: API responses:', { progressResponse, scavengerProgressResponse, qrResponse });
+        
+        // Process QR code
+        if (qrResponse.success && qrResponse.data?.qrCode) {
+          setQrCode(qrResponse.data.qrCode);
+          
+          // Generate QR code image
+          const QRCode = (await import('qrcode')).default;
+          const qrDataURL = await QRCode.toDataURL(qrResponse.data.qrCode, {
+            width: 200,
+            margin: 2,
+            color: {
+              dark: '#000000',
+              light: '#FFFFFF'
+            }
+          });
+          setQrCodeImage(qrDataURL);
+        } else {
+          throw new Error(qrResponse.error || "Failed to generate QR code");
+        }
+
+        // Process game status
+        const scavengerStarted = progressResponse.success && progressResponse.data?.progress?.dashboardGames?.scavengerHunt?.isStarted || false;
+        const status = {
+          cardGame: progressResponse.success && progressResponse.data?.progress?.dashboardGames?.cardGame?.isCompleted || false,
+          puzzle: progressResponse.success && progressResponse.data?.progress?.dashboardGames?.puzzle?.isCompleted || false,
+          carRace: progressResponse.success && progressResponse.data?.progress?.dashboardGames?.carRace?.isCompleted || false,
+          scavengerHunt: scavengerProgressResponse.success && (scavengerProgressResponse.data?.totalFound || 0) >= 8 || false,
+          scavengerProgress: scavengerProgressResponse.success ? (scavengerProgressResponse.data?.totalFound || 0) : 0,
+          scavengerStarted: scavengerStarted
+        };
+        setGameStatus(status);
+
+      } catch (error) {
+        console.error('Error generating QR code:', error);
+        setError(error instanceof Error ? error.message : "Failed to generate QR code");
+      } finally {
+        setIsGenerating(false);
+      }
+    };
+
+    generateClaimQR();
+  }, []);
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
       <div className="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
-        {isSuccess ? (
-          <div className="text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg
-                className="w-8 h-8 text-green-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            </div>
-            <h3 className="text-lg sm:text-xl font-bold text-green-600 mb-2">
-              Success!
-            </h3>
-            <p className="text-sm sm:text-base text-gray-600 mb-4">
-              {gameName} completed successfully!
-            </p>
-            <div className="text-sm text-gray-500">
-              Returning to dashboard...
-            </div>
-          </div>
-        ) : (
-          <>
-            <h3 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
-              Scan QR Code
-            </h3>
-            <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">
-              {gameType === "scavenger" ? (
-                `Scan the specific checkpoint QR code to enter the ${gameName} adventure!`
-              ) : (
-                <>
-                  Scan the checkpoint QR code for: <strong>{gameName}</strong>
-                </>
-              )}
-            </p>
+        <div className="text-center">
+          <h3 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
+            Claim Your Reward
+          </h3>
+          <p className="text-sm sm:text-base text-gray-600 mb-4">
+            Show this QR code to the booth staff to claim your reward
+          </p>
+          
+                     {/* QR Code Display */}
+           <div className="bg-gray-100 p-4 rounded-lg mb-4">
+             <div className="text-center">
+               <div className="text-xs text-gray-500 mb-2">QR Code</div>
+               <div className="bg-white p-4 rounded border-2 border-dashed border-gray-300 flex justify-center">
+                 {isGenerating ? (
+                   <div className="flex items-center justify-center h-48">
+                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                     <span className="ml-2 text-gray-600">Generating QR Code...</span>
+                   </div>
+                 ) : qrCodeImage ? (
+                   <img 
+                     src={qrCodeImage} 
+                     alt="Claim QR Code" 
+                     className="w-48 h-48"
+                     style={{ imageRendering: 'pixelated' }}
+                   />
+                                  ) : error ? (
+                    <div className="text-red-500 text-sm">{error}</div>
+                  ) : (
+                    <div className="text-red-500 text-sm">Failed to generate QR code</div>
+                  )}
+               </div>
+               <div className="mt-2 text-xs text-gray-500 font-mono break-all">
+                 {qrCode}
+               </div>
+             </div>
+           </div>
 
-            {/* Direct QR Scanner with expected QR code validation */}
-            <SimpleQRScanner
-              title={`Scan QR for ${gameName}`}
-              expectedQRCode={expectedQRCode}
-              onScan={(scannedCode: string) => {
-                onScanResult(scannedCode);
-              }}
-              onClose={onClose}
-            />
-          </>
-        )}
+                       {/* Game Status Display */}
+            {gameStatus && (
+              <div className="bg-gray-50 p-3 rounded-lg mb-4">
+                <div className="text-xs text-gray-500 mb-3 text-center">Game Progress</div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Card Game</span>
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${
+                      gameStatus.cardGame ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {gameStatus.cardGame ? '✓ Completed' : '✗ Pending'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Puzzle</span>
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${
+                      gameStatus.puzzle ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {gameStatus.puzzle ? '✓ Completed' : '✗ Pending'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Car Race</span>
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${
+                      gameStatus.carRace ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {gameStatus.carRace ? '✓ Completed' : '✗ Pending'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Scavenger Hunt</span>
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${
+                      gameStatus.scavengerHunt ? 'bg-green-100 text-green-700' : 
+                      gameStatus.scavengerStarted ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {gameStatus.scavengerHunt ? '✓ Completed' : 
+                       gameStatus.scavengerStarted ? `${gameStatus.scavengerProgress}/8` : '✗ Pending'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          
+          <button
+            onClick={onClose}
+            className="bg-orange-500 text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition-colors text-sm sm:text-base font-medium"
+          >
+            Close
+          </button>
+        </div>
       </div>
     </div>
   );

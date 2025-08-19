@@ -8,40 +8,52 @@ const router = express.Router();
 
 // No authentication required for admin routes
 
-// Get all users with their progress and prize claim status
-router.get('/users', catchAsync(async (req, res) => {
-  console.log('📊 Admin: Getting all users...');
+// Get total users count
+router.get('/total-users', catchAsync(async (req, res) => {
+  console.log('📊 Admin: Getting total users count...');
 
   try {
-    // Get all users
+    const totalUsers = await User.countDocuments();
+    console.log(`📊 Admin: Total users: ${totalUsers}`);
+
+    res.status(200).json({
+      success: true,
+      totalUsers
+    });
+
+  } catch (error) {
+    console.error('❌ Admin: Error getting total users:', error);
+    throw new AppError('Failed to get total users', 500);
+  }
+}));
+
+// Get all users with progress and claim status
+router.get('/all-users', catchAsync(async (req, res) => {
+  console.log('📊 Admin: Getting all users with progress...');
+
+  try {
     const users = await User.find().sort({ createdAt: -1 });
     console.log(`📊 Admin: Found ${users.length} users`);
 
-    // Get progress for each user
     const usersWithProgress = await Promise.all(
       users.map(async (user) => {
         try {
-          // Get user progress
           const userProgress = await UserProgress.findOne({ userId: user._id });
+          
+          // Calculate completed games
+          const dashboardGames = userProgress?.dashboardGames || {};
+          const completedGames = Object.values(dashboardGames).filter(game => game?.isCompleted).length;
+          
+          // Get scavenger hunt progress
+          const scavengerProgress = userProgress?.totalFound || 0;
           
           return {
             _id: user._id,
             phoneNumber: user.phoneNumber,
             createdAt: user.createdAt,
-            progress: userProgress ? {
-              dashboardGames: userProgress.dashboardGames || {},
-              scavengerHunt: {
-                completedCheckpoints: userProgress.completedCheckpoints || [],
-                totalFound: userProgress.totalFound || 0,
-                isCompleted: userProgress.isCompleted || false
-              }
-            } : {},
-            hasClaimed: user.hasClaimed || {
-              cardGame: false,
-              puzzle: false,
-              carRace: false,
-              scavengerHunt: false
-            }
+            completedGames: `${completedGames}/4`,
+            scavengerProgress: `${scavengerProgress}/8`,
+            isClaimed: user.isClaimed || false
           };
         } catch (err) {
           console.error(`❌ Error loading progress for user ${user._id}:`, err);
@@ -49,13 +61,9 @@ router.get('/users', catchAsync(async (req, res) => {
             _id: user._id,
             phoneNumber: user.phoneNumber,
             createdAt: user.createdAt,
-            progress: {},
-            hasClaimed: {
-              cardGame: false,
-              puzzle: false,
-              carRace: false,
-              scavengerHunt: false
-            }
+            completedGames: '0/4',
+            scavengerProgress: '0/8',
+            isClaimed: user.isClaimed || false
           };
         }
       })
@@ -73,106 +81,123 @@ router.get('/users', catchAsync(async (req, res) => {
   }
 }));
 
-// Update prize claim status for a user
-router.post('/prize-claim', catchAsync(async (req, res) => {
-  const { userId, prizeType, claimed } = req.body;
+// Generate claim QR code for user
+router.post('/generate-claim-qr', catchAsync(async (req, res) => {
+  const { phoneNumber } = req.body;
   
-  console.log('🏆 Admin: Updating prize claim...', { userId, prizeType, claimed });
+  console.log('🎫 Admin: Generating claim QR code...', { phoneNumber });
 
-  // Validate input
-  if (!userId || !prizeType || typeof claimed !== 'boolean') {
-    throw new AppError('Missing required fields: userId, prizeType, claimed', 400);
-  }
-
-  const validPrizeTypes = ['cardGame', 'puzzle', 'carRace', 'scavengerHunt'];
-  if (!validPrizeTypes.includes(prizeType)) {
-    throw new AppError(`Invalid prize type. Must be one of: ${validPrizeTypes.join(', ')}`, 400);
+  if (!phoneNumber) {
+    throw new AppError('Phone number is required', 400);
   }
 
   try {
-    // Find the user
-    const user = await User.findById(userId);
+    const user = await User.findOne({ phoneNumber });
     if (!user) {
       throw new AppError('User not found', 404);
     }
 
-    // Initialize hasClaimed if it doesn't exist
-    if (!user.hasClaimed) {
-      user.hasClaimed = {
-        cardGame: false,
-        puzzle: false,
-        carRace: false,
-        scavengerHunt: false
-      };
-    }
-
-    // Update the specific prize claim status
-    user.hasClaimed[prizeType] = claimed;
+    // Generate QR code
+    const timestamp = Date.now();
+    const qrCode = `TALABAT_CLAIM_${phoneNumber}_${timestamp}`;
     
-    // Save the user
+    // Save QR code to user
+    user.claimQRCode = qrCode;
     await user.save();
 
-    console.log(`🏆 Admin: Successfully updated ${prizeType} prize claim for user ${userId} to ${claimed}`);
+    console.log(`🎫 Admin: Generated QR code for user ${phoneNumber}`);
 
     res.status(200).json({
       success: true,
-      message: `Prize claim ${claimed ? 'marked' : 'unmarked'} successfully`,
       data: {
-        userId,
-        prizeType,
-        claimed,
-        hasClaimed: user.hasClaimed
+        qrCode,
+        phoneNumber
       }
     });
 
   } catch (error) {
-    console.error('❌ Admin: Error updating prize claim:', error);
+    console.error('❌ Admin: Error generating QR code:', error);
     if (error instanceof AppError) {
       throw error;
     }
-    throw new AppError('Failed to update prize claim', 500);
+    throw new AppError('Failed to generate QR code', 500);
   }
 }));
 
-// Get admin statistics (optional - for dashboard stats)
-router.get('/stats', catchAsync(async (req, res) => {
-  console.log('📈 Admin: Getting statistics...');
+// Mark user as claimed (for QR code scanning)
+router.post('/mark-claimed', catchAsync(async (req, res) => {
+  const { qrCode } = req.body;
+  
+  console.log('🏆 Admin: Scanning QR code for claim...', { qrCode });
+
+  if (!qrCode) {
+    throw new AppError('QR code is required', 400);
+  }
 
   try {
-    const totalUsers = await User.countDocuments();
-    const totalProgress = await UserProgress.countDocuments();
-    
-    // Count users with completed scavenger hunts
-    const completedHunts = await UserProgress.countDocuments({ isCompleted: true });
-    
-    // Count total prize claims
-    const users = await User.find();
-    let totalPrizeClaims = 0;
-    
-    users.forEach(user => {
-      if (user.hasClaimed) {
-        totalPrizeClaims += Object.values(user.hasClaimed).filter(Boolean).length;
-      }
-    });
+    // Find user by QR code
+    const user = await User.findOne({ claimQRCode: qrCode });
+    if (!user) {
+      throw new AppError('Invalid QR code or user not found', 404);
+    }
 
-    const stats = {
-      totalUsers,
-      totalProgress,
-      completedHunts,
-      totalPrizeClaims
-    };
+    // Check if already claimed
+    if (user.isClaimed) {
+      throw new AppError('User has already claimed their reward', 400);
+    }
 
-    console.log('📈 Admin: Statistics:', stats);
+    // Mark as claimed
+    user.isClaimed = true;
+    await user.save();
+
+    console.log(`🏆 Admin: Successfully marked user ${user.phoneNumber} as claimed`);
 
     res.status(200).json({
       success: true,
-      stats
+      message: 'User marked as claimed successfully',
+      data: {
+        phoneNumber: user.phoneNumber,
+        isClaimed: true
+      }
     });
 
   } catch (error) {
-    console.error('❌ Admin: Error getting statistics:', error);
-    throw new AppError('Failed to get statistics', 500);
+    console.error('❌ Admin: Error marking user as claimed:', error);
+    if (error instanceof AppError) {
+      throw error;
+    }
+    throw new AppError('Failed to mark user as claimed', 500);
   }
 }));
+
+// Check if user is claimed
+router.get('/check-claimed/:phoneNumber', catchAsync(async (req, res) => {
+  const { phoneNumber } = req.params;
+  
+  console.log('🔍 Admin: Checking if user is claimed...', { phoneNumber });
+
+  try {
+    const user = await User.findOne({ phoneNumber });
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        isClaimed: user.isClaimed || false
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Admin: Error checking claim status:', error);
+    if (error instanceof AppError) {
+      throw error;
+    }
+    throw new AppError('Failed to check claim status', 500);
+  }
+}));
+
+
 
 module.exports = router;

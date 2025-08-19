@@ -23,20 +23,12 @@ class SMSService {
    */
   async sendOTP(phoneNumber, otp) {
     try {
-      // debug:
-      return {
-        success: true,
-        message: "OTP sent successfully",
-        otp: otp,
-        response: "responseText",
-      };
-
       // Format phone number (remove + if present)
       const formattedPhone = phoneNumber.replace("+", "");
 
       // Create SMS text
-      const message = `Your Talabat OTP is ${otp}. Valid for 5 minutes.`;
-
+      const message = `Your Back2Something talabat code is ${otp}. Sharing is caring… except with OTPs. Valid for 5 minutes.`;
+      
       // Build URL with parameters
       const url = `${this.baseUrl}?username=${this.username}&apikey=${
         this.apiKey

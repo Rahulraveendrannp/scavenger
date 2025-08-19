@@ -95,18 +95,20 @@ router.post('/dashboard/:gameId/complete', authMiddleware, async (req, res) => {
       });
     }
     
-    // Mark game as completed
-    progress.markDashboardGameComplete(gameField);
-    if (completionTime) {
-      progress.dashboardGames[gameField].completionTime = completionTime;
-    }
-    
-    // Update current state
+    // Handle scavenger hunt differently - mark as started, not completed
     if (gameId === 'scavenger-hunt') {
-      progress.updateCurrentState('scavenger-hunt');
+      // For scavenger hunt, mark as started when QR is scanned
+      progress.dashboardGames[gameField].isStarted = true;
+      progress.dashboardGames[gameField].startedAt = new Date();
       progress.scavengerHuntProgress.isStarted = true;
       progress.scavengerHuntProgress.startedAt = new Date();
+      progress.updateCurrentState('scavenger-hunt');
     } else {
+      // For other games, mark as completed
+      progress.markDashboardGameComplete(gameField);
+      if (completionTime) {
+        progress.dashboardGames[gameField].completionTime = completionTime;
+      }
       progress.updateCurrentState('dashboard');
     }
     
@@ -180,6 +182,16 @@ router.post('/scavenger/checkpoint/:checkpointId/complete', authMiddleware, asyn
                         progress.scavengerHuntProgress.totalCheckpoints;
     
     console.log('🔍 Scavenger Hunt API: Total completed:', progress.scavengerHuntProgress.completedCheckpoints.length, '/', progress.scavengerHuntProgress.totalCheckpoints);
+    
+    // If all checkpoints are completed, mark scavenger hunt as completed
+    if (allCompleted) {
+      progress.dashboardGames.scavengerHunt.isCompleted = true;
+      progress.dashboardGames.scavengerHunt.completedAt = new Date();
+      progress.scavengerHuntProgress.isCompleted = true;
+      progress.updateCurrentState('completed');
+      await progress.save();
+      console.log('🎉 Scavenger Hunt API: All checkpoints completed! Scavenger hunt marked as completed.');
+    }
     
     res.json({
       success: true,
