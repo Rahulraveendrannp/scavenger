@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // api.ts - Twilio OTP Implementation
 import type {
   ApiResponse,
@@ -6,13 +8,12 @@ import type {
 } from "./types";
 
 const API_BASE =
-  (import.meta as any).env?.VITE_API_BASE ||
-  "https://talabat-scavenger-hunt-backend-657638641053.us-central1.run.app/api";
+  (import.meta as any).env?.VITE_API_BASE || "http://localhost:8080/api";
 
 function setToken(token: string) {
   console.log(
     "🔐 setToken: Saving token to localStorage:",
-    token ? "Token provided" : "No token"
+    token ? "Token provided" : "No token",
   );
   localStorage.setItem("jwt_token", token);
   console.log("🔐 setToken: Token saved successfully");
@@ -21,7 +22,7 @@ function getToken(): string | null {
   const token = localStorage.getItem("jwt_token");
   console.log(
     "🔐 getToken: Retrieved token from localStorage:",
-    token ? "Token exists" : "No token found"
+    token ? "Token exists" : "No token found",
   );
   return token;
 }
@@ -57,7 +58,7 @@ export class ScavengerAPI {
       const token = getToken();
       console.log(
         "🔍 getUserProgress: Token result:",
-        token ? "Token found" : "No token"
+        token ? "Token found" : "No token",
       );
 
       if (!token) {
@@ -103,7 +104,7 @@ export class ScavengerAPI {
 
   static async completeDashboardGame(
     gameId: string,
-    completionTime?: number
+    completionTime?: number,
   ): Promise<ApiResponse<any>> {
     try {
       const token = getToken();
@@ -125,7 +126,7 @@ export class ScavengerAPI {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ completionTime }),
-        }
+        },
       );
 
       const data = await response.json();
@@ -142,7 +143,7 @@ export class ScavengerAPI {
 
   static async completeCheckpoint(
     checkpointId: number,
-    location: string
+    location: string,
   ): Promise<ApiResponse<any>> {
     try {
       const token = getToken();
@@ -157,7 +158,7 @@ export class ScavengerAPI {
       console.log("🔍 Completing checkpoint:", { checkpointId, location });
       console.log(
         "🔍 API URL:",
-        `${API_BASE}/progress/scavenger/checkpoint/${checkpointId}/complete`
+        `${API_BASE}/progress/scavenger/checkpoint/${checkpointId}/complete`,
       );
       console.log("🔍 Token available:", token ? "Yes" : "No");
 
@@ -170,7 +171,7 @@ export class ScavengerAPI {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ location }),
-        }
+        },
       );
 
       console.log("🔍 Response status:", response.status);
@@ -227,7 +228,7 @@ export class ScavengerAPI {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       const data = await response.json();
@@ -243,7 +244,7 @@ export class ScavengerAPI {
 
   static async updateCurrentState(
     currentPage: string,
-    checkpoint?: number
+    checkpoint?: number,
   ): Promise<ApiResponse<any>> {
     try {
       const token = getToken();
@@ -261,7 +262,7 @@ export class ScavengerAPI {
       });
       console.log(
         "🔍 updateCurrentState: API URL:",
-        `${API_BASE}/progress/state`
+        `${API_BASE}/progress/state`,
       );
 
       const response = await fetch(`${API_BASE}/progress/state`, {
@@ -290,7 +291,7 @@ export class ScavengerAPI {
 
   static async completeGame(
     finalScore?: number,
-    timeElapsed?: number
+    timeElapsed?: number,
   ): Promise<ApiResponse<any>> {
     try {
       const token = getToken();
@@ -342,7 +343,7 @@ export class ScavengerAPI {
   }
   // Send OTP using Qatar SMS API
   static async registerUser(
-    phoneNumber: string
+    phoneNumber: string,
   ): Promise<ApiResponse<{ otpSent: boolean; isTestNumber?: boolean }>> {
     try {
       console.log("Sending SMS OTP to:", phoneNumber);
@@ -382,7 +383,7 @@ export class ScavengerAPI {
   // Verify OTP using Qatar SMS API
   static async verifyOTP(
     phoneNumber: string,
-    otpCode: string
+    otpCode: string,
   ): Promise<OTPVerificationResponse> {
     try {
       console.log("Verifying SMS OTP for:", phoneNumber, "Code:", otpCode);
@@ -397,7 +398,7 @@ export class ScavengerAPI {
       console.log("🔐 API: Server response data:", data);
       console.log(
         "🔐 API: Checking if token exists in response:",
-        data.data?.token ? "Token found" : "No token in response"
+        data.data?.token ? "Token found" : "No token in response",
       );
 
       if (data.success && data.data?.token) {
@@ -409,7 +410,7 @@ export class ScavengerAPI {
         const savedToken = getToken();
         console.log(
           "🔐 API: Verified saved token:",
-          savedToken ? "Token exists" : "No token found"
+          savedToken ? "Token exists" : "No token found",
         );
 
         // Create game session
@@ -451,7 +452,7 @@ export class ScavengerAPI {
 
   // Resend OTP using Qatar SMS API
   static async resendOTP(
-    phoneNumber: string
+    phoneNumber: string,
   ): Promise<ApiResponse<{ otpSent: boolean }>> {
     try {
       const response = await fetch(`${API_BASE}/auth/resend-otp`, {
@@ -498,7 +499,7 @@ export class ScavengerAPI {
 
   static async submitGameCompletion(
     phoneNumber: string,
-    sessionId?: string
+    sessionId?: string,
   ): Promise<ApiResponse<{ saved?: boolean }>> {
     try {
       const token = getToken();
@@ -508,7 +509,7 @@ export class ScavengerAPI {
 
       if (!sessionId) {
         console.warn(
-          "No sessionId available; skipping backend completion call"
+          "No sessionId available; skipping backend completion call",
         );
         return { success: true, data: { saved: false } };
       }
@@ -563,7 +564,7 @@ export class ScavengerAPI {
       // Check if token is invalid
       if (response.status === 401 || json.error?.includes("token")) {
         console.log(
-          "🔍 getGameProgress: Token invalid, clearing and redirecting"
+          "🔍 getGameProgress: Token invalid, clearing and redirecting",
         );
         // Clear invalid token and redirect to registration
         clearToken();
@@ -583,7 +584,7 @@ export class ScavengerAPI {
 
       console.log(
         "🔍 getGameProgress: Successfully loaded progress:",
-        json.data
+        json.data,
       );
       return { success: true, data: json.data };
     } catch (error: any) {
@@ -624,7 +625,7 @@ export class ScavengerAPI {
   static async updatePrizeClaim(
     userId: string,
     prizeType: string,
-    claimed: boolean
+    claimed: boolean,
   ): Promise<ApiResponse<any>> {
     try {
       console.log("🏆 API: Updating prize claim...", {

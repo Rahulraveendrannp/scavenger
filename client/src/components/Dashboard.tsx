@@ -47,7 +47,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       if (!token || !phoneNumber) {
         console.log(
-          "🔐 Dashboard: No authentication found, redirecting to registration"
+          "🔐 Dashboard: No authentication found, redirecting to registration",
         );
         window.location.href = "/";
         return false;
@@ -73,13 +73,13 @@ const Dashboard: React.FC<DashboardProps> = ({
         if (!healthResponse.success) {
           console.error(
             "❌ Dashboard: API server is not accessible:",
-            healthResponse.error
+            healthResponse.error,
           );
           // Continue with fallback data
         }
 
         const [progressResponse, scavengerProgressResponse] = await Promise.all(
-          [ScavengerAPI.getUserProgress(), ScavengerAPI.getGameProgress()]
+          [ScavengerAPI.getUserProgress(), ScavengerAPI.getGameProgress()],
         );
 
         console.log("📊 Dashboard: Progress responses:", {
@@ -106,12 +106,12 @@ const Dashboard: React.FC<DashboardProps> = ({
           return;
         }
 
-    const defaultGames = [
-      {
+        const defaultGames = [
+          {
             id: "card-game",
             title: "Card Game",
             description: "Complete the offline card game and scan QR",
-        icon: <Gamepad2 className="w-8 h-8" />,
+            icon: <Gamepad2 className="w-8 h-8" />,
             type: "offline" as const,
             isCompleted: false,
           },
@@ -119,7 +119,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             id: "puzzle",
             title: "Puzzle",
             description: "Solve the puzzle and scan QR to complete",
-        icon: <Puzzle className="w-8 h-8" />,
+            icon: <Puzzle className="w-8 h-8" />,
             type: "offline" as const,
             isCompleted: false,
           },
@@ -127,7 +127,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             id: "car-race",
             title: "Car Race",
             description: "Finish the car race and scan QR",
-        icon: <Car className="w-8 h-8" />,
+            icon: <Car className="w-8 h-8" />,
             type: "offline" as const,
             isCompleted: false,
           },
@@ -135,7 +135,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             id: "scavenger-hunt",
             title: "Scavenger Hunt",
             description: "Scan QR to enter the treasure hunt",
-        icon: <Search className="w-8 h-8" />,
+            icon: <Search className="w-8 h-8" />,
             type: "scavenger" as const,
             isCompleted: false,
           },
@@ -162,14 +162,14 @@ const Dashboard: React.FC<DashboardProps> = ({
                 ?.isCompleted;
 
             return {
-          ...game,
+              ...game,
               isCompleted: scavengerCompleted || false,
               isUnlocked: scavengerUnlocked || false,
               description: scavengerCompleted
                 ? `Find all 8 checkpoints (${completedCount}/8 completed)`
                 : scavengerUnlocked
-                ? `Start your adventure! (${completedCount}/8 completed)`
-                : `Scan QR to enter the treasure hunt`,
+                  ? `Start your adventure! (${completedCount}/8 completed)`
+                  : `Scan QR to enter the treasure hunt`,
             };
           } else {
             // For other games, check dashboard progress from UserProgress model
@@ -201,7 +201,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         console.log("📊 Dashboard: Final games state:", updatedGames);
         console.log(
           "📊 Dashboard: Completed games count:",
-          updatedGames.filter((g) => g.isCompleted).length
+          updatedGames.filter((g) => g.isCompleted).length,
         );
       } catch (error) {
         console.error("❌ Dashboard: Error loading progress:", error);
@@ -242,7 +242,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         ]);
       } finally {
         console.log(
-          "🏁 Dashboard: Loading completed, setting isLoading to false"
+          "🏁 Dashboard: Loading completed, setting isLoading to false",
         );
         setIsLoading(false);
       }
@@ -285,16 +285,16 @@ const Dashboard: React.FC<DashboardProps> = ({
       const response = await ScavengerAPI.completeDashboardGame(gameId);
 
       console.log("completeDashboardGame response:", response);
-      
+
       if (response.success) {
         console.log("Dashboard game progress saved:", response.data);
-        
+
         // Show completion celebration only for newly completed games
         showGameCompletionCelebration(gameId);
       } else {
         console.error(
           "Failed to save dashboard game progress:",
-          response.error
+          response.error,
         );
       }
     } catch (error) {
@@ -334,9 +334,9 @@ const Dashboard: React.FC<DashboardProps> = ({
         }
       </style>
     `;
-    
+
     document.body.appendChild(celebration);
-    
+
     setTimeout(() => {
       if (celebration.parentNode) {
         celebration.parentNode.removeChild(celebration);
@@ -376,56 +376,62 @@ const Dashboard: React.FC<DashboardProps> = ({
     if (selectedGame.type === "scavenger") {
       // For scavenger hunt, mark as unlocked and start the game
       const updatedGames = games.map((game) =>
-          game.id === selectedGame.id 
+        game.id === selectedGame.id
           ? {
               ...game,
               isUnlocked: true,
               description: "Start your adventure! (0/8 completed)",
             }
-            : game
-        );
-        setGames(updatedGames);
-        
-        // Save progress to localStorage  
-        const progressData = updatedGames.reduce((acc, game) => {
-        acc[game.id] = game.isCompleted || game.isUnlocked || false;
+          : game,
+      );
+      setGames(updatedGames);
+
+      // Save progress to localStorage
+      const progressData = updatedGames.reduce(
+        (acc, game) => {
+          acc[game.id] = game.isCompleted || game.isUnlocked || false;
           return acc;
-        }, {} as Record<string, boolean>);
+        },
+        {} as Record<string, boolean>,
+      );
       localStorage.setItem(
         "talabat_user_progress",
-        JSON.stringify(progressData)
+        JSON.stringify(progressData),
       );
-        
-        // Save to database
+
+      // Save to database
       console.log("Saving dashboard game progress for:", selectedGame.id);
-        saveDashboardGameProgress(selectedGame.id);
-        
-        setShowQRScanner(false);
-        onStartScavengerHunt();
-      } else {
+      saveDashboardGameProgress(selectedGame.id);
+
+      setShowQRScanner(false);
+      onStartScavengerHunt();
+    } else {
       // For offline games, mark as completed and return to dashboard immediately
       const updatedGames = games.map((game) =>
-        game.id === selectedGame.id ? { ...game, isCompleted: true } : game
-        );
-        setGames(updatedGames);
-        
-        // Save progress to localStorage
-        const progressData = updatedGames.reduce((acc, game) => {
+        game.id === selectedGame.id ? { ...game, isCompleted: true } : game,
+      );
+      setGames(updatedGames);
+
+      // Save progress to localStorage
+      const progressData = updatedGames.reduce(
+        (acc, game) => {
           acc[game.id] = game.isCompleted;
           return acc;
-        }, {} as Record<string, boolean>);
+        },
+        {} as Record<string, boolean>,
+      );
       localStorage.setItem(
         "talabat_user_progress",
-        JSON.stringify(progressData)
+        JSON.stringify(progressData),
       );
-        
-        // Save progress to database
-        saveDashboardGameProgress(selectedGame.id);
-        
-      // Close QR scanner immediately and return to dashboard
-          setShowQRScanner(false);
 
-          setScanSuccess(false);
+      // Save progress to database
+      saveDashboardGameProgress(selectedGame.id);
+
+      // Close QR scanner immediately and return to dashboard
+      setShowQRScanner(false);
+
+      setScanSuccess(false);
     }
   };
 
@@ -477,7 +483,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             </p>
           </div>
         </div>
-        
+
         {/* Progress Bar */}
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
@@ -489,7 +495,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3">
-            <div 
+            <div
               className="bg-green-500 h-2 sm:h-3 rounded-full transition-all duration-500"
               style={{ width: `${progressPercentage}%` }}
             ></div>
@@ -516,7 +522,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       {/* Game Cards */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6">
         {games.map((game) => (
-          <div 
+          <div
             key={game.id}
             className={`bg-white rounded-xl shadow-lg p-4 sm:p-6 transition-all duration-300 hover:shadow-xl ${
               game.isCompleted ? "ring-2 ring-green-500" : ""
@@ -538,14 +544,14 @@ const Dashboard: React.FC<DashboardProps> = ({
                 </div>
               )}
             </div>
-            
+
             <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">
               {game.title}
             </h3>
             <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">
               {game.description}
             </p>
-            
+
             <button
               onClick={() => {
                 if (
@@ -564,11 +570,11 @@ const Dashboard: React.FC<DashboardProps> = ({
                 game.isCompleted
                   ? "bg-gray-200 text-gray-500 cursor-not-allowed"
                   : game.type === "scavenger" &&
-                    (game.isUnlocked || game.isCompleted)
-                  ? "bg-green-500 hover:bg-green-600 text-white"
-                  : game.type === "scavenger"
-                  ? "bg-purple-500 hover:bg-purple-600 text-white"
-                  : "bg-orange-500 hover:bg-orange-600 text-white"
+                      (game.isUnlocked || game.isCompleted)
+                    ? "bg-green-500 hover:bg-green-600 text-white"
+                    : game.type === "scavenger"
+                      ? "bg-purple-500 hover:bg-purple-600 text-white"
+                      : "bg-orange-500 hover:bg-orange-600 text-white"
               }`}
             >
               {game.type === "scavenger" &&
@@ -581,19 +587,19 @@ const Dashboard: React.FC<DashboardProps> = ({
                 {game.isCompleted
                   ? "Completed"
                   : game.type === "scavenger" && game.isUnlocked
-                  ? "Resume Hunt"
-                  : game.type === "scavenger"
-                  ? "Scan to Enter Hunt"
-                  : "Scan to Complete"}
+                    ? "Resume Hunt"
+                    : game.type === "scavenger"
+                      ? "Scan to Enter Hunt"
+                      : "Scan to Complete"}
               </span>
               <span className="sm:hidden">
                 {game.isCompleted
                   ? "Done"
                   : game.type === "scavenger" && game.isUnlocked
-                  ? "Resume"
-                  : game.type === "scavenger"
-                  ? "Enter Hunt"
-                  : "Complete"}
+                    ? "Resume"
+                    : game.type === "scavenger"
+                      ? "Enter Hunt"
+                      : "Complete"}
               </span>
             </button>
           </div>
@@ -673,8 +679,8 @@ const QRScannerModal: React.FC<{
               ) : (
                 <>
                   Scan the checkpoint QR code for: <strong>{gameName}</strong>
-          </>
-        )}
+                </>
+              )}
             </p>
 
             {/* Direct QR Scanner with expected QR code validation */}

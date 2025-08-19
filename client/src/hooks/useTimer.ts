@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from "react";
 
 export const useTimer = (startTime?: number) => {
   const [timeElapsed, setTimeElapsed] = useState(0);
@@ -24,13 +24,13 @@ export const useTimer = (startTime?: number) => {
     };
   }, [isRunning, startTime]);
 
-  const start = (
+  const start = () =>
     // customStartTime?: number
-) => {
-   // const time = customStartTime || Date.now();
-    setIsRunning(true);
-    setTimeElapsed(0);
-  };
+    {
+      // const time = customStartTime || Date.now();
+      setIsRunning(true);
+      setTimeElapsed(0);
+    };
 
   const stop = () => {
     setIsRunning(false);
@@ -46,6 +46,6 @@ export const useTimer = (startTime?: number) => {
     isRunning,
     start,
     stop,
-    reset
+    reset,
   };
 };

@@ -1,5 +1,5 @@
 // components/LandingPage.tsx
-import React from 'react';
+import React from "react";
 
 interface LandingPageProps {
   onStartHunt: () => void;
@@ -20,7 +20,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStartHunt }) => {
       </div>
 
       {/* How it works button */}
-      <button 
+      <button
         onClick={onStartHunt}
         className="bg-[#FF8C00] text-white px-12 py-4 rounded-full text-xl font-semibold hover:bg-[#FF7F00] transition-colors shadow-lg"
       >

@@ -23,9 +23,15 @@ export interface LeaderboardEntry {
   completedAt: string;
 }
 
-export type RewardTier = 'Gold' | 'Silver' | 'Bronze';
+export type RewardTier = "Gold" | "Silver" | "Bronze";
 
-export type ViewState = 'landing' | 'registration' | 'otp' | 'game' | 'complete' | 'leaderboard';
+export type ViewState =
+  | "landing"
+  | "registration"
+  | "otp"
+  | "game"
+  | "complete"
+  | "leaderboard";
 
 export interface ApiResponse<T = unknown> {
   success: boolean;
