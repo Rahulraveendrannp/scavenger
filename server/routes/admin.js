@@ -8,6 +8,146 @@ const router = express.Router();
 
 // No authentication required for admin routes
 
+// Get total users count
+router.get('/total-users', catchAsync(async (req, res) => {
+  console.log('📊 Admin: Getting total users count...');
+
+  try {
+    const totalUsers = await User.countDocuments();
+    console.log(`📊 Admin: Total users: ${totalUsers}`);
+
+    res.status(200).json({
+      success: true,
+      totalUsers
+    });
+
+  } catch (error) {
+    console.error('❌ Admin: Error getting total users:', error);
+    throw new AppError('Failed to get total users', 500);
+  }
+}));
+
+// Get all users with progress and claim status
+router.get('/all-users', catchAsync(async (req, res) => {
+  console.log('📊 Admin: Getting all users with progress...');
+
+  try {
+    const users = await User.find().sort({ createdAt: -1 });
+    console.log(`📊 Admin: Found ${users.length} users`);
+
+    const usersWithProgress = await Promise.all(
+      users.map(async (user) => {
+        try {
+          const userProgress = await UserProgress.findOne({ userId: user._id });
+          
+          // Calculate completed games
+          const dashboardGames = userProgress?.dashboardGames || {};
+          const completedGames = Object.values(dashboardGames).filter(game => game?.isCompleted).length;
+          
+          // Get scavenger hunt progress
+          const scavengerProgress = userProgress?.totalFound || 0;
+          
+          return {
+            _id: user._id,
+            phoneNumber: user.phoneNumber,
+            createdAt: user.createdAt,
+            completedGames: `${completedGames}/4`,
+            scavengerProgress: `${scavengerProgress}/8`,
+            isClaimed: user.isClaimed || false
+          };
+        } catch (err) {
+          console.error(`❌ Error loading progress for user ${user._id}:`, err);
+          return {
+            _id: user._id,
+            phoneNumber: user.phoneNumber,
+            createdAt: user.createdAt,
+            completedGames: '0/4',
+            scavengerProgress: '0/8',
+            isClaimed: user.isClaimed || false
+          };
+        }
+      })
+    );
+
+    console.log('📊 Admin: Successfully loaded all users with progress');
+    res.status(200).json({
+      success: true,
+      users: usersWithProgress
+    });
+
+  } catch (error) {
+    console.error('❌ Admin: Error loading users:', error);
+    throw new AppError('Failed to load users', 500);
+  }
+}));
+
+// Mark user as claimed (for QR code scanning)
+router.post('/mark-claimed', catchAsync(async (req, res) => {
+  const { phoneNumber } = req.body;
+  
+  console.log('🏆 Admin: Marking user as claimed...', { phoneNumber });
+
+  if (!phoneNumber) {
+    throw new AppError('Phone number is required', 400);
+  }
+
+  try {
+    const user = await User.findOne({ phoneNumber });
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    user.isClaimed = true;
+    await user.save();
+
+    console.log(`🏆 Admin: Successfully marked user ${phoneNumber} as claimed`);
+
+    res.status(200).json({
+      success: true,
+      message: 'User marked as claimed successfully',
+      data: {
+        phoneNumber,
+        isClaimed: true
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Admin: Error marking user as claimed:', error);
+    if (error instanceof AppError) {
+      throw error;
+    }
+    throw new AppError('Failed to mark user as claimed', 500);
+  }
+}));
+
+// Check if user is claimed
+router.get('/check-claimed/:phoneNumber', catchAsync(async (req, res) => {
+  const { phoneNumber } = req.params;
+  
+  console.log('🔍 Admin: Checking if user is claimed...', { phoneNumber });
+
+  try {
+    const user = await User.findOne({ phoneNumber });
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        isClaimed: user.isClaimed || false
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Admin: Error checking claim status:', error);
+    if (error instanceof AppError) {
+      throw error;
+    }
+    throw new AppError('Failed to check claim status', 500);
+  }
+}));
+
 // Get all users with their progress and prize claim status
 router.get('/users', catchAsync(async (req, res) => {
   console.log('📊 Admin: Getting all users...');

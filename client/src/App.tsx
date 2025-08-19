@@ -18,6 +18,7 @@ import OTPPage from './components/OTPPage';
 import Dashboard from './components/Dashboard';
 import ScavengerHuntPage from './components/ScavengerHuntPage';
 import AdminPanel from './components/AdminPanel';
+import AdminPage from './components/AdminPage';
 
 import ProgressPage from "./components/ProgressPage";
 
@@ -153,6 +154,16 @@ const DashboardWrapper: React.FC = () => {
 
 const AdminPanelWrapper: React.FC = () => {
   return <AdminPanel />;
+};
+
+const AdminPageWrapper: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleBack = () => {
+    navigate("/dashboard");
+  };
+
+  return <AdminPage onBack={handleBack} />;
 };
 
 const ScavengerHuntPageWrapper: React.FC = () => {
@@ -297,6 +308,7 @@ const AppContent: React.FC = () => {
       />
       <Route path="/dashboard" element={<DashboardWrapper />} />
       <Route path="/admin" element={<AdminPanelWrapper />} />
+      <Route path="/admin-booth" element={<AdminPageWrapper />} />
       <Route path="/game" element={<ScavengerHuntPageWrapper />} />
 
       <Route path="/progress" element={<ProgressPageWrapper />} />

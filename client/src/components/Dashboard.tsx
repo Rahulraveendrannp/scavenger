@@ -78,9 +78,18 @@ const Dashboard: React.FC<DashboardProps> = ({
           // Continue with fallback data
         }
 
-        const [progressResponse, scavengerProgressResponse] = await Promise.all(
-          [ScavengerAPI.getUserProgress(), ScavengerAPI.getGameProgress()]
-        );
+        const phoneNumber = localStorage.getItem("talabat_phone_number");
+        
+        const [progressResponse, scavengerProgressResponse, claimResponse] = await Promise.all([
+          ScavengerAPI.getUserProgress(), 
+          ScavengerAPI.getGameProgress(),
+          phoneNumber ? ScavengerAPI.checkUserClaimed(phoneNumber) : Promise.resolve({ success: false, data: { isClaimed: false } })
+        ]);
+
+        // Check if user is claimed
+        if (claimResponse.success && claimResponse.data?.isClaimed) {
+          setIsClaimed(true);
+        }
 
         console.log("📊 Dashboard: Progress responses:", {
           userProgress: progressResponse,
@@ -253,8 +262,9 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
-
   const [scanSuccess, setScanSuccess] = useState(false);
+  const [showClaimQR, setShowClaimQR] = useState(false);
+  const [isClaimed, setIsClaimed] = useState(false);
 
   const completedGames = games.filter((game) => game.isCompleted).length;
   const progressPercentage = (completedGames / games.length) * 100;
@@ -269,6 +279,21 @@ const Dashboard: React.FC<DashboardProps> = ({
     };
 
     return expectedQRCodes[gameId as keyof typeof expectedQRCodes] || "";
+  };
+
+  // Generate claim QR code
+  const generateClaimQRCode = (): string => {
+    const phoneNumber = localStorage.getItem("talabat_phone_number");
+    const timestamp = Date.now();
+    return `TALABAT_CLAIM_${phoneNumber}_${timestamp}`;
+  };
+
+  const handleClaimClick = () => {
+    setShowClaimQR(true);
+  };
+
+  const closeClaimQR = () => {
+    setShowClaimQR(false);
   };
 
   // Save dashboard game progress to database
@@ -459,6 +484,15 @@ const Dashboard: React.FC<DashboardProps> = ({
     );
   }
 
+  if (showClaimQR) {
+    return (
+      <ClaimQRModal
+        qrCode={generateClaimQRCode()}
+        onClose={closeClaimQR}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-400 to-red-500 p-2 sm:p-4">
       {/* Header */}
@@ -484,9 +518,22 @@ const Dashboard: React.FC<DashboardProps> = ({
             <span className="text-xs sm:text-sm font-medium text-gray-700">
               Overall Progress
             </span>
-            <span className="text-xs sm:text-sm text-gray-500">
-              {completedGames}/{games.length} completed
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs sm:text-sm text-gray-500">
+                {completedGames}/{games.length} completed
+              </span>
+              <button
+                onClick={handleClaimClick}
+                disabled={isClaimed}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                  isClaimed
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-orange-500 hover:bg-orange-600 text-white"
+                }`}
+              >
+                {isClaimed ? "CLAIMED" : "CLAIM"}
+              </button>
+            </div>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3">
             <div
@@ -545,20 +592,20 @@ const Dashboard: React.FC<DashboardProps> = ({
               {game.description}
             </p>
 
-            <button
-              onClick={() => {
-                if (
-                  game.type === "scavenger" &&
-                  (game.isUnlocked || game.isCompleted)
-                ) {
-                  // If scavenger hunt is unlocked or completed, go directly to hunt
-                  onStartScavengerHunt();
-                } else if (!game.isCompleted) {
-                  // Only show QR scanner if game is not completed
-                  handleScanQR(game.id);
-                }
-              }}
-              disabled={game.isCompleted}
+                         <button
+               onClick={() => {
+                 if (
+                   game.type === "scavenger" &&
+                   (game.isUnlocked || game.isCompleted)
+                 ) {
+                   // If scavenger hunt is unlocked or completed, go directly to hunt
+                   onStartScavengerHunt();
+                 } else if (!game.isCompleted) {
+                   // Only show QR scanner if game is not completed
+                   handleScanQR(game.id);
+                 }
+               }}
+               disabled={game.isCompleted || isClaimed}
               className={`w-full py-2 sm:py-3 px-3 sm:px-4 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base ${game.isCompleted
                   ? "bg-gray-200 text-gray-500 cursor-not-allowed"
                   : game.type === "scavenger" &&
@@ -690,5 +737,87 @@ const QRScannerModal: React.FC<{
       </div>
     );
   };
+
+// Claim QR Modal Component
+const ClaimQRModal: React.FC<{
+  qrCode: string;
+  onClose: () => void;
+}> = ({ qrCode, onClose }) => {
+  const [qrCodeImage, setQrCodeImage] = useState<string>("");
+  const [isGenerating, setIsGenerating] = useState(true);
+
+  useEffect(() => {
+    const generateQRCode = async () => {
+      try {
+        setIsGenerating(true);
+        const QRCode = (await import('qrcode')).default;
+        const qrDataURL = await QRCode.toDataURL(qrCode, {
+          width: 200,
+          margin: 2,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        });
+        setQrCodeImage(qrDataURL);
+      } catch (error) {
+        console.error('Error generating QR code:', error);
+      } finally {
+        setIsGenerating(false);
+      }
+    };
+
+    generateQRCode();
+  }, [qrCode]);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+      <div className="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="text-center">
+          <h3 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
+            Claim Your Reward
+          </h3>
+          <p className="text-sm sm:text-base text-gray-600 mb-4">
+            Show this QR code to the booth staff to claim your reward
+          </p>
+          
+          {/* QR Code Display */}
+          <div className="bg-gray-100 p-4 rounded-lg mb-4">
+            <div className="text-center">
+              <div className="text-xs text-gray-500 mb-2">QR Code</div>
+              <div className="bg-white p-4 rounded border-2 border-dashed border-gray-300 flex justify-center">
+                {isGenerating ? (
+                  <div className="flex items-center justify-center h-48">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                    <span className="ml-2 text-gray-600">Generating QR Code...</span>
+                  </div>
+                ) : qrCodeImage ? (
+                  <img 
+                    src={qrCodeImage} 
+                    alt="Claim QR Code" 
+                    className="w-48 h-48"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                ) : (
+                  <div className="text-red-500 text-sm">Failed to generate QR code</div>
+                )}
+              </div>
+              <div className="mt-2 text-xs text-gray-500 font-mono break-all">
+                {qrCode}
+              </div>
+            </div>
+          </div>
+          
+          <button
+            onClick={onClose}
+            className="bg-orange-500 text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition-colors text-sm sm:text-base font-medium"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default Dashboard;

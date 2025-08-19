@@ -577,4 +577,83 @@ export class ScavengerAPI {
     }
   }
 
+  // New Admin API methods for claim functionality
+  static async getTotalUsers(): Promise<ApiResponse<any>> {
+    try {
+      console.log('📊 API: Getting total users count...');
+
+      const response = await fetch(`${API_BASE}/admin/total-users`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+      console.log('📊 API: Get total users response:', data);
+
+      if (!response.ok) {
+        return { success: false, error: data?.message || 'Failed to load total users' };
+      }
+
+      return { success: true, data: data };
+    } catch (error: any) {
+      console.error('Failed to load total users:', error);
+      return { success: false, error: error?.message || 'Network error' };
+    }
+  }
+
+  static async markUserAsClaimed(phoneNumber: string): Promise<ApiResponse<any>> {
+    try {
+      console.log('🏆 API: Marking user as claimed...', { phoneNumber });
+
+      const response = await fetch(`${API_BASE}/admin/mark-claimed`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          phoneNumber
+        })
+      });
+
+      const data = await response.json();
+      console.log('🏆 API: Mark claimed response:', data);
+
+      if (!response.ok) {
+        return { success: false, error: data?.message || 'Failed to mark user as claimed' };
+      }
+
+      return { success: true, data: data };
+    } catch (error: any) {
+      console.error('Failed to mark user as claimed:', error);
+      return { success: false, error: error?.message || 'Network error' };
+    }
+  }
+
+  static async checkUserClaimed(phoneNumber: string): Promise<ApiResponse<any>> {
+    try {
+      console.log('🔍 API: Checking if user is claimed...', { phoneNumber });
+
+      const response = await fetch(`${API_BASE}/admin/check-claimed/${phoneNumber}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+      console.log('🔍 API: Check claimed response:', data);
+
+      if (!response.ok) {
+        return { success: false, error: data?.message || 'Failed to check claim status' };
+      }
+
+      return { success: true, data: data };
+    } catch (error: any) {
+      console.error('Failed to check claim status:', error);
+      return { success: false, error: error?.message || 'Network error' };
+    }
+  }
+
 }
