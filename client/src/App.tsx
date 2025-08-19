@@ -23,6 +23,8 @@ import ProgressPage from "./components/ProgressPage";
 
 import LeaderboardPage from "./components/LeadrboardPage";
 import ScavengerHuntIntro from "./components/ScavengerHuntIntro";
+import ScavengerHuntFinish from "./components/ScavengerHuntFinish";
+import ClaimPrize from "./components/ClaimPrize";
 
 // Context to share state across components
 const AppContext = React.createContext<{
@@ -32,7 +34,7 @@ const AppContext = React.createContext<{
   setGameSession: (session: GameSession | null) => void;
   gameCompletionData: { timeElapsed: number; scannedQRs: string[] } | null;
   setGameCompletionData: (
-    data: { timeElapsed: number; scannedQRs: string[] } | null
+    data: { timeElapsed: number; scannedQRs: string[] } | null,
   ) => void;
   currentCheckpoint: number | null;
   setCurrentCheckpoint: (id: number | null) => void;
@@ -160,7 +162,7 @@ const ScavengerHuntPageWrapper: React.FC = () => {
   const { phoneNumber, gameSession } = React.useContext(AppContext);
   // Track if rules have been read for this session
   const [isReadScavengerRulesRed, setIsReadScavengerRulesRed] = useState(
-    () => localStorage.getItem("readScavengerRules") === "true"
+    () => localStorage.getItem("readScavengerRules") === "true",
   );
 
   // Handler for "Start" button in intro
@@ -175,10 +177,8 @@ const ScavengerHuntPageWrapper: React.FC = () => {
     localStorage.removeItem("readScavengerRules");
     setIsReadScavengerRulesRed(false);
     // Go directly back to dashboard instead of completion page
-    navigate("/dashboard");
+    navigate("/game/finish");
   };
-
-
 
   // Redirect if not authenticated at all
   if (!phoneNumber) {
@@ -298,6 +298,9 @@ const AppContent: React.FC = () => {
       <Route path="/dashboard" element={<DashboardWrapper />} />
       <Route path="/admin" element={<AdminPageWrapper />} />
       <Route path="/game" element={<ScavengerHuntPageWrapper />} />
+      <Route path="/game/finish" element={<ScavengerHuntFinish />} />
+
+      <Route path="/claim" element={<ClaimPrize />} />
 
       <Route path="/progress" element={<ProgressPageWrapper />} />
 
@@ -331,7 +334,7 @@ const App: React.FC = () => {
     () => {
       const saved = localStorage.getItem("talabat_current_checkpoint");
       return saved ? JSON.parse(saved) : null;
-    }
+    },
   );
 
   const [userProgress, setUserProgress] = useState<any>(null);
@@ -349,7 +352,7 @@ const App: React.FC = () => {
       // If we have a token but no phone number, or vice versa, clear everything
       if ((token && !savedPhoneNumber) || (!token && savedPhoneNumber)) {
         console.log(
-          "🔐 App: Inconsistent authentication state, clearing all data"
+          "🔐 App: Inconsistent authentication state, clearing all data",
         );
         localStorage.clear();
         setPhoneNumber("");
@@ -414,7 +417,7 @@ const App: React.FC = () => {
   };
 
   const setGameCompletionDataWithPersistence = (
-    data: { timeElapsed: number; scannedQRs: string[] } | null
+    data: { timeElapsed: number; scannedQRs: string[] } | null,
   ) => {
     setGameCompletionData(data);
     if (data) {
@@ -429,7 +432,7 @@ const App: React.FC = () => {
     if (checkpoint !== null) {
       localStorage.setItem(
         "talabat_current_checkpoint",
-        JSON.stringify(checkpoint)
+        JSON.stringify(checkpoint),
       );
     } else {
       localStorage.removeItem("talabat_current_checkpoint");

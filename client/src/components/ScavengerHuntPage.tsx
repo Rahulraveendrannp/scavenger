@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // components/ScavengerHuntPage.tsx
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -150,7 +151,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
   const [expandedId, setExpandedId] = useState<number | null>(1);
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [scannerCheckpointId, setScannerCheckpointId] = useState<number | null>(
-    null
+    null,
   );
   const [scannerError, setScannerError] = useState<string>("");
 
@@ -217,7 +218,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
       if (!checkpoint || checkpoint.isCompleted) return;
 
       const updatedCheckpoints = checkpoints.map((cp) =>
-        cp.id === checkpointId ? { ...cp, isCompleted: true } : cp
+        cp.id === checkpointId ? { ...cp, isCompleted: true } : cp,
       );
       setCheckpoints(updatedCheckpoints);
 
@@ -235,7 +236,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
       try {
         const response = await ScavengerAPI.completeCheckpoint(
           checkpointId,
-          checkpoint.location
+          checkpoint.location,
         );
         if (response.success) {
           console.log("Checkpoint completed in database:", response.data);
@@ -249,7 +250,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
         console.error("Error saving checkpoint progress:", error);
       }
     },
-    [checkpoints, hintCredits, revealedHints, progress]
+    [checkpoints, hintCredits, revealedHints, progress],
   );
 
   // Map checkpoint -> expected QR code
@@ -274,7 +275,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
       scannedText.trim().toUpperCase() === expected.trim().toUpperCase();
     if (!isMatch) {
       setScannerError(
-        "Incorrect QR code for this checkpoint. Please try again."
+        "Incorrect QR code for this checkpoint. Please try again.",
       );
       setTimeout(() => setScannerError(""), 2000);
       return;
@@ -291,19 +292,19 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
       const { checkpointId } = event.detail;
       console.log(
         "QR scan success event received for checkpoint:",
-        checkpointId
+        checkpointId,
       );
       markCheckpointComplete(checkpointId);
     };
 
     window.addEventListener(
       "qr-scan-success",
-      handleQRSuccess as EventListener
+      handleQRSuccess as EventListener,
     );
     return () => {
       window.removeEventListener(
         "qr-scan-success",
-        handleQRSuccess as EventListener
+        handleQRSuccess as EventListener,
       );
     };
   }, [markCheckpointComplete]);
@@ -316,7 +317,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
   const saveProgressToStorage = (
     checkpoints: ClueItem[],
     credits: number,
-    hints: Set<number>
+    hints: Set<number>,
   ) => {
     const progressData = {
       completedCheckpoints: checkpoints
@@ -328,7 +329,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
     };
     localStorage.setItem(
       "talabat_scavenger_progress",
-      JSON.stringify(progressData)
+      JSON.stringify(progressData),
     );
   };
 
@@ -363,7 +364,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
       }
       // If already revealed, the hint will just be visible without any action needed
     },
-    [hintCredits, revealedHints, checkpoints]
+    [hintCredits, revealedHints, checkpoints],
   );
 
   const scanQR = (checkpointId: number) => {
@@ -426,9 +427,11 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
               {/* Checkpoint Header */}
               <div
                 className={`flex items-center justify-between p-3 sm:p-4 ${
-                  checkpoint.isCompleted ? '' : 'cursor-pointer'
+                  checkpoint.isCompleted ? "" : "cursor-pointer"
                 }`}
-                onClick={() => !checkpoint.isCompleted && toggleExpanded(checkpoint.id)}
+                onClick={() =>
+                  !checkpoint.isCompleted && toggleExpanded(checkpoint.id)
+                }
               >
                 <div className="flex items-center space-x-2 sm:space-x-3">
                   {checkpoint.isCompleted ? (
@@ -454,7 +457,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
                       <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5 text-[#8B4513]" />
                     ) : (
                       <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-[#8B4513]" />
-                )}
+                    )}
                   </>
                 )}
               </div>
@@ -542,7 +545,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
               </div>
               <span className="text-xs sm:text-sm text-gray-500">
                 {Math.round(
-                  (progress.totalFound / progress.totalCheckpoints) * 100
+                  (progress.totalFound / progress.totalCheckpoints) * 100,
                 )}
                 %
               </span>

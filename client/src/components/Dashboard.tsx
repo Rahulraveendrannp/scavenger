@@ -47,7 +47,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       if (!token || !phoneNumber) {
         console.log(
-          "🔐 Dashboard: No authentication found, redirecting to registration"
+          "🔐 Dashboard: No authentication found, redirecting to registration",
         );
         window.location.href = "/";
         return false;
@@ -73,7 +73,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         if (!healthResponse.success) {
           console.error(
             "❌ Dashboard: API server is not accessible:",
-            healthResponse.error
+            healthResponse.error,
           );
           // Continue with fallback data
         }
@@ -210,7 +210,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         console.log("📊 Dashboard: Final games state:", updatedGames);
         console.log(
           "📊 Dashboard: Completed games count:",
-          updatedGames.filter((g) => g.isCompleted).length
+          updatedGames.filter((g) => g.isCompleted).length,
         );
       } catch (error) {
         console.error("❌ Dashboard: Error loading progress:", error);
@@ -251,7 +251,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         ]);
       } finally {
         console.log(
-          "🏁 Dashboard: Loading completed, setting isLoading to false"
+          "🏁 Dashboard: Loading completed, setting isLoading to false",
         );
         setIsLoading(false);
       }
@@ -332,7 +332,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       } else {
         console.error(
           "Failed to save dashboard game progress:",
-          response.error
+          response.error,
         );
       }
     } catch (error) {
@@ -454,7 +454,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       }, {} as Record<string, boolean>);
       localStorage.setItem(
         "talabat_user_progress",
-        JSON.stringify(progressData)
+        JSON.stringify(progressData),
       );
 
       // Save progress to database

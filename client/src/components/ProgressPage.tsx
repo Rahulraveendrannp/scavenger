@@ -1,5 +1,5 @@
 // components/ProgressPage.tsx
-import React from 'react';
+import React from "react";
 
 interface ProgressPageProps {
   totalFound: number;
@@ -9,32 +9,34 @@ interface ProgressPageProps {
   onClaimPrize: () => void;
 }
 
-const ProgressPage: React.FC<ProgressPageProps> = ({ 
-  totalFound, 
-  totalCheckpoints, 
-  currentTier, 
-  onContinueHunt, 
-  onClaimPrize 
+const ProgressPage: React.FC<ProgressPageProps> = ({
+  totalFound,
+  totalCheckpoints,
+  currentTier,
+  onContinueHunt,
+  onClaimPrize,
 }) => {
   return (
     <div className="min-h-screen bg-[#F5F5DC] flex flex-col items-center justify-center p-4">
       {/* Title */}
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-[#8B4513] mb-6">Scavenger Hunt</h1>
+        <h1 className="text-3xl font-bold text-[#8B4513] mb-6">
+          Scavenger Hunt
+        </h1>
       </div>
 
       {/* Progress Information */}
       <div className="text-center mb-8 max-w-md">
         <div className="space-y-4 text-[#8B4513]">
           <p className="text-xl">
-            You've found <span className="font-bold">{totalFound}</span> out of <span className="font-bold">{totalCheckpoints}</span> checkpoints.
+            You've found <span className="font-bold">{totalFound}</span> out of{" "}
+            <span className="font-bold">{totalCheckpoints}</span> checkpoints.
           </p>
           <p className="text-lg">
-            That puts you in the <span className="font-bold">{currentTier} Tier</span>.
+            That puts you in the{" "}
+            <span className="font-bold">{currentTier} Tier</span>.
           </p>
-          <p className="text-lg">
-            Collect your prize at the booth.
-          </p>
+          <p className="text-lg">Collect your prize at the booth.</p>
         </div>
       </div>
 
@@ -64,4 +66,4 @@ const ProgressPage: React.FC<ProgressPageProps> = ({
   );
 };
 
-export default ProgressPage; 
+export default ProgressPage;

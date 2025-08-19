@@ -1,16 +1,16 @@
 // utils.ts
-import type { RewardTier } from './types';
+import type { RewardTier } from "./types";
 
 export const formatTime = (seconds: number): string => {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
-  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 };
 
 export const calculateRewardTier = (timeInMinutes: number): RewardTier => {
-  if (timeInMinutes < 20) return 'Gold';
-  if (timeInMinutes <= 40) return 'Silver';
-  return 'Bronze';
+  if (timeInMinutes < 20) return "Gold";
+  if (timeInMinutes <= 40) return "Silver";
+  return "Bronze";
 };
 
 export const generateRewardToken = (phoneNumber: string): string => {

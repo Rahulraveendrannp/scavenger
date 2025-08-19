@@ -1,5 +1,5 @@
 // components/InstructionsPage.tsx
-import React from 'react';
+import React from "react";
 
 interface InstructionsPageProps {
   onStart: () => void;
@@ -15,19 +15,22 @@ const InstructionsPage: React.FC<InstructionsPageProps> = ({ onStart }) => {
             <span className="font-bold">1.</span> You'll get 8 clues.
           </div>
           <div className="text-lg">
-            <span className="font-bold">2.</span> Find as many checkpoints as you can.
+            <span className="font-bold">2.</span> Find as many checkpoints as
+            you can.
           </div>
           <div className="text-lg">
-            <span className="font-bold">3.</span> Scan each QR to mark it as found.
+            <span className="font-bold">3.</span> Scan each QR to mark it as
+            found.
           </div>
           <div className="text-lg">
-            <span className="font-bold">4.</span> Return to the booth to claim your prize.
+            <span className="font-bold">4.</span> Return to the booth to claim
+            your prize.
           </div>
         </div>
       </div>
 
       {/* Start button */}
-      <button 
+      <button
         onClick={onStart}
         className="bg-[#FF8C00] text-white px-16 py-4 rounded-full text-xl font-semibold hover:bg-[#FF7F00] transition-colors shadow-lg"
       >
@@ -37,4 +40,4 @@ const InstructionsPage: React.FC<InstructionsPageProps> = ({ onStart }) => {
   );
 };
 
-export default InstructionsPage; 
+export default InstructionsPage;
