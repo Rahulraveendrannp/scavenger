@@ -3,11 +3,9 @@ import { Users, QrCode, CheckCircle, Search, ChevronLeft, ChevronRight } from "l
 import { ScavengerAPI } from "../api";
 import SimpleQRScanner from "./SimpleQRScanner";
 
-interface AdminPageProps {
-  onBack: () => void;
-}
+interface AdminPageProps {}
 
-const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
+const AdminPage: React.FC<AdminPageProps> = () => {
   const [totalUsers, setTotalUsers] = useState(0);
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,19 +51,9 @@ const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
         setTimeout(() => setClaimMessage(""), 3000);
         return;
       }
-
-      // Extract phone number from QR code
-      const parts = qrCode.split("_");
-      if (parts.length < 3) {
-        setClaimMessage("❌ Invalid QR code format");
-        setTimeout(() => setClaimMessage(""), 3000);
-        return;
-      }
-
-      const phoneNumber = parts[2];
       
-      // Call API to mark user as claimed
-      const response = await ScavengerAPI.markUserAsClaimed(phoneNumber);
+      // Call API to mark user as claimed using QR code
+      const response = await ScavengerAPI.markUserAsClaimed(qrCode);
       
       if (response.success) {
         setClaimMessage("✅ Reward claimed successfully!");

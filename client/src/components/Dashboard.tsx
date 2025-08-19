@@ -150,36 +150,36 @@ const Dashboard: React.FC<DashboardProps> = ({
           },
         ];
 
-        // Update games based on database progress
-        const updatedGames: Game[] = defaultGames.map((game) => {
-          if (game.id === "scavenger-hunt") {
-            // For scavenger hunt, check if all 8 checkpoints are completed
-            const scavengerCompleted =
-              scavengerProgressResponse.success &&
-              scavengerProgressResponse.data &&
-              scavengerProgressResponse.data.totalFound >= 8;
-            const completedCount =
-              scavengerProgressResponse.success &&
-                scavengerProgressResponse.data
-                ? scavengerProgressResponse.data.totalFound || 0
-                : 0;
+                 // Update games based on database progress
+         const updatedGames: Game[] = defaultGames.map((game) => {
+           if (game.id === "scavenger-hunt") {
+             // For scavenger hunt, check if all 8 checkpoints are completed
+             const scavengerCompleted =
+               scavengerProgressResponse.success &&
+               scavengerProgressResponse.data &&
+               scavengerProgressResponse.data.totalFound >= 8;
+             const completedCount =
+               scavengerProgressResponse.success &&
+                 scavengerProgressResponse.data
+                 ? scavengerProgressResponse.data.totalFound || 0
+                 : 0;
 
-            // Check if scavenger hunt has been unlocked (QR scanned)
-            const scavengerUnlocked =
-              progressResponse.success &&
-              progressResponse.data?.progress?.dashboardGames?.scavengerHunt
-                ?.isCompleted;
+             // Check if scavenger hunt has been started (QR scanned)
+             const scavengerStarted =
+               progressResponse.success &&
+               progressResponse.data?.progress?.dashboardGames?.scavengerHunt
+                 ?.isStarted;
 
-            return {
-              ...game,
-              isCompleted: scavengerCompleted || false,
-              isUnlocked: scavengerUnlocked || false,
-              description: scavengerCompleted
-                ? `Find all 8 checkpoints (${completedCount}/8 completed)`
-                : scavengerUnlocked
-                  ? `Start your adventure! (${completedCount}/8 completed)`
-                  : `Scan QR to enter the treasure hunt`,
-            };
+             return {
+               ...game,
+               isCompleted: scavengerCompleted || false,
+               isUnlocked: scavengerStarted || false,
+               description: scavengerCompleted
+                 ? `Find all 8 checkpoints (${completedCount}/8 completed)`
+                 : scavengerStarted
+                   ? `Start your adventure! (${completedCount}/8 completed)`
+                   : `Scan QR to enter the treasure hunt`,
+             };
           } else {
             // For other games, check dashboard progress from UserProgress model
             const dashboardGames =
@@ -282,10 +282,23 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   // Generate claim QR code
-  const generateClaimQRCode = (): string => {
+  const generateClaimQRCode = async (): Promise<string> => {
     const phoneNumber = localStorage.getItem("talabat_phone_number");
-    const timestamp = Date.now();
-    return `TALABAT_CLAIM_${phoneNumber}_${timestamp}`;
+    if (!phoneNumber) {
+      throw new Error("Phone number not found");
+    }
+
+    try {
+      const response = await ScavengerAPI.generateClaimQR(phoneNumber);
+      if (response.success && response.data?.qrCode) {
+        return response.data.qrCode;
+      } else {
+        throw new Error(response.error || "Failed to generate QR code");
+      }
+    } catch (error) {
+      console.error("Error generating QR code:", error);
+      throw error;
+    }
   };
 
   const handleClaimClick = () => {
@@ -398,35 +411,35 @@ const Dashboard: React.FC<DashboardProps> = ({
     // The validation is now handled inside SimpleQRScanner
     // This function will only be called if the QR code is valid
 
-    if (selectedGame.type === "scavenger") {
-      // For scavenger hunt, mark as unlocked and start the game
-      const updatedGames = games.map((game) =>
-        game.id === selectedGame.id
-          ? {
-            ...game,
-            isUnlocked: true,
-            description: "Start your adventure! (0/8 completed)",
-          }
-          : game
-      );
-      setGames(updatedGames);
+         if (selectedGame.type === "scavenger") {
+       // For scavenger hunt, mark as started (not completed)
+       const updatedGames = games.map((game) =>
+         game.id === selectedGame.id
+           ? {
+             ...game,
+             isUnlocked: true,
+             description: "Start your adventure! (0/8 completed)",
+           }
+           : game
+       );
+       setGames(updatedGames);
 
-      // Save progress to localStorage  
-      const progressData = updatedGames.reduce((acc, game) => {
-        acc[game.id] = game.isCompleted || game.isUnlocked || false;
-        return acc;
-      }, {} as Record<string, boolean>);
-      localStorage.setItem(
-        "talabat_user_progress",
-        JSON.stringify(progressData)
-      );
+       // Save progress to localStorage  
+       const progressData = updatedGames.reduce((acc, game) => {
+         acc[game.id] = game.isCompleted || game.isUnlocked || false;
+         return acc;
+       }, {} as Record<string, boolean>);
+       localStorage.setItem(
+         "talabat_user_progress",
+         JSON.stringify(progressData)
+       );
 
-      // Save to database
-      console.log("Saving dashboard game progress for:", selectedGame.id);
-      saveDashboardGameProgress(selectedGame.id);
+       // Save to database - mark as started, not completed
+       console.log("Saving dashboard game progress for:", selectedGame.id);
+       saveDashboardGameProgress(selectedGame.id);
 
-      setShowQRScanner(false);
-      onStartScavengerHunt();
+       setShowQRScanner(false);
+       onStartScavengerHunt();
     } else {
       // For offline games, mark as completed and return to dashboard immediately
       const updatedGames = games.map((game) =>
@@ -487,7 +500,6 @@ const Dashboard: React.FC<DashboardProps> = ({
   if (showClaimQR) {
     return (
       <ClaimQRModal
-        qrCode={generateClaimQRCode()}
         onClose={closeClaimQR}
       />
     );
@@ -740,35 +752,75 @@ const QRScannerModal: React.FC<{
 
 // Claim QR Modal Component
 const ClaimQRModal: React.FC<{
-  qrCode: string;
   onClose: () => void;
-}> = ({ qrCode, onClose }) => {
+}> = ({ onClose }) => {
   const [qrCodeImage, setQrCodeImage] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(true);
+  const [qrCode, setQrCode] = useState<string>("");
+  const [error, setError] = useState<string>("");
+  const [gameStatus, setGameStatus] = useState<any>(null);
 
   useEffect(() => {
-    const generateQRCode = async () => {
+    const generateClaimQR = async () => {
       try {
         setIsGenerating(true);
-        const QRCode = (await import('qrcode')).default;
-        const qrDataURL = await QRCode.toDataURL(qrCode, {
-          width: 200,
-          margin: 2,
-          color: {
-            dark: '#000000',
-            light: '#FFFFFF'
-          }
-        });
-        setQrCodeImage(qrDataURL);
+        setError("");
+        
+        const phoneNumber = localStorage.getItem("talabat_phone_number");
+        if (!phoneNumber) {
+          throw new Error("Phone number not found");
+        }
+
+        // Get game progress and generate QR code in parallel
+        const [progressResponse, scavengerProgressResponse, qrResponse] = await Promise.all([
+          ScavengerAPI.getUserProgress(),
+          ScavengerAPI.getGameProgress(),
+          ScavengerAPI.generateClaimQR(phoneNumber)
+        ]);
+
+        console.log('ClaimQRModal: API responses:', { progressResponse, scavengerProgressResponse, qrResponse });
+        
+        // Process QR code
+        if (qrResponse.success && qrResponse.data?.qrCode) {
+          setQrCode(qrResponse.data.qrCode);
+          
+          // Generate QR code image
+          const QRCode = (await import('qrcode')).default;
+          const qrDataURL = await QRCode.toDataURL(qrResponse.data.qrCode, {
+            width: 200,
+            margin: 2,
+            color: {
+              dark: '#000000',
+              light: '#FFFFFF'
+            }
+          });
+          setQrCodeImage(qrDataURL);
+        } else {
+          throw new Error(qrResponse.error || "Failed to generate QR code");
+        }
+
+        // Process game status
+        const scavengerStarted = progressResponse.success && progressResponse.data?.progress?.dashboardGames?.scavengerHunt?.isStarted || false;
+        const status = {
+          cardGame: progressResponse.success && progressResponse.data?.progress?.dashboardGames?.cardGame?.isCompleted || false,
+          puzzle: progressResponse.success && progressResponse.data?.progress?.dashboardGames?.puzzle?.isCompleted || false,
+          carRace: progressResponse.success && progressResponse.data?.progress?.dashboardGames?.carRace?.isCompleted || false,
+          scavengerHunt: scavengerProgressResponse.success && (scavengerProgressResponse.data?.totalFound || 0) >= 8 || false,
+          scavengerProgress: scavengerProgressResponse.success ? (scavengerProgressResponse.data?.totalFound || 0) : 0,
+          scavengerStarted: scavengerStarted
+        };
+        setGameStatus(status);
+
       } catch (error) {
         console.error('Error generating QR code:', error);
+        setError(error instanceof Error ? error.message : "Failed to generate QR code");
       } finally {
         setIsGenerating(false);
       }
     };
 
-    generateQRCode();
-  }, [qrCode]);
+    generateClaimQR();
+  }, []);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
@@ -781,32 +833,77 @@ const ClaimQRModal: React.FC<{
             Show this QR code to the booth staff to claim your reward
           </p>
           
-          {/* QR Code Display */}
-          <div className="bg-gray-100 p-4 rounded-lg mb-4">
-            <div className="text-center">
-              <div className="text-xs text-gray-500 mb-2">QR Code</div>
-              <div className="bg-white p-4 rounded border-2 border-dashed border-gray-300 flex justify-center">
-                {isGenerating ? (
-                  <div className="flex items-center justify-center h-48">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-                    <span className="ml-2 text-gray-600">Generating QR Code...</span>
+                     {/* QR Code Display */}
+           <div className="bg-gray-100 p-4 rounded-lg mb-4">
+             <div className="text-center">
+               <div className="text-xs text-gray-500 mb-2">QR Code</div>
+               <div className="bg-white p-4 rounded border-2 border-dashed border-gray-300 flex justify-center">
+                 {isGenerating ? (
+                   <div className="flex items-center justify-center h-48">
+                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                     <span className="ml-2 text-gray-600">Generating QR Code...</span>
+                   </div>
+                 ) : qrCodeImage ? (
+                   <img 
+                     src={qrCodeImage} 
+                     alt="Claim QR Code" 
+                     className="w-48 h-48"
+                     style={{ imageRendering: 'pixelated' }}
+                   />
+                                  ) : error ? (
+                    <div className="text-red-500 text-sm">{error}</div>
+                  ) : (
+                    <div className="text-red-500 text-sm">Failed to generate QR code</div>
+                  )}
+               </div>
+               <div className="mt-2 text-xs text-gray-500 font-mono break-all">
+                 {qrCode}
+               </div>
+             </div>
+           </div>
+
+                       {/* Game Status Display */}
+            {gameStatus && (
+              <div className="bg-gray-50 p-3 rounded-lg mb-4">
+                <div className="text-xs text-gray-500 mb-3 text-center">Game Progress</div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Card Game</span>
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${
+                      gameStatus.cardGame ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {gameStatus.cardGame ? '✓ Completed' : '✗ Pending'}
+                    </span>
                   </div>
-                ) : qrCodeImage ? (
-                  <img 
-                    src={qrCodeImage} 
-                    alt="Claim QR Code" 
-                    className="w-48 h-48"
-                    style={{ imageRendering: 'pixelated' }}
-                  />
-                ) : (
-                  <div className="text-red-500 text-sm">Failed to generate QR code</div>
-                )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Puzzle</span>
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${
+                      gameStatus.puzzle ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {gameStatus.puzzle ? '✓ Completed' : '✗ Pending'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Car Race</span>
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${
+                      gameStatus.carRace ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {gameStatus.carRace ? '✓ Completed' : '✗ Pending'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Scavenger Hunt</span>
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${
+                      gameStatus.scavengerHunt ? 'bg-green-100 text-green-700' : 
+                      gameStatus.scavengerStarted ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {gameStatus.scavengerHunt ? '✓ Completed' : 
+                       gameStatus.scavengerStarted ? `${gameStatus.scavengerProgress}/8` : '✗ Pending'}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="mt-2 text-xs text-gray-500 font-mono break-all">
-                {qrCode}
-              </div>
-            </div>
-          </div>
+            )}
           
           <button
             onClick={onClose}

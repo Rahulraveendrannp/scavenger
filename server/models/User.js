@@ -56,23 +56,13 @@ const userSchema = new mongoose.Schema({
     },
     lastPlayedAt: Date
   },
-  hasClaimed: {
-    cardGame: {
-      type: Boolean,
-      default: false
-    },
-    puzzle: {
-      type: Boolean,
-      default: false
-    },
-    carRace: {
-      type: Boolean,
-      default: false
-    },
-    scavengerHunt: {
-      type: Boolean,
-      default: false
-    }
+  isClaimed: {
+    type: Boolean,
+    default: false
+  },
+  claimQRCode: {
+    type: String,
+    default: null
   },
   preferences: {
     notifications: {
@@ -89,10 +79,7 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  isClaimed: {
-    type: Boolean,
-    default: false
-  },
+
   createdAt: {
     type: Date,
     default: Date.now

@@ -526,7 +526,7 @@ export class ScavengerAPI {
     try {
       console.log('📊 API: Getting all users...');
 
-      const response = await fetch(`${API_BASE}/admin/users`, {
+      const response = await fetch(`${API_BASE}/admin/all-users`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -547,35 +547,7 @@ export class ScavengerAPI {
     }
   }
 
-  static async updatePrizeClaim(userId: string, prizeType: string, claimed: boolean): Promise<ApiResponse<any>> {
-    try {
-      console.log('🏆 API: Updating prize claim...', { userId, prizeType, claimed });
 
-      const response = await fetch(`${API_BASE}/admin/prize-claim`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId,
-          prizeType,
-          claimed
-        })
-      });
-
-      const data = await response.json();
-      console.log('🏆 API: Update prize claim response:', data);
-
-      if (!response.ok) {
-        return { success: false, error: data?.message || 'Failed to update prize claim' };
-      }
-
-      return { success: true, data: data };
-    } catch (error: any) {
-      console.error('Failed to update prize claim:', error);
-      return { success: false, error: error?.message || 'Network error' };
-    }
-  }
 
   // New Admin API methods for claim functionality
   static async getTotalUsers(): Promise<ApiResponse<any>> {
@@ -603,9 +575,37 @@ export class ScavengerAPI {
     }
   }
 
-  static async markUserAsClaimed(phoneNumber: string): Promise<ApiResponse<any>> {
+  static async generateClaimQR(phoneNumber: string): Promise<ApiResponse<any>> {
     try {
-      console.log('🏆 API: Marking user as claimed...', { phoneNumber });
+      console.log('🎫 API: Generating claim QR code...', { phoneNumber });
+
+      const response = await fetch(`${API_BASE}/admin/generate-claim-qr`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          phoneNumber
+        })
+      });
+
+      const data = await response.json();
+      console.log('🎫 API: Generate QR response:', data);
+
+      if (!response.ok) {
+        return { success: false, error: data?.message || 'Failed to generate QR code' };
+      }
+
+      return { success: true, data: data.data };
+    } catch (error: any) {
+      console.error('Failed to generate QR code:', error);
+      return { success: false, error: error?.message || 'Network error' };
+    }
+  }
+
+  static async markUserAsClaimed(qrCode: string): Promise<ApiResponse<any>> {
+    try {
+      console.log('🏆 API: Marking user as claimed...', { qrCode });
 
       const response = await fetch(`${API_BASE}/admin/mark-claimed`, {
         method: 'POST',
@@ -613,7 +613,7 @@ export class ScavengerAPI {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          phoneNumber
+          qrCode
         })
       });
 
