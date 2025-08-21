@@ -34,7 +34,7 @@ const verifyLimiter = rateLimit({
 // Validation middleware
 const validatePhoneNumber = [
   body('phoneNumber')
-    .matches(/^(\+974|974)?[3456789]\d{7}$/)
+    .matches(/^(\+974|974)?[123456789]\d{7}$/)
     .withMessage('Please enter a valid Qatar phone number'),
 ];
 

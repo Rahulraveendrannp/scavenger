@@ -497,45 +497,7 @@ export class ScavengerAPI {
     }
   }
 
-  static async submitGameCompletion(
-    phoneNumber: string,
-    sessionId?: string,
-  ): Promise<ApiResponse<{ saved?: boolean }>> {
-    try {
-      const token = getToken();
-      if (!token) {
-        return { success: false, error: "Not authenticated" };
-      }
 
-      if (!sessionId) {
-        console.warn(
-          "No sessionId available; skipping backend completion call",
-        );
-        return { success: true, data: { saved: false } };
-      }
-
-      const response = await fetch(`${API_BASE}/game/complete`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ sessionId, phoneNumber }),
-      });
-
-      const json = await response.json();
-      if (!response.ok) {
-        return {
-          success: false,
-          error: json?.message || "Failed to submit completion",
-        };
-      }
-
-      return { success: true, data: json.data };
-    } catch (error: any) {
-      return { success: false, error: error?.message || "Network error" };
-    }
-  }
 
   static async getGameProgress(): Promise<ApiResponse<GameProgress>> {
     try {
@@ -670,6 +632,8 @@ export class ScavengerAPI {
       if (!response.ok) {
         return { success: false, error: data?.message || 'Failed to generate QR code' };
       }
+
+      console.log('🎫 API: QR code retrieved/generated for user');
 
       return { success: true, data: data.data };
     } catch (error: any) {

@@ -9,7 +9,7 @@ interface RegistrationPageProps {
 }
 
 const RegistrationPage: React.FC<RegistrationPageProps> = ({ onSuccess }) => {
-  const [localPhone, setLocalPhone] = useState("12345678"); // Pre-filled for testing
+  const [localPhone, setLocalPhone] = useState(""); // Pre-filled for testing
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 

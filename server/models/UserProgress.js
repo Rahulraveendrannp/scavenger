@@ -41,10 +41,6 @@ const userProgressSchema = new mongoose.Schema({
 
   // Scavenger hunt detailed progress
   scavengerHuntProgress: {
-    currentSession: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'GameSession'
-    },
     completedCheckpoints: [{
       checkpointId: Number,
       location: String,

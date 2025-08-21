@@ -45,7 +45,7 @@ router.get('/all-users', catchAsync(async (req, res) => {
           const completedGames = Object.values(dashboardGames).filter(game => game?.isCompleted).length;
           
           // Get scavenger hunt progress
-          const scavengerProgress = userProgress?.totalFound || 0;
+          const scavengerProgress = userProgress?.scavengerHuntProgress?.completedCheckpoints?.length || 0;
           
           return {
             _id: user._id,
@@ -97,9 +97,23 @@ router.post('/generate-claim-qr', catchAsync(async (req, res) => {
       throw new AppError('User not found', 404);
     }
 
-    // Generate QR code
-    const timestamp = Date.now();
-    const qrCode = `TALABAT_CLAIM_${phoneNumber}_${timestamp}`;
+    // Check if user already has a QR code
+    if (user.claimQRCode) {
+      // Return existing QR code
+      console.log(`🎫 Admin: User ${phoneNumber} already has QR code: ${user.claimQRCode}`);
+      
+      return res.status(200).json({
+        success: true,
+        data: {
+          qrCode: user.claimQRCode,
+          phoneNumber: user.phoneNumber,
+          userId: user._id
+        }
+      });
+    }
+
+    // Generate unique QR code with phone number and user ID (not timestamp)
+    const qrCode = `TALABAT_CLAIM_${phoneNumber}_${user._id}`;
     
     // Save QR code to user
     user.claimQRCode = qrCode;
@@ -111,7 +125,8 @@ router.post('/generate-claim-qr', catchAsync(async (req, res) => {
       success: true,
       data: {
         qrCode,
-        phoneNumber
+        phoneNumber: user.phoneNumber,
+        userId: user._id
       }
     });
 
@@ -154,10 +169,12 @@ router.post('/mark-claimed', catchAsync(async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'User marked as claimed successfully',
+      message: `User ${user.phoneNumber} marked as claimed successfully!`,
       data: {
         phoneNumber: user.phoneNumber,
-        isClaimed: true
+        userId: user._id,
+        isClaimed: true,
+        qrCode: user.claimQRCode
       }
     });
 

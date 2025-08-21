@@ -2,7 +2,7 @@
 const express = require('express');
 const { body, param, validationResult } = require('express-validator');
 const User = require('../models/User');
-const GameSession = require('../models/GameSession');
+
 const { asyncHandler } = require('../middleware/asyncHandler');
 const AppError = require('../utils/appError');
 
@@ -16,7 +16,7 @@ const validateProfile = [
 ];
 
 const validatePhoneNumber = [
-  param('phoneNumber').matches(/^(\+974|974)?[3456789]\d{7}$/).withMessage('Invalid Qatar phone number')
+  param('phoneNumber').matches(/^(\+974|974)?[123456789]\d{7}$/).withMessage('Invalid Qatar phone number')
 ];
 
 /**
@@ -113,23 +113,6 @@ router.get('/:phoneNumber/stats', validatePhoneNumber, asyncHandler(async (req, 
     return next(new AppError('User not found', 404));
   }
 
-  // Get additional stats
-  const recentGames = await GameSession.getUserHistory(user._id, 5);
-  const totalPlayTime = await GameSession.aggregate([
-    { $match: { userId: user._id, status: 'completed' } },
-    { $group: { _id: null, totalTime: { $sum: '$timeElapsed' } } }
-  ]);
-
-  // Calculate average completion time
-  const completedGames = await GameSession.find({ 
-    userId: user._id, 
-    status: 'completed' 
-  }).select('timeElapsed');
-
-  const averageTime = completedGames.length > 0 
-    ? completedGames.reduce((sum, game) => sum + game.timeElapsed, 0) / completedGames.length 
-    : null;
-
   // Get rank
   const betterUsers = await User.countDocuments({
     'gameStats.bestTime': { $lt: user.gameStats.bestTime || Number.MAX_SAFE_INTEGER },
@@ -141,15 +124,7 @@ router.get('/:phoneNumber/stats', validatePhoneNumber, asyncHandler(async (req, 
     data: {
       stats: {
         ...user.gameStats.toObject(),
-        averageCompletionTime: averageTime,
-        totalPlayTime: totalPlayTime[0]?.totalTime || 0,
-        rank: betterUsers + 1,
-        recentGames: recentGames.map(game => ({
-          completedAt: game.createdAt,
-          timeElapsed: game.timeElapsed,
-          rewardTier: game.rewardTier,
-          status: game.status
-        }))
+        rank: betterUsers + 1
       }
     }
   });
@@ -200,22 +175,7 @@ router.get('/:phoneNumber/achievements', validatePhoneNumber, asyncHandler(async
     });
   }
 
-  // Speed Demon (Gold tier)
-  const goldGames = await GameSession.countDocuments({
-    userId: user._id,
-    rewardTier: 'Gold',
-    status: 'completed'
-  });
 
-  if (goldGames >= 1) {
-    achievements.push({
-      id: 'speed_demon',
-      title: 'Speed Demon',
-      description: 'Earned a Gold tier reward',
-      icon: '⚡',
-      category: 'performance'
-    });
-  }
 
   // Consistency achievements
   if (stats.currentStreak >= 3) {
@@ -271,8 +231,7 @@ router.delete('/:phoneNumber', validatePhoneNumber, asyncHandler(async (req, res
     return next(new AppError('User not found', 404));
   }
 
-  // Delete all user's game sessions
-  await GameSession.deleteMany({ userId: user._id });
+
 
   // Delete user account
   await User.findByIdAndDelete(user._id);

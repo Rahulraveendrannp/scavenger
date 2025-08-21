@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Phone number is required'],
     unique: true,
-    match: [/^(\+974|974)?[3456789]\d{7}$/, 'Please enter a valid Qatar phone number']
+    match: [/^(\+974|974)?[123456789]\d{7}$/, 'Please enter a valid Qatar phone number']
   },
 
   isVerified: {
@@ -99,13 +99,7 @@ userSchema.index({ phoneNumber: 1 });
 userSchema.index({ createdAt: -1 });
 userSchema.index({ 'gameStats.bestTime': 1 });
 
-// Virtual for user's rank
-userSchema.virtual('rank', {
-  ref: 'GameSession',
-  localField: '_id',
-  foreignField: 'userId',
-  count: true
-});
+
 
 // Pre-save middleware to hash OTP
 userSchema.pre('save', async function(next) {
