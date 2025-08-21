@@ -541,12 +541,6 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
     return "w-48 h-48"; // Original size for desktop (192px x 192px)
   };
 
-  const getViewfinderRadius = () => {
-    if (isMobile) {
-      return "25%"; // Larger radius for mobile
-    }
-    return "35%"; // Original radius for desktop
-  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-95 z-50 flex items-center justify-center">
@@ -585,31 +579,49 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
           </button>
         </div>
 
-        {/* Invalid QR Message Display */}
-        {invalidQRMessage && (
-          <div className="mb-4 p-3 bg-red-900 border border-red-600 rounded-lg animate-pulse">
-            <p className="text-red-200 text-sm font-semibold">
-              {invalidQRMessage}
-            </p>
-            <p className="text-red-300 text-xs mt-1">
-              Please scan the correct checkpoint QR code
-            </p>
-          </div>
-        )}
+        {/* Fixed Error/Message Area - Always takes up space */}
+        <div className="mb-4 min-h-[80px]">
+          {/* Invalid QR Message Display */}
+          {invalidQRMessage && (
+            <div className="p-3 bg-red-900 border border-red-600 rounded-lg animate-pulse">
+              <p className="text-red-200 text-sm font-semibold">
+                {invalidQRMessage}
+              </p>
+              <p className="text-red-300 text-xs mt-1">
+                Please scan the correct checkpoint QR code
+              </p>
+            </div>
+          )}
 
-        {/* Scan Result Display */}
-        {scanResult && (
-          <div className="mb-4 p-3 bg-green-900 border border-green-600 rounded-lg">
-            <p className="text-green-200 text-sm font-semibold">
-              ✅ Valid QR Code Detected!
-            </p>
-            <p className="text-green-300 text-xs mt-1 font-mono break-all">
-              {scanResult}
-            </p>
-          </div>
-        )}
+          {/* Scan Result Display */}
+          {scanResult && (
+            <div className="p-3 bg-green-900 border border-green-600 rounded-lg">
+              <p className="text-green-200 text-sm font-semibold">
+                ✅ Valid QR Code Detected!
+              </p>
+              <p className="text-green-300 text-xs mt-1 font-mono break-all">
+                {scanResult}
+              </p>
+            </div>
+          )}
 
-        {/* Camera View with Enhanced Mobile Viewfinder */}
+          {/* Error Display */}
+          {error && (
+            <div className="p-3 bg-red-900 border border-red-600 rounded-lg">
+              <p className="text-red-200 text-sm mb-2">⚠️ {error}</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleRetry}
+                  className="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700"
+                >
+                  Retry
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Fixed Camera View - Never moves */}
         <div className="relative mb-4">
           <div
             className="relative bg-gray-900 rounded-lg overflow-hidden"
@@ -645,16 +657,6 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="relative z-10">
                   <div className={`${getViewfinderSize()} relative`}>
-                    {/* Enhanced dimmed overlay with larger cut-out for mobile */}
-                    {/* <div
-                      className="absolute inset-0"
-                      style={{
-                        background: `radial-gradient(circle at center, transparent ${getViewfinderRadius()}, rgba(0,0,0,0.7) ${
-                          parseInt(getViewfinderRadius()) + 10
-                        }%)`,
-                      }}
-                    ></div> */}
-
                     {/* Larger corner brackets for mobile */}
                     <div
                       className={`absolute top-0 left-0 ${
@@ -763,21 +765,6 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
             <canvas ref={canvasRef} className="hidden" />
           </div>
         </div>
-
-        {/* Error Display */}
-        {error && (
-          <div className="mb-4 p-3 bg-red-900 border border-red-600 rounded-lg">
-            <p className="text-red-200 text-sm mb-2">⚠️ {error}</p>
-            <div className="flex gap-2">
-              <button
-                onClick={handleRetry}
-                className="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700"
-              >
-                Retry
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Enhanced Instructions */}
         <div className="text-center text-gray-400 text-sm"></div>
