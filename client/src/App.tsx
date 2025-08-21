@@ -21,7 +21,6 @@ import AdminPage from "./components/AdminPage";
 
 import ProgressPage from "./components/ProgressPage";
 
-import LeaderboardPage from "./components/LeadrboardPage";
 import ScavengerHuntIntro from "./components/ScavengerHuntIntro";
 import ScavengerHuntFinish from "./components/ScavengerHuntFinish";
 import ClaimPrize from "./components/ClaimPrize";
@@ -177,6 +176,8 @@ const AdminPageWrapper: React.FC = () => {
 const ScavengerHuntPageWrapper: React.FC = () => {
   const navigate = useNavigate();
   const { phoneNumber, gameSession } = React.useContext(AppContext);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isScavengerStarted, setIsScavengerStarted] = useState(false);
 
   // Create a unique key for this game session to track intro completion
   const sessionIntroKey = gameSession
@@ -201,6 +202,31 @@ const ScavengerHuntPageWrapper: React.FC = () => {
     return localStorage.getItem(sessionIntroKey) === "true";
   });
 
+  // Check if scavenger hunt is started from database
+  useEffect(() => {
+    const checkScavengerStatus = async () => {
+      try {
+        const response = await ScavengerAPI.getUserProgress();
+        if (response.success && response.data?.progress?.dashboardGames?.scavengerHunt?.isStarted) {
+          setIsScavengerStarted(true);
+        } else {
+          // If not started, redirect to dashboard
+          navigate("/dashboard", { replace: true });
+          return;
+        }
+      } catch (error) {
+        console.error("Error checking scavenger hunt status:", error);
+        // On error, redirect to dashboard
+        navigate("/dashboard", { replace: true });
+        return;
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkScavengerStatus();
+  }, [navigate]);
+
   // Handler for "Start" button in intro
   const handleStartScavengerHuntIntro = () => {
     if (sessionIntroKey) {
@@ -221,26 +247,27 @@ const ScavengerHuntPageWrapper: React.FC = () => {
     return <Navigate to="/" replace />;
   }
 
-  // Check if session exists and is valid
+    // Check if session exists and is valid
   if (!gameSession) {
     // If no valid session, redirect to registration
     return <Navigate to="/" replace />;
   }
 
-  // Guard: Only allow entering game if scavenger hunt has been unlocked from dashboard
-  try {
-    const progressRaw = localStorage.getItem("talabat_user_progress");
-    const progress = progressRaw
-      ? (JSON.parse(progressRaw) as Record<string, boolean>)
-      : {};
-    const unlocked = !!progress["scavenger-hunt"];
-    if (!unlocked) {
-      return <Navigate to="/dashboard" replace />;
-    }
-  } catch (error) {
-    // If parsing fails, redirect to dashboard for safety
-    console.error("Error parsing user progress:", error);
-    return <Navigate to="/dashboard" replace />;
+  // Show loading while checking scavenger hunt status
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
+        <div className="bg-white rounded-xl p-6 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading scavenger hunt...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If scavenger hunt is not started, don't render anything (redirect will happen)
+  if (!isScavengerStarted) {
+    return null;
   }
 
   return (
@@ -279,20 +306,6 @@ const ProgressPageWrapper: React.FC = () => {
   );
 };
 
-const LeaderboardPageWrapper: React.FC = () => {
-  const navigate = useNavigate();
-
-  const handlePlayAgain = () => {
-    navigate("/");
-  };
-
-  return (
-    <LeaderboardPage
-      currentUserPhone="+97412345678"
-      onPlayAgain={handlePlayAgain}
-    />
-  );
-};
 
 // Main App Component
 const AppContent: React.FC = () => {
@@ -343,9 +356,6 @@ const AppContent: React.FC = () => {
       <Route path="/claim" element={<ClaimPrize />} />
 
       <Route path="/progress" element={<ProgressPageWrapper />} />
-
-      <Route path="/leaderboard" element={<LeaderboardPageWrapper />} />
-      {/* Catch all route - redirect based on auth status */}
       <Route
         path="*"
         element={<Navigate to={isAuthenticated ? "/dashboard" : "/"} replace />}

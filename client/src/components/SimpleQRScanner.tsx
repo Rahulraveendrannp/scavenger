@@ -646,14 +646,14 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
                 <div className="relative z-10">
                   <div className={`${getViewfinderSize()} relative`}>
                     {/* Enhanced dimmed overlay with larger cut-out for mobile */}
-                    <div
+                    {/* <div
                       className="absolute inset-0"
                       style={{
                         background: `radial-gradient(circle at center, transparent ${getViewfinderRadius()}, rgba(0,0,0,0.7) ${
                           parseInt(getViewfinderRadius()) + 10
                         }%)`,
                       }}
-                    ></div>
+                    ></div> */}
 
                     {/* Larger corner brackets for mobile */}
                     <div

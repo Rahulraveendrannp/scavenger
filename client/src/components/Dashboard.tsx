@@ -18,7 +18,7 @@ interface Game {
   icon: React.ReactNode;
   type: "offline" | "scavenger";
   isCompleted: boolean;
-  isUnlocked?: boolean;
+  isStarted?: boolean;
 }
 
 interface DashboardProps {
@@ -176,12 +176,12 @@ const Dashboard: React.FC<DashboardProps> = ({
             return {
               ...game,
               isCompleted: scavengerCompleted || false,
-              isUnlocked: scavengerStarted || false,
+              isStarted: scavengerStarted || false,
               description: scavengerCompleted
                 ? `Find all 8 checkpoints (${completedCount}/8 completed)`
                 : scavengerStarted
-                ? `Start your adventure! (${completedCount}/8 completed)`
-                : `Scan QR to enter the treasure hunt`,
+                  ? `Start your adventure! (${completedCount}/8 completed)`
+                  : `Scan QR to enter the treasure hunt`,
             };
           } else {
             // For other games, check dashboard progress from UserProgress model
@@ -284,25 +284,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     return expectedQRCodes[gameId as keyof typeof expectedQRCodes] || "";
   };
 
-  // Generate claim QR code
-  const generateClaimQRCode = async (): Promise<string> => {
-    const phoneNumber = localStorage.getItem("talabat_phone_number");
-    if (!phoneNumber) {
-      throw new Error("Phone number not found");
-    }
 
-    try {
-      const response = await ScavengerAPI.generateClaimQR(phoneNumber);
-      if (response.success && response.data?.qrCode) {
-        return response.data.qrCode;
-      } else {
-        throw new Error(response.error || "Failed to generate QR code");
-      }
-    } catch (error) {
-      console.error("Error generating QR code:", error);
-      throw error;
-    }
-  };
 
   const handleClaimClick = () => {
     setShowClaimQR(true);
@@ -348,6 +330,10 @@ const Dashboard: React.FC<DashboardProps> = ({
     const game = games.find((g) => g.id === gameId);
     if (!game) return;
 
+    const message = game.type === "scavenger" 
+      ? "🎯 start hunting!" 
+      : `🎉 ${game.title} Completed! ✓`;
+
     const celebration = document.createElement("div");
     celebration.innerHTML = `
       <div style="
@@ -365,7 +351,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         box-shadow: 0 10px 25px rgba(0,0,0,0.3);
         animation: celebrationPop 2s ease-in-out;
       ">
-        🎉 ${game.title} Completed! ✓
+        ${message}
       </div>
       <style>
         @keyframes celebrationPop {
@@ -414,28 +400,28 @@ const Dashboard: React.FC<DashboardProps> = ({
     // The validation is now handled inside SimpleQRScanner
     // This function will only be called if the QR code is valid
 
-    if (selectedGame.type === "scavenger") {
-      // For scavenger hunt, mark as started (not completed)
-      const updatedGames = games.map((game) =>
-        game.id === selectedGame.id
-          ? {
+         if (selectedGame.type === "scavenger") {
+               // For scavenger hunt, mark as started (not completed)
+        const updatedGames = games.map((game) =>
+          game.id === selectedGame.id
+            ? {
               ...game,
-              isUnlocked: true,
+              isStarted: true,
               description: "Start your adventure! (0/8 completed)",
             }
-          : game
-      );
-      setGames(updatedGames);
+            : game
+        );
+        setGames(updatedGames);
 
-      // Save progress to localStorage
-      const progressData = updatedGames.reduce((acc, game) => {
-        acc[game.id] = game.isCompleted || game.isUnlocked || false;
-        return acc;
-      }, {} as Record<string, boolean>);
-      localStorage.setItem(
-        "talabat_user_progress",
-        JSON.stringify(progressData)
-      );
+        // Save progress to localStorage  
+        const progressData = updatedGames.reduce((acc, game) => {
+          acc[game.id] = game.isCompleted || game.isStarted || false;
+          return acc;
+        }, {} as Record<string, boolean>);
+       localStorage.setItem(
+         "talabat_user_progress",
+         JSON.stringify(progressData)
+       );
 
       // Save to database - mark as started, not completed
       console.log("Saving dashboard game progress for:", selectedGame.id);
@@ -609,9 +595,9 @@ const Dashboard: React.FC<DashboardProps> = ({
               onClick={() => {
                 if (
                   game.type === "scavenger" &&
-                  (game.isUnlocked || game.isCompleted)
+                  (game.isStarted || game.isCompleted)
                 ) {
-                  // If scavenger hunt is unlocked or completed, go directly to hunt
+                  // If scavenger hunt is started or completed, go directly to hunt
                   onStartScavengerHunt();
                 } else if (!game.isCompleted) {
                   // Only show QR scanner if game is not completed
@@ -623,7 +609,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 game.isCompleted
                   ? "bg-gray-200 text-gray-500 cursor-not-allowed"
                   : game.type === "scavenger" &&
-                    (game.isUnlocked || game.isCompleted)
+                    (game.isStarted || game.isCompleted)
                   ? "bg-green-500 hover:bg-green-600 text-white"
                   : game.type === "scavenger"
                   ? "bg-purple-500 hover:bg-purple-600 text-white"
@@ -631,7 +617,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               }`}
             >
               {game.type === "scavenger" &&
-              (game.isUnlocked || game.isCompleted) ? (
+              (game.isStarted || game.isCompleted) ? (
                 <Search className="w-4 h-4 sm:w-5 sm:h-5" />
               ) : (
                 <QrCode className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -639,7 +625,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               <span className="hidden sm:inline">
                 {game.isCompleted
                   ? "Completed"
-                  : game.type === "scavenger" && game.isUnlocked
+                  : game.type === "scavenger" && game.isStarted
                   ? "Resume Hunt"
                   : game.type === "scavenger"
                   ? "Scan to Enter Hunt"
@@ -648,7 +634,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               <span className="sm:hidden">
                 {game.isCompleted
                   ? "Done"
-                  : game.type === "scavenger" && game.isUnlocked
+                  : game.type === "scavenger" && game.isStarted
                   ? "Resume"
                   : game.type === "scavenger"
                   ? "Enter Hunt"
@@ -715,7 +701,9 @@ const QRScannerModal: React.FC<{
               Success!
             </h3>
             <p className="text-sm sm:text-base text-gray-600 mb-4">
-              {gameName} completed successfully!
+              {gameType === "scavenger" 
+                ? "Start hunting! 🎯" 
+                : `${gameName} completed successfully!`}
             </p>
             <div className="text-sm text-gray-500">
               Returning to dashboard...
@@ -763,7 +751,7 @@ const ClaimQRModal: React.FC<{
   const [gameStatus, setGameStatus] = useState<any>(null);
 
   useEffect(() => {
-    const generateClaimQR = async () => {
+    const generateClaimQR = async () => { 
       try {
         setIsGenerating(true);
         setError("");
@@ -790,7 +778,9 @@ const ClaimQRModal: React.FC<{
         // Process QR code
         if (qrResponse.success && qrResponse.data?.qrCode) {
           setQrCode(qrResponse.data.qrCode);
-
+          
+          console.log('ClaimQRModal: QR code retrieved/generated for user');
+          
           // Generate QR code image
           const QRCode = (await import("qrcode")).default;
           const qrDataURL = await QRCode.toDataURL(qrResponse.data.qrCode, {
@@ -861,7 +851,7 @@ const ClaimQRModal: React.FC<{
           <p className="text-sm sm:text-base text-gray-600 mb-4">
             Show this QR code to the booth staff to claim your reward
           </p>
-
+          
           {/* QR Code Display */}
           <div className="bg-gray-100 p-4 rounded-lg mb-4">
             <div className="text-center">

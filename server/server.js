@@ -2,10 +2,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const helmet = require('helmet');
 const morgan = require('morgan');
-const compression = require('compression');
-const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 // Import routes
@@ -25,48 +22,29 @@ const PORT = process.env.PORT || 5000;
 // Connect to MongoDB
 connectDB();
 
-// Security middleware
-app.use(helmet());
-app.use(compression());
+// Simple CORS setup - allow all origins in development
+const corsOptions = {
+  origin: true, // This allows all origins
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+};
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
-  message: {
-    error: 'Too many requests from this IP, please try again later.'
-  }
-});
-app.use('/api/', limiter);
+// For production, you can still use specific origins if needed
+if (process.env.NODE_ENV === 'production' && process.env.FRONTEND_URLS) {
+  const allowedOrigins = process.env.FRONTEND_URLS.split(',').map(url => url.trim());
+  corsOptions.origin = allowedOrigins;
+}
 
-// CORS configuration - support multiple frontend URLs (comma-separated)
-const rawAllowed = process.env.FRONTEND_URLS || process.env.FRONTEND_URL || 'http://localhost:5173';
-const ALLOWED_ORIGINS = rawAllowed
-  .split(',')
-  .map((o) => o.trim())
-  .filter(Boolean);
-
-app.use(
-  cors({
-    credentials: true,
-    origin: (origin, callback) => {
-      // Allow non-browser or same-origin requests (e.g., curl, server-to-server)
-      if (!origin) return callback(null, true);
-      const isAllowed = ALLOWED_ORIGINS.includes(origin);
-      return isAllowed
-        ? callback(null, true)
-        : callback(new Error(`Not allowed by CORS: ${origin}`));
-    },
-  })
-);
+app.use(cors(corsOptions));
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Logging middleware
-if (process.env.NODE_ENV !== 'test') {
-  app.use(morgan('combined'));
+// Logging middleware (only in development)
+if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
+  app.use(morgan('dev')); // 'dev' is shorter and cleaner for development
 }
 
 // Health check endpoint
@@ -84,7 +62,8 @@ app.get('/test', (req, res) => {
   res.status(200).json({
     success: true,
     message: 'Test endpoint working',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    cors: 'working'
   });
 });
 
@@ -122,11 +101,12 @@ process.on('SIGINT', () => {
 });
 
 const server = app.listen(PORT, () => {
-  console.log(`🚀 Talabat Scavenger Hunt API running on port ${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`📍 Health check: http://localhost:${PORT}/health`);
-  console.log(`🔐 JWT_SECRET available: ${process.env.JWT_SECRET ? 'Yes' : 'No'}`);
-  console.log(`📱 SMS credentials available: ${process.env.SMS_USERNAME && process.env.SMS_API_KEY ? 'Yes' : 'No'}`);
+  console.log(`🔐 JWT_SECRET: ${process.env.JWT_SECRET ? 'Set ✅' : 'Missing ❌'}`);
+  console.log(`📱 SMS Config: ${process.env.SMS_USERNAME && process.env.SMS_API_KEY ? 'Set ✅' : 'Missing ❌'}`);
+  console.log(`🔗 CORS: ${corsOptions.origin === true ? 'Allow All' : 'Restricted'}`);
 });
 
 module.exports = app;
