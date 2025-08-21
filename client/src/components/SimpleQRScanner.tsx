@@ -293,16 +293,14 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
               }, 1000);
 
               return;
-            } else {
-              console.log("❌ Invalid QR code scanned:", qrCode.data);
-              setInvalidQRMessage(
-                `❌ Invalid QR code! Expected specific checkpoint QR.`
-              );
+                         } else {
+               console.log("❌ Invalid QR code scanned:", qrCode.data);
+               setInvalidQRMessage("invalid");
 
-              setTimeout(() => {
-                setInvalidQRMessage("");
-              }, 3000);
-            }
+               setTimeout(() => {
+                 setInvalidQRMessage("");
+               }, 3000);
+             }
           }
         }
       }
@@ -584,11 +582,9 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
           {/* Invalid QR Message Display */}
           {invalidQRMessage && (
             <div className="p-3 bg-red-900 border border-red-600 rounded-lg animate-pulse">
-              <p className="text-red-200 text-sm font-semibold">
-                {invalidQRMessage}
-              </p>
-              <p className="text-red-300 text-xs mt-1">
-                Please scan the correct checkpoint QR code
+              <p className="text-red-200 text-sm font-semibold flex items-center gap-2">
+                <span>❌</span>
+                <span>Uh oh! You found a QR code, just not the right one. Keep looking!</span>
               </p>
             </div>
           )}
