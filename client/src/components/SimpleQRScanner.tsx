@@ -43,7 +43,7 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
         "windows phone",
       ];
       const isMobileUA = mobileKeywords.some((keyword) =>
-        userAgent.includes(keyword),
+        userAgent.includes(keyword)
       );
       const isTouchDevice =
         "ontouchstart" in window || navigator.maxTouchPoints > 0;
@@ -64,7 +64,7 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
         .enumerateDevices()
         .then((devices) => {
           const cameras = devices.filter(
-            (device) => device.kind === "videoinput",
+            (device) => device.kind === "videoinput"
           );
           console.log("📷 Available cameras:", cameras.length);
         })
@@ -89,7 +89,7 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
             kind: track.kind,
             readyState: track.readyState,
             enabled: track.enabled,
-          })),
+          }))
         );
       }
     }
@@ -101,7 +101,7 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
           kind: track.kind,
           readyState: track.readyState,
           enabled: track.enabled,
-        })),
+        }))
       );
     }
   };
@@ -154,7 +154,7 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
               .catch((playError) => {
                 console.error("Error playing video:", playError);
                 setError(
-                  "Failed to start camera preview. Please check permissions.",
+                  "Failed to start camera preview. Please check permissions."
                 );
               });
           }
@@ -173,13 +173,13 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
   const handleCameraError = (err: any) => {
     if (err.name === "NotAllowedError") {
       setError(
-        "Camera permission denied. Please allow camera access and refresh the page.",
+        "Camera permission denied. Please allow camera access and refresh the page."
       );
     } else if (err.name === "NotFoundError") {
       setError("No camera found on this device.");
     } else if (err.name === "NotReadableError") {
       setError(
-        "Camera is being used by another application. Please close other apps and try again.",
+        "Camera is being used by another application. Please close other apps and try again."
       );
     } else if (err.name === "OverconstrainedError") {
       setError("Camera constraints not supported. Trying fallback...");
@@ -259,7 +259,7 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
             0,
             0,
             canvas.width,
-            canvas.height,
+            canvas.height
           );
 
           // Detect QR with inversion attempts for better robustness
@@ -269,7 +269,7 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
             imageData.height,
             {
               inversionAttempts: "attemptBoth", // Try both normal and inverted for varied QR appearances
-            },
+            }
           );
 
           if (qrCode && qrCode.data) {
@@ -296,7 +296,7 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
             } else {
               console.log("❌ Invalid QR code scanned:", qrCode.data);
               setInvalidQRMessage(
-                `❌ Invalid QR code! Expected specific checkpoint QR.`,
+                `❌ Invalid QR code! Expected specific checkpoint QR.`
               );
 
               setTimeout(() => {
@@ -370,12 +370,12 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
             `🔴 Video element track ${index}:`,
             track.kind,
             track.readyState,
-            track.enabled,
+            track.enabled
           );
           track.stop();
           console.log(
             `✅ Video element track ${index} stopped:`,
-            track.readyState,
+            track.readyState
           );
         });
       }
@@ -394,7 +394,7 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
           `🔴 StreamRef track ${index}:`,
           track.kind,
           track.readyState,
-          track.enabled,
+          track.enabled
         );
         if (track.readyState !== "ended") {
           track.stop();
@@ -447,7 +447,7 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
 
     return () => {
       console.log(
-        "🔴 QR Scanner component unmounting - forcing camera cleanup",
+        "🔴 QR Scanner component unmounting - forcing camera cleanup"
       );
 
       if (videoRef.current) {
@@ -461,7 +461,7 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
             console.log(
               "🔴 UNMOUNT: Force stopping track:",
               track.kind,
-              track.readyState,
+              track.readyState
             );
             track.stop();
           });
@@ -477,7 +477,7 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
           if (track.readyState !== "ended") {
             console.log(
               "🔴 UNMOUNT: Force stopping streamRef track:",
-              track.kind,
+              track.kind
             );
             track.stop();
           }
@@ -583,18 +583,6 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
               />
             </svg>
           </button>
-        </div>
-
-        {/* Expected QR Info with Mobile Enhancement Notice */}
-        <div className="mb-4 p-3 bg-blue-900 border border-blue-600 rounded-lg">
-          <p className="text-blue-200 text-sm font-semibold">
-            🎯 Looking for specific checkpoint QR
-          </p>
-          <p className="text-blue-300 text-xs mt-1">
-            {isMobile
-              ? "📱 Enhanced mobile scanning - larger detection area active"
-              : "🖥️ Desktop scanning mode active"}
-          </p>
         </div>
 
         {/* Invalid QR Message Display */}
@@ -774,25 +762,6 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
             {/* Hidden canvas for QR processing */}
             <canvas ref={canvasRef} className="hidden" />
           </div>
-
-          {/* Enhanced Scanning Status */}
-          {isCameraReady && !isProcessingQR && (
-            <div className="text-center mt-2">
-              <p
-                className={`text-sm font-medium ${
-                  invalidQRMessage ? "text-red-400" : "text-orange-400"
-                }`}
-              >
-                {isScanning
-                  ? invalidQRMessage
-                    ? "🔴 Scanning... (Invalid QR detected)"
-                    : `📷 Scanning for checkpoint QR... ${
-                        isMobile ? "(Enhanced Mobile Mode)" : "(Desktop Mode)"
-                      }`
-                  : "⏸️ Scanning paused"}
-              </p>
-            </div>
-          )}
         </div>
 
         {/* Error Display */}
@@ -811,19 +780,7 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
         )}
 
         {/* Enhanced Instructions */}
-        <div className="text-center text-gray-400 text-sm">
-          <p>📱 Point camera at the checkpoint QR code</p>
-          <p>🎯 Only the correct QR will show success</p>
-          {isMobile ? (
-            <p className="text-green-400 mt-2">
-              📱 Mobile optimized: Large scanning area active
-            </p>
-          ) : (
-            <p className="text-orange-400 mt-2">
-              💡 Invalid QRs will be rejected
-            </p>
-          )}
-        </div>
+        <div className="text-center text-gray-400 text-sm"></div>
       </div>
     </div>
   );

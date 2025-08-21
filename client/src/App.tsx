@@ -11,13 +11,13 @@ import type { GameSession } from "./types";
 import { ScavengerAPI } from "./api";
 
 // Import all page components
-import LandingPage from './components/LandingPage';
-import InstructionsPage from './components/InstructionsPage';
-import RegistrationPage from './components/RegistrationPage';
-import OTPPage from './components/OTPPage';
-import Dashboard from './components/Dashboard';
-import ScavengerHuntPage from './components/ScavengerHuntPage';
-import AdminPage from './components/AdminPage';
+import LandingPage from "./components/LandingPage";
+import InstructionsPage from "./components/InstructionsPage";
+import RegistrationPage from "./components/RegistrationPage";
+import OTPPage from "./components/OTPPage";
+import Dashboard from "./components/Dashboard";
+import ScavengerHuntPage from "./components/ScavengerHuntPage";
+import AdminPage from "./components/AdminPage";
 
 import ProgressPage from "./components/ProgressPage";
 
@@ -34,7 +34,7 @@ const AppContext = React.createContext<{
   setGameSession: (session: GameSession | null) => void;
   gameCompletionData: { timeElapsed: number; scannedQRs: string[] } | null;
   setGameCompletionData: (
-    data: { timeElapsed: number; scannedQRs: string[] } | null,
+    data: { timeElapsed: number; scannedQRs: string[] } | null
   ) => void;
   currentCheckpoint: number | null;
   setCurrentCheckpoint: (id: number | null) => void;
@@ -112,6 +112,7 @@ const DashboardWrapper: React.FC = () => {
   const navigate = useNavigate();
   const {
     phoneNumber,
+    gameSession,
     setGameSession,
     setPhoneNumber,
     setGameCompletionData,
@@ -124,6 +125,21 @@ const DashboardWrapper: React.FC = () => {
 
   const handleLogout = () => {
     console.log("🔐 App: Logging out user...");
+
+    // Clean up session-specific intro state
+    if (gameSession) {
+      const sessionIntroKey = `readScavengerRules_${gameSession.userId}`;
+      localStorage.removeItem(sessionIntroKey);
+    }
+
+    // Clean up any other session-specific intro keys from previous sessions
+    const keys = Object.keys(localStorage);
+    keys.forEach((key) => {
+      if (key.startsWith("readScavengerRules_")) {
+        localStorage.removeItem(key);
+      }
+    });
+
     // Call the API logout method to clear tokens properly
     ScavengerAPI.logout();
     // Clear all localStorage data
@@ -134,7 +150,8 @@ const DashboardWrapper: React.FC = () => {
     localStorage.removeItem("talabat_user_progress");
     localStorage.removeItem("talabat_scavenger_progress");
     localStorage.removeItem("jwt_token");
-    localStorage.removeItem("readScavengerRules");
+    localStorage.removeItem("readScavengerRules"); // Clean up old key as well
+
     // Reset all state
     setGameSession(null);
     setPhoneNumber("");
@@ -160,22 +177,41 @@ const AdminPageWrapper: React.FC = () => {
 const ScavengerHuntPageWrapper: React.FC = () => {
   const navigate = useNavigate();
   const { phoneNumber, gameSession } = React.useContext(AppContext);
-  // Track if rules have been read for this session
-  const [isReadScavengerRulesRed, setIsReadScavengerRulesRed] = useState(
-    () => localStorage.getItem("readScavengerRules") === "true",
-  );
+
+  // Create a unique key for this game session to track intro completion
+  const sessionIntroKey = gameSession
+    ? `readScavengerRules_${gameSession.userId}`
+    : null;
+
+  // Track if rules have been read for this specific game session
+  const [isReadScavengerRulesRed, setIsReadScavengerRulesRed] = useState(() => {
+    if (!sessionIntroKey) return false;
+
+    // Clean up old intro keys from previous sessions to prevent localStorage bloat
+    const cleanupOldIntroKeys = () => {
+      const keys = Object.keys(localStorage);
+      keys.forEach((key) => {
+        if (key.startsWith("readScavengerRules_") && key !== sessionIntroKey) {
+          localStorage.removeItem(key);
+        }
+      });
+    };
+    cleanupOldIntroKeys();
+
+    return localStorage.getItem(sessionIntroKey) === "true";
+  });
 
   // Handler for "Start" button in intro
   const handleStartScavengerHuntIntro = () => {
-    localStorage.setItem("readScavengerRules", "true");
-    setIsReadScavengerRulesRed(true);
+    if (sessionIntroKey) {
+      localStorage.setItem(sessionIntroKey, "true");
+      setIsReadScavengerRulesRed(true);
+    }
   };
 
   // Handler for game completion
   const handleGameComplete = () => {
-    // Reset rules for next session
-    localStorage.removeItem("readScavengerRules");
-    setIsReadScavengerRulesRed(false);
+    // Don't reset the intro state here - let it persist for the session
     // Go directly back to dashboard instead of completion page
     navigate("/game/finish");
   };
@@ -201,7 +237,11 @@ const ScavengerHuntPageWrapper: React.FC = () => {
     if (!unlocked) {
       return <Navigate to="/dashboard" replace />;
     }
-  } catch {}
+  } catch (error) {
+    // If parsing fails, redirect to dashboard for safety
+    console.error("Error parsing user progress:", error);
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return (
     <>
@@ -334,10 +374,13 @@ const App: React.FC = () => {
     () => {
       const saved = localStorage.getItem("talabat_current_checkpoint");
       return saved ? JSON.parse(saved) : null;
-    },
+    }
   );
 
-  const [userProgress, setUserProgress] = useState<any>(null);
+  const [userProgress, setUserProgress] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
 
   // Check authentication on app load
   useEffect(() => {
@@ -352,7 +395,7 @@ const App: React.FC = () => {
       // If we have a token but no phone number, or vice versa, clear everything
       if ((token && !savedPhoneNumber) || (!token && savedPhoneNumber)) {
         console.log(
-          "🔐 App: Inconsistent authentication state, clearing all data",
+          "🔐 App: Inconsistent authentication state, clearing all data"
         );
         localStorage.clear();
         setPhoneNumber("");
@@ -417,7 +460,7 @@ const App: React.FC = () => {
   };
 
   const setGameCompletionDataWithPersistence = (
-    data: { timeElapsed: number; scannedQRs: string[] } | null,
+    data: { timeElapsed: number; scannedQRs: string[] } | null
   ) => {
     setGameCompletionData(data);
     if (data) {
@@ -432,7 +475,7 @@ const App: React.FC = () => {
     if (checkpoint !== null) {
       localStorage.setItem(
         "talabat_current_checkpoint",
-        JSON.stringify(checkpoint),
+        JSON.stringify(checkpoint)
       );
     } else {
       localStorage.removeItem("talabat_current_checkpoint");
