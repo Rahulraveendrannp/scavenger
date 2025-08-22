@@ -45,24 +45,18 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ onSuccess }) => {
 
   return (
     <div className="min-h-screen bg-[#FF5900] relative overflow-hidden">
-      {/* Top curved background */}
-      <div className="absolute top-0 left-0 right-0 h-1/2">
-        <svg viewBox="0 0 400 200" preserveAspectRatio="none" className="w-full h-full">
-          <path
-            d="M0,0 Q200,50 400,0 L400,200 L0,200 Z"
-            fill="#F4EDE3"
-          />
-        </svg>
-      </div>
 
-      {/* Bottom curved background */}
-      <div className="absolute bottom-0 left-0 right-0 h-1/2">
-        <svg viewBox="0 0 400 200" preserveAspectRatio="none" className="w-full h-full">
-          <path
-            d="M0,200 Q200,150 400,200 L400,0 L0,0 Z"
-            fill="#F4EDE3"
-          />
-        </svg>
+      {/* Grey center section with bg.svg - 70% of screen height */}
+      <div className="absolute top-[10%] left-[-10%] right-0 h-[80%] w-[120%] bg-[#FF5900]">
+        {/* bg.svg as background */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-100"
+          style={{
+            backgroundImage: 'url(/bg.svg)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+          }}
+        />
       </div>
 
       {/* Main content area */}
@@ -88,7 +82,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ onSuccess }) => {
 
         {/* Phone input */}
         <div className="w-full max-w-xs mb-6">
-          <div className="flex bg-white border-2 border-[#FF5900] rounded-lg overflow-hidden">
+          <div className="flex bg-white border-2 border-[#FF5900] rounded-lg overflow-hidden shadow-lg">
             <div className="px-4 py-3 bg-gray-50 border-r border-[#FF5900]">
               <span className="text-[#5D4E37] font-medium">+974</span>
             </div>
@@ -119,7 +113,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ onSuccess }) => {
           <button
             onClick={handleSubmit}
             disabled={isLoading || localPhone.length !== 8}
-            className="w-full bg-[#FF5900] text-white py-2 rounded-full text-base font-semibold hover:bg-[#E54D00] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full bg-[#FF5900] text-white py-2 rounded-full text-base font-semibold hover:bg-[#E54D00] disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg"
           >
             {isLoading ? "Sending OTP..." : "Send OTP"}
           </button>

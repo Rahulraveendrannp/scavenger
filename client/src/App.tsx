@@ -18,6 +18,7 @@ import OTPPage from "./components/OTPPage";
 import Dashboard from "./components/Dashboard";
 import ScavengerHuntPage from "./components/ScavengerHuntPage";
 import AdminPage from "./components/AdminPage";
+import WelcomePage from "./components/WelcomePage";
 
 import ProgressPage from "./components/ProgressPage";
 
@@ -49,6 +50,16 @@ const AppContext = React.createContext<{
 });
 
 // Wrapper components for each route
+const WelcomePageWrapper: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleStart = () => {
+    navigate("/register");
+  };
+
+  return <WelcomePage onStart={handleStart} />;
+};
+
 const LandingPageWrapper: React.FC = () => {
   const navigate = useNavigate();
 
@@ -322,7 +333,7 @@ const AppContent: React.FC = () => {
           isAuthenticated ? (
             <Navigate to="/dashboard" replace />
           ) : (
-            <RegistrationPageWrapper />
+            <WelcomePageWrapper />
           )
         }
       />
