@@ -51,10 +51,10 @@ const OTPPage: React.FC<OTPPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center p-2 sm:p-4">
+    <div className="min-h-screen bg-[#FF5900] flex items-center justify-center p-2 sm:p-4">
       <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-8 max-w-md w-full">
         <div className="text-center mb-4 sm:mb-6">
-          <Smartphone className="w-10 h-10 sm:w-12 sm:h-12 text-orange-500 mx-auto mb-3 sm:mb-4" />
+                      <Smartphone className="w-10 h-10 sm:w-12 sm:h-12 text-[#FF5900] mx-auto mb-3 sm:mb-4" />
           <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
             Verify OTP
           </h2>
@@ -73,7 +73,7 @@ const OTPPage: React.FC<OTPPageProps> = ({
               value={otpCode}
               onChange={handleOtpChange}
               placeholder="Enter 4-digit code"
-              className={`w-full px-3 sm:px-4 py-2 sm:py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-center text-lg sm:text-2xl tracking-widest ${
+              className={`w-full px-3 sm:px-4 py-2 sm:py-3 border rounded-lg focus:ring-2 focus:ring-[#FF5900] focus:border-transparent text-center text-lg sm:text-2xl tracking-widest ${
                 error ? "border-red-500" : "border-gray-300"
               }`}
               disabled={isLoading}
@@ -88,7 +88,7 @@ const OTPPage: React.FC<OTPPageProps> = ({
           <button
             onClick={handleVerifyOTP}
             disabled={otpCode.length !== 4 || isLoading}
-            className="w-full bg-orange-500 text-white py-2 sm:py-3 rounded-lg text-sm sm:text-base font-semibold hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full bg-[#FF5900] text-white py-2 sm:py-3 rounded-lg text-sm sm:text-base font-semibold hover:bg-[#E54D00] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isLoading ? "Verifying..." : "Verify OTP"}
           </button>

@@ -116,12 +116,12 @@ const AdminPage: React.FC<AdminPageProps> = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-400 to-red-500 p-2 sm:p-4">
+    <div className="min-h-screen bg-[#FF5900] p-2 sm:p-4">
       {/* Header */}
       <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
                  <div className="mb-4">
            <div>
-             <h1 className="text-2xl sm:text-3xl font-bold text-orange-600">
+             <h1 className="text-2xl sm:text-3xl font-bold text-[#FF5900]">
                talabat Admin
              </h1>
              <p className="text-sm sm:text-base text-gray-600">Booth Management</p>
@@ -130,14 +130,14 @@ const AdminPage: React.FC<AdminPageProps> = () => {
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          <div className="bg-orange-50 rounded-xl p-4">
+          <div className="bg-[#FF5900]/5 rounded-xl p-4">
             <div className="flex items-center gap-3">
-              <div className="bg-orange-100 p-2 rounded-lg">
-                <Users className="w-6 h-6 text-orange-600" />
+                              <div className="bg-[#FF5900]/10 p-2 rounded-lg">
+                                  <Users className="w-6 h-6 text-[#FF5900]" />
               </div>
               <div>
                 <p className="text-sm text-gray-600">Total Users</p>
-                <p className="text-2xl font-bold text-orange-600">
+                                  <p className="text-2xl font-bold text-[#FF5900]">
                   {isLoading ? "..." : totalUsers}
                 </p>
               </div>
@@ -160,7 +160,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
            <button
              onClick={() => setShowQRScanner(true)}
-             className="bg-orange-500 text-white py-3 px-4 rounded-lg hover:bg-orange-600 transition-colors font-semibold flex items-center justify-center gap-2 text-sm sm:text-base"
+             className="bg-[#FF5900] text-white py-3 px-4 rounded-lg hover:bg-[#E54D00] transition-colors font-semibold flex items-center justify-center gap-2 text-sm sm:text-base"
            >
              <QrCode className="w-4 h-4 sm:w-5 sm:h-5" />
              <span className="hidden sm:inline">Scan Claim QR Code</span>
@@ -191,7 +191,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                     placeholder="Search by phone number..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent w-full sm:w-64"
+                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF5900] focus:border-transparent w-full sm:w-64"
                   />
                </div>
              </div>
@@ -199,7 +199,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
 
            {isLoading ? (
              <div className="text-center py-12">
-               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF5900] mx-auto mb-4"></div>
                <p className="text-gray-600 text-lg">Loading users...</p>
              </div>
            ) : usersList.length === 0 ? (
@@ -215,7 +215,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="bg-gradient-to-r from-orange-50 to-red-50 border-b border-gray-200">
+                                             <tr className="bg-[#FF5900]/5 border-b border-gray-200">
                         <th className="text-left py-4 px-6 font-semibold text-gray-700 text-sm uppercase tracking-wider">
                           Phone Number
                         </th>
@@ -262,7 +262,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                                 <span className="text-lg">✓</span>
                               </span>
                             ) : (
-                              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-800">
+                              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#FF5900]/10 text-[#FF5900]">
                                 <span className="text-lg">X</span>
                               </span>
                             )}
@@ -312,7 +312,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                                onClick={() => setCurrentPage(pageNum)}
                                className={`px-3 py-1 text-sm font-medium rounded-md ${
                                  currentPage === pageNum
-                                   ? 'bg-orange-500 text-white'
+                                   ? 'bg-[#FF5900] text-white'
                                    : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
                                }`}
                              >

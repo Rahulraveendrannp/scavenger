@@ -341,7 +341,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background: linear-gradient(135deg, #F59E0B, #D97706);
+        background: #FF5900;
         color: white;
         padding: 20px 30px;
         border-radius: 15px;
@@ -464,9 +464,9 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
+      <div className="min-h-screen bg-[#FF5900] flex items-center justify-center">
         <div className="bg-white rounded-xl p-6 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF5900] mx-auto mb-4"></div>
           <p className="text-gray-600">Loading your progress...</p>
         </div>
       </div>
@@ -491,12 +491,12 @@ const Dashboard: React.FC<DashboardProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-400 to-red-500 p-2 sm:p-4">
+    <div className="min-h-screen bg-[#FF5900] p-2 sm:p-4">
       {/* Header */}
       <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-orange-600">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#FF5900]">
               talabat
             </h1>
             <p className="text-sm sm:text-base text-gray-600">Gaming Hub</p>
@@ -525,7 +525,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
                   isClaimed
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-orange-500 hover:bg-orange-600 text-white"
+                    : "bg-[#FF5900] hover:bg-[#E54D00] text-white"
                 }`}
               >
                 {isClaimed ? "CLAIMED" : "CLAIM"}
@@ -571,7 +571,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 className={`p-2 sm:p-3 rounded-xl ${
                   game.isCompleted
                     ? "bg-green-100 text-green-600"
-                    : "bg-orange-100 text-orange-600"
+                    : "bg-[#FF5900]/10 text-[#FF5900]"
                 }`}
               >
                 <div className="w-6 h-6 sm:w-8 sm:h-8">{game.icon}</div>
@@ -613,7 +613,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   ? "bg-green-500 hover:bg-green-600 text-white"
                   : game.type === "scavenger"
                   ? "bg-purple-500 hover:bg-purple-600 text-white"
-                  : "bg-orange-500 hover:bg-orange-600 text-white"
+                  : "bg-[#FF5900] hover:bg-[#E54D00] text-white"
               }`}
             >
               {game.type === "scavenger" &&
@@ -859,7 +859,7 @@ const ClaimQRModal: React.FC<{
               <div className="bg-white p-4 rounded border-2 border-dashed border-gray-300 flex justify-center">
                 {isGenerating ? (
                   <div className="flex items-center justify-center h-48">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF5900]"></div>
                     <span className="ml-2 text-gray-600">
                       Generating QR Code...
                     </span>
@@ -952,7 +952,7 @@ const ClaimQRModal: React.FC<{
 
           <button
             onClick={onClose}
-            className="bg-orange-500 text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition-colors text-sm sm:text-base font-medium"
+            className="bg-[#FF5900] text-white px-6 py-2 rounded-lg hover:bg-[#E54D00] transition-colors text-sm sm:text-base font-medium"
           >
             Close
           </button>

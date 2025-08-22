@@ -51,7 +51,7 @@ const ScavengerHuntIntro: React.FC<ScavengerHuntIntroProps> = ({ onStart }) => {
           <div className="w-full pb-8">
             <button
               onClick={handleStart}
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white text-xl font-semibold py-4 px-8 rounded-full transition-colors duration-200 shadow-lg"
+              className="w-full bg-[#FF5900] hover:bg-[#E54D00] text-white text-xl font-semibold py-4 px-8 rounded-full transition-colors duration-200 shadow-lg"
             >
               Start
             </button>
@@ -82,7 +82,7 @@ const ScavengerHuntIntro: React.FC<ScavengerHuntIntroProps> = ({ onStart }) => {
         <div className="w-full pb-8">
           <button
             onClick={handleHowItWorks}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white text-xl font-semibold py-4 px-8 rounded-full transition-colors duration-200 shadow-lg"
+            className="w-full bg-[#FF5900] hover:bg-[#E54D00] text-white text-xl font-semibold py-4 px-8 rounded-full transition-colors duration-200 shadow-lg"
           >
             How it works
           </button>

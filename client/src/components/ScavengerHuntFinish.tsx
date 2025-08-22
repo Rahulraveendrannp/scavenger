@@ -69,14 +69,14 @@ function ScavengerHuntFinish() {
         <div className="w-full flex  gap-2 pb-8">
           <button
             onClick={() => navigate("/game")}
-            className=" bg-white hover:bg-white text-orange-600 border border-orange-600 text-xl font-semibold py-4 px-8 rounded-full transition-colors duration-200 shadow-lg"
+            className=" bg-white hover:bg-white text-[#FF5900] border border-[#FF5900] text-xl font-semibold py-4 px-8 rounded-full transition-colors duration-200 shadow-lg"
           >
             Continue hunt
           </button>
 
           <button
             onClick={handleClaimPrize}
-            className=" bg-orange-500 hover:bg-orange-600 text-white text-xl font-semibold py-4 px-8 rounded-full transition-colors duration-200 shadow-lg"
+            className=" bg-[#FF5900] hover:bg-[#E54D00] text-white text-xl font-semibold py-4 px-8 rounded-full transition-colors duration-200 shadow-lg"
           >
             Claim prize
           </button>
