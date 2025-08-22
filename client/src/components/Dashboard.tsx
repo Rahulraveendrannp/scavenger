@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   Gamepad2,
@@ -487,7 +488,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   }
 
   if (showClaimQR) {
-    return <ClaimQRModal onClose={closeClaimQR} />;
+    return <ClaimVoucherModal onClose={closeClaimQR} />;
   }
 
   return (
@@ -740,18 +741,18 @@ const QRScannerModal: React.FC<{
   );
 };
 
-// Claim QR Modal Component
-const ClaimQRModal: React.FC<{
+// Claim Voucher Modal Component
+const ClaimVoucherModal: React.FC<{
   onClose: () => void;
 }> = ({ onClose }) => {
-  const [qrCodeImage, setQrCodeImage] = useState<string>("");
+  const [voucherCode, setVoucherCode] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(true);
-  const [qrCode, setQrCode] = useState<string>("");
+  const [isScratched, setIsScratched] = useState(false);
   const [error, setError] = useState<string>("");
   const [gameStatus, setGameStatus] = useState<any>(null);
 
   useEffect(() => {
-    const generateClaimQR = async () => { 
+    const generateVoucher = async () => { 
       try {
         setIsGenerating(true);
         setError("");
@@ -761,85 +762,54 @@ const ClaimQRModal: React.FC<{
           throw new Error("Phone number not found");
         }
 
-        // Get game progress and generate QR code in parallel
-        const [progressResponse, scavengerProgressResponse, qrResponse] =
+        // Get game progress and generate voucher code in parallel
+        const [progressResponse, scavengerProgressResponse, voucherResponse] =
           await Promise.all([
             ScavengerAPI.getUserProgress(),
             ScavengerAPI.getGameProgress(),
-            ScavengerAPI.generateClaimQR(phoneNumber),
+            ScavengerAPI.generateVoucher(phoneNumber),
           ]);
 
-        console.log("ClaimQRModal: API responses:", {
-          progressResponse,
-          scavengerProgressResponse,
-          qrResponse,
-        });
-
-        // Process QR code
-        if (qrResponse.success && qrResponse.data?.qrCode) {
-          setQrCode(qrResponse.data.qrCode);
-          
-          console.log('ClaimQRModal: QR code retrieved/generated for user');
-          
-          // Generate QR code image
-          const QRCode = (await import("qrcode")).default;
-          const qrDataURL = await QRCode.toDataURL(qrResponse.data.qrCode, {
-            width: 200,
-            margin: 2,
-            color: {
-              dark: "#000000",
-              light: "#FFFFFF",
-            },
-          });
-          setQrCodeImage(qrDataURL);
+        // Process voucher code
+        if (voucherResponse.success && voucherResponse.data?.voucherCode) {
+          setVoucherCode(voucherResponse.data.voucherCode);
+          console.log('ClaimVoucherModal: Voucher code retrieved/generated for user');
         } else {
-          throw new Error(qrResponse.error || "Failed to generate QR code");
+          throw new Error(voucherResponse.error || "Failed to generate voucher code");
         }
 
         // Process game status
-        const scavengerStarted =
-          (progressResponse.success &&
-            progressResponse.data?.progress?.dashboardGames?.scavengerHunt
-              ?.isStarted) ||
-          false;
-        const status = {
-          cardGame:
-            (progressResponse.success &&
-              progressResponse.data?.progress?.dashboardGames?.cardGame
-                ?.isCompleted) ||
-            false,
-          puzzle:
-            (progressResponse.success &&
-              progressResponse.data?.progress?.dashboardGames?.puzzle
-                ?.isCompleted) ||
-            false,
-          carRace:
-            (progressResponse.success &&
-              progressResponse.data?.progress?.dashboardGames?.carRace
-                ?.isCompleted) ||
-            false,
-          scavengerHunt:
-            (scavengerProgressResponse.success &&
-              (scavengerProgressResponse.data?.totalFound || 0) >= 8) ||
-            false,
-          scavengerProgress: scavengerProgressResponse.success
-            ? scavengerProgressResponse.data?.totalFound || 0
-            : 0,
-          scavengerStarted: scavengerStarted,
-        };
-        setGameStatus(status);
+        if (progressResponse.success && scavengerProgressResponse.success) {
+          const dashboardGames = progressResponse.data?.progress?.dashboardGames;
+          const scavengerProgress = scavengerProgressResponse.data?.totalFound || 0;
+          const scavengerStarted = dashboardGames?.scavengerHunt?.isStarted || false;
+          
+          setGameStatus({
+            cardGame: dashboardGames?.cardGame?.isCompleted || false,
+            puzzle: dashboardGames?.puzzle?.isCompleted || false,
+            carRace: dashboardGames?.carRace?.isCompleted || false,
+            scavengerHunt: scavengerProgress >= 8,
+            scavengerStarted: scavengerStarted,
+            scavengerProgress: scavengerProgress
+          });
+        }
+
       } catch (error) {
-        console.error("Error generating QR code:", error);
+        console.error("Error generating voucher code:", error);
         setError(
-          error instanceof Error ? error.message : "Failed to generate QR code"
+          error instanceof Error ? error.message : "Failed to generate voucher code"
         );
       } finally {
         setIsGenerating(false);
       }
     };
 
-    generateClaimQR();
+    generateVoucher();
   }, []);
+
+  const handleScratch = () => {
+    setIsScratched(true);
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
@@ -849,44 +819,54 @@ const ClaimQRModal: React.FC<{
             Claim Your Reward
           </h3>
           <p className="text-sm sm:text-base text-gray-600 mb-4">
-            Show this QR code to the booth staff to claim your reward
+            Scratch below to reveal your voucher code and show it to booth staff
           </p>
           
-          {/* QR Code Display */}
+          {/* Voucher Code Display */}
           <div className="bg-gray-100 p-4 rounded-lg mb-4">
             <div className="text-center">
-              <div className="text-xs text-gray-500 mb-2">QR Code</div>
-              <div className="bg-white p-4 rounded border-2 border-dashed border-gray-300 flex justify-center">
-                {isGenerating ? (
-                  <div className="flex items-center justify-center h-48">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF5900]"></div>
-                    <span className="ml-2 text-gray-600">
-                      Generating QR Code...
-                    </span>
+              {isGenerating ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF5900]"></div>
+                  <span className="ml-2 text-gray-600">
+                    Generating voucher code...
+                  </span>
+                </div>
+              ) : error ? (
+                <div className="text-red-500 text-sm">{error}</div>
+              ) : (
+                <div className="bg-white p-4 rounded border-2 border-dashed border-gray-300">
+                  <div 
+                    className={`relative inline-block cursor-pointer ${
+                      isScratched ? 'pointer-events-none' : ''
+                    }`}
+                    onClick={handleScratch}
+                  >
+                    <div className="bg-gray-300 rounded-lg p-4 min-w-[120px] text-center">
+                      {isScratched ? (
+                        <span className="text-2xl font-bold text-[#8B4513] tracking-wider">
+                          {voucherCode}
+                        </span>
+                      ) : (
+                        <div className="flex items-center justify-center">
+                          <span className="text-gray-500 text-sm">👆 Scratch Here</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {!isScratched && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-gray-400 to-gray-300 rounded-lg flex items-center justify-center">
+                        <span className="text-gray-600 text-sm font-medium">👆 Scratch Here</span>
+                      </div>
+                    )}
                   </div>
-                ) : qrCodeImage ? (
-                  <img
-                    src={qrCodeImage}
-                    alt="Claim QR Code"
-                    className="w-48 h-48"
-                    style={{ imageRendering: "pixelated" }}
-                  />
-                ) : error ? (
-                  <div className="text-red-500 text-sm">{error}</div>
-                ) : (
-                  <div className="text-red-500 text-sm">
-                    Failed to generate QR code
-                  </div>
-                )}
-              </div>
-              <div className="mt-2 text-xs text-gray-500 font-mono break-all">
-                {qrCode}
-              </div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Game Status Display */}
-          {gameStatus && (
+           {/* Game Status Display */}
+           {gameStatus && (
             <div className="bg-gray-50 p-3 rounded-lg mb-4">
               <div className="text-xs text-gray-500 mb-3 text-center">
                 Game Progress
@@ -963,3 +943,4 @@ const ClaimQRModal: React.FC<{
 };
 
 export default Dashboard;
+

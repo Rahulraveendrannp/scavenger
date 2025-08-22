@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { Users, QrCode, CheckCircle, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Users, CheckCircle, Search, ChevronLeft, ChevronRight, ToggleLeft, ToggleRight } from "lucide-react";
 import { ScavengerAPI } from "../api";
-import SimpleQRScanner from "./SimpleQRScanner";
 
 interface AdminPageProps {}
 
 const AdminPage: React.FC<AdminPageProps> = () => {
   const [totalUsers, setTotalUsers] = useState(0);
-  const [showQRScanner, setShowQRScanner] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [claimMessage, setClaimMessage] = useState("");
   const [usersList, setUsersList] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [voucherInput, setVoucherInput] = useState("");
+  const [showVoucherInput, setShowVoucherInput] = useState(false);
+  const [voucherError, setVoucherError] = useState("");
 
   useEffect(() => {
     loadTotalUsers();
@@ -41,45 +42,62 @@ const AdminPage: React.FC<AdminPageProps> = () => {
     }
   };
 
-  const handleClaimScan = async (qrCode: string) => {
+  const handleVoucherClaim = async () => {
     try {
-      console.log("Scanning claim QR code:", qrCode);
+      console.log("Processing voucher code:", voucherInput);
+      setVoucherError(""); // Clear previous errors
       
-      // Check if it's a valid claim QR code
-      if (!qrCode.startsWith("TALABAT_CLAIM_")) {
-        setClaimMessage("❌ Invalid QR code format");
-        setTimeout(() => setClaimMessage(""), 3000);
+      if (!voucherInput.trim()) {
+        setVoucherError("❌ Please enter a voucher code");
         return;
       }
       
-      // Call API to mark user as claimed using QR code
-      const response = await ScavengerAPI.markUserAsClaimed(qrCode);
+      // Call API to mark user as claimed using voucher code
+      const response = await ScavengerAPI.markUserAsClaimed(voucherInput.trim().toUpperCase());
       
       if (response.success) {
         setClaimMessage("✅ Reward claimed successfully!");
+        setVoucherInput("");
+        setVoucherError("");
+        setShowVoucherInput(false);
         // Refresh total users
         loadTotalUsers();
+        setTimeout(() => setClaimMessage(""), 3000);
       } else {
-        setClaimMessage(`❌ ${response.error || "Failed to claim reward"}`);
+        setVoucherError(`❌ ${response.error || "Invalid voucher code or user not found"}`);
       }
-      
-      setTimeout(() => setClaimMessage(""), 3000);
-      setShowQRScanner(false);
       
     } catch (error) {
       console.error("Error claiming reward:", error);
-      setClaimMessage("❌ Error processing claim");
+      setVoucherError("❌ Error processing claim. Please try again.");
+    }
+  };
+
+  const handleToggleClaimStatus = async (userId: string) => {
+    try {
+      const response = await ScavengerAPI.toggleClaimStatus(userId);
+      
+      if (response.success) {
+        setClaimMessage("✅ Claim status updated successfully!");
+        // Refresh total users
+        loadTotalUsers();
+      } else {
+        setClaimMessage(`❌ ${response.error || "Failed to update claim status"}`);
+      }
+      
+      setTimeout(() => setClaimMessage(""), 3000);
+      
+    } catch (error) {
+      console.error("Error toggling claim status:", error);
+      setClaimMessage("❌ Error updating claim status");
       setTimeout(() => setClaimMessage(""), 3000);
     }
   };
 
-  const closeQRScanner = () => {
-    setShowQRScanner(false);
-  };
-
-  // Filter users based on search term (phone number only)
+  // Filter users based on search term (phone number and voucher code)
   const filteredUsers = usersList.filter(user =>
-    user.phoneNumber?.toLowerCase().includes(searchTerm.toLowerCase())
+    user.phoneNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.voucherCode?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Calculate pagination
@@ -92,28 +110,6 @@ const AdminPage: React.FC<AdminPageProps> = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
-
-  if (showQRScanner) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
-        <div className="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
-          <h3 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
-            Scan Claim QR Code
-          </h3>
-          <p className="text-sm sm:text-base text-gray-600 mb-4">
-            Scan the QR code from the user's dashboard to mark them as claimed
-          </p>
-          
-          <SimpleQRScanner
-            title="Scan Claim QR Code"
-            expectedQRCode="TALABAT_CLAIM_"
-            onScan={handleClaimScan}
-            onClose={closeQRScanner}
-          />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#FF5900] p-2 sm:p-4">
@@ -159,12 +155,12 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                  {/* Actions */}
          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
            <button
-             onClick={() => setShowQRScanner(true)}
+             onClick={() => setShowVoucherInput(true)}
              className="bg-[#FF5900] text-white py-3 px-4 rounded-lg hover:bg-[#E54D00] transition-colors font-semibold flex items-center justify-center gap-2 text-sm sm:text-base"
            >
-             <QrCode className="w-4 h-4 sm:w-5 sm:h-5" />
-             <span className="hidden sm:inline">Scan Claim QR Code</span>
-             <span className="sm:hidden">Scan QR</span>
+             <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+             <span className="hidden sm:inline">Claim with Voucher</span>
+             <span className="sm:hidden">Claim</span>
            </button>
            
            <button
@@ -188,7 +184,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                                    <input
                     type="text"
-                    placeholder="Search by phone number..."
+                    placeholder="Search by phone number or voucher code..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF5900] focus:border-transparent w-full sm:w-64"
@@ -226,7 +222,10 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                           Scavenger Hunt
                         </th>
                         <th className="text-center py-4 px-6 font-semibold text-gray-700 text-sm uppercase tracking-wider">
-                          Status
+                          Voucher Code
+                        </th>
+                        <th className="text-center py-4 px-6 font-semibold text-gray-700 text-sm uppercase tracking-wider">
+                          Claim Status
                         </th>
                       </tr>
                     </thead>
@@ -257,15 +256,37 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                             </div>
                           </td>
                           <td className="py-4 px-6 text-center">
-                            {user.isClaimed ? (
-                              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-100 text-green-800">
-                                <span className="text-lg">✓</span>
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#FF5900]/10 text-[#FF5900]">
-                                <span className="text-lg">X</span>
-                              </span>
-                            )}
+                            <div className="text-sm font-medium text-gray-900">
+                              {user.voucherCode ? (
+                                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded font-mono">
+                                  {user.voucherCode}
+                                </span>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-4 px-6 text-center">
+                            <button
+                              onClick={() => handleToggleClaimStatus(user._id)}
+                              className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                                user.isClaimed
+                                  ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                                  : 'bg-[#FF5900]/10 text-[#FF5900] hover:bg-[#FF5900]/20'
+                              }`}
+                            >
+                              {user.isClaimed ? (
+                                <>
+                                  <ToggleRight className="w-4 h-4 mr-1" />
+                                  Claimed
+                                </>
+                              ) : (
+                                <>
+                                  <ToggleLeft className="w-4 h-4 mr-1" />
+                                  Not Claimed
+                                </>
+                              )}
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -337,6 +358,69 @@ const AdminPage: React.FC<AdminPageProps> = () => {
              </>
            )}
          </div>
+
+         {/* Voucher Input Modal */}
+         {showVoucherInput && (
+           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+             <div className="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+               <h3 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
+                 Claim with Voucher Code
+               </h3>
+               <p className="text-sm sm:text-base text-gray-600 mb-4">
+                 Enter the voucher code from the user's dashboard to mark them as claimed
+               </p>
+               
+               <div className="space-y-4">
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-2">
+                     Voucher Code
+                   </label>
+                   <input
+                     type="text"
+                     value={voucherInput}
+                     onChange={(e) => {
+                       setVoucherInput(e.target.value.toUpperCase());
+                       setVoucherError(""); // Clear error when user types
+                     }}
+                     placeholder="Enter 4-digit voucher code..."
+                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF5900] focus:border-transparent"
+                     maxLength={4}
+                   />
+                 </div>
+                 
+                 {/* Error Message */}
+                 {voucherError && (
+                   <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                     <div className="flex items-center">
+                       <span className="text-red-500 text-sm font-medium">
+                         {voucherError}
+                       </span>
+                     </div>
+                   </div>
+                 )}
+                 
+                 <div className="flex gap-3">
+                   <button
+                     onClick={handleVoucherClaim}
+                     className="flex-1 bg-[#FF5900] text-white py-2 px-4 rounded-lg hover:bg-[#E54D00] transition-colors font-semibold"
+                   >
+                     Claim Reward
+                   </button>
+                   <button
+                     onClick={() => {
+                       setShowVoucherInput(false);
+                       setVoucherInput("");
+                       setVoucherError("");
+                     }}
+                     className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors font-semibold"
+                   >
+                     Cancel
+                   </button>
+                 </div>
+               </div>
+             </div>
+           </div>
+         )}
       </div>
     </div>
   );

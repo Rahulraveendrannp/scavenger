@@ -612,11 +612,11 @@ export class ScavengerAPI {
     }
   }
 
-  static async generateClaimQR(phoneNumber: string): Promise<ApiResponse<any>> {
+  static async generateVoucher(phoneNumber: string): Promise<ApiResponse<any>> {
     try {
-      console.log('🎫 API: Generating claim QR code...', { phoneNumber });
+      console.log('🎫 API: Generating voucher code...', { phoneNumber });
 
-      const response = await fetch(`${API_BASE}/admin/generate-claim-qr`, {
+      const response = await fetch(`${API_BASE}/admin/generate-voucher`, {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
@@ -627,24 +627,24 @@ export class ScavengerAPI {
       });
 
       const data = await response.json();
-      console.log('🎫 API: Generate QR response:', data);
+      console.log('🎫 API: Generate voucher response:', data);
 
       if (!response.ok) {
-        return { success: false, error: data?.message || 'Failed to generate QR code' };
+        return { success: false, error: data?.message || 'Failed to generate voucher code' };
       }
 
-      console.log('🎫 API: QR code retrieved/generated for user');
+      console.log('🎫 API: Voucher code retrieved/generated for user');
 
       return { success: true, data: data.data };
     } catch (error: any) {
-      console.error('Failed to generate QR code:', error);
+      console.error('Failed to generate voucher code:', error);
       return { success: false, error: error?.message || 'Network error' };
     }
   }
 
-  static async markUserAsClaimed(qrCode: string): Promise<ApiResponse<any>> {
+  static async markUserAsClaimed(voucherCode: string): Promise<ApiResponse<any>> {
     try {
-      console.log('🏆 API: Marking user as claimed...', { qrCode });
+      console.log('🏆 API: Marking user as claimed...', { voucherCode });
 
       const response = await fetch(`${API_BASE}/admin/mark-claimed`, {
         method: 'POST',
@@ -652,7 +652,7 @@ export class ScavengerAPI {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          qrCode
+          voucherCode
         })
       });
 
@@ -691,6 +691,34 @@ export class ScavengerAPI {
       return { success: true, data: data };
     } catch (error: any) {
       console.error('Failed to check claim status:', error);
+      return { success: false, error: error?.message || 'Network error' };
+    }
+  }
+
+  static async toggleClaimStatus(userId: string): Promise<ApiResponse<any>> {
+    try {
+      console.log('🔄 API: Toggling claim status...', { userId });
+
+      const response = await fetch(`${API_BASE}/admin/toggle-claim-status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          userId
+        })
+      });
+
+      const data = await response.json();
+      console.log('🔄 API: Toggle claim status response:', data);
+
+      if (!response.ok) {
+        return { success: false, error: data?.message || 'Failed to toggle claim status' };
+      }
+
+      return { success: true, data: data };
+    } catch (error: any) {
+      console.error('Failed to toggle claim status:', error);
       return { success: false, error: error?.message || 'Network error' };
     }
   }

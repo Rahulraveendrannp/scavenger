@@ -53,7 +53,8 @@ router.get('/all-users', catchAsync(async (req, res) => {
             createdAt: user.createdAt,
             completedGames: `${completedGames}/4`,
             scavengerProgress: `${scavengerProgress}/8`,
-            isClaimed: user.isClaimed || false
+            isClaimed: user.isClaimed || false,
+            voucherCode: user.voucherCode || null
           };
         } catch (err) {
           console.error(`❌ Error loading progress for user ${user._id}:`, err);
@@ -63,7 +64,8 @@ router.get('/all-users', catchAsync(async (req, res) => {
             createdAt: user.createdAt,
             completedGames: '0/4',
             scavengerProgress: '0/8',
-            isClaimed: user.isClaimed || false
+            isClaimed: user.isClaimed || false,
+            voucherCode: user.voucherCode || null
           };
         }
       })
@@ -81,11 +83,11 @@ router.get('/all-users', catchAsync(async (req, res) => {
   }
 }));
 
-// Generate claim QR code for user
-router.post('/generate-claim-qr', catchAsync(async (req, res) => {
+// Generate voucher code for user
+router.post('/generate-voucher', catchAsync(async (req, res) => {
   const { phoneNumber } = req.body;
   
-  console.log('🎫 Admin: Generating claim QR code...', { phoneNumber });
+  console.log('🎫 Admin: Generating voucher code...', { phoneNumber });
 
   if (!phoneNumber) {
     throw new AppError('Phone number is required', 400);
@@ -97,63 +99,86 @@ router.post('/generate-claim-qr', catchAsync(async (req, res) => {
       throw new AppError('User not found', 404);
     }
 
-    // Check if user already has a QR code
-    if (user.claimQRCode) {
-      // Return existing QR code
-      console.log(`🎫 Admin: User ${phoneNumber} already has QR code: ${user.claimQRCode}`);
+    // Check if user already has a voucher code
+    if (user.voucherCode) {
+      // Return existing voucher code
+      console.log(`🎫 Admin: User ${phoneNumber} already has voucher code: ${user.voucherCode}`);
       
       return res.status(200).json({
         success: true,
         data: {
-          qrCode: user.claimQRCode,
+          voucherCode: user.voucherCode,
           phoneNumber: user.phoneNumber,
           userId: user._id
         }
       });
     }
 
-    // Generate unique QR code with phone number and user ID (not timestamp)
-    const qrCode = `TALABAT_CLAIM_${phoneNumber}_${user._id}`;
+    // Generate unique 4-digit voucher code with letters and numbers
+    const generateVoucherCode = () => {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let result = '';
+      for (let i = 0; i < 4; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+    };
+
+    let voucherCode;
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    // Keep trying until we get a unique code
+    do {
+      voucherCode = generateVoucherCode();
+      attempts++;
+      const existingUser = await User.findOne({ voucherCode });
+      if (!existingUser) break;
+    } while (attempts < maxAttempts);
+
+    if (attempts >= maxAttempts) {
+      throw new AppError('Failed to generate unique voucher code', 500);
+    }
     
-    // Save QR code to user
-    user.claimQRCode = qrCode;
+    // Save voucher code to user
+    user.voucherCode = voucherCode;
     await user.save();
 
-    console.log(`🎫 Admin: Generated QR code for user ${phoneNumber}`);
+    console.log(`🎫 Admin: Generated voucher code for user ${phoneNumber}: ${voucherCode}`);
 
     res.status(200).json({
       success: true,
       data: {
-        qrCode,
+        voucherCode,
         phoneNumber: user.phoneNumber,
         userId: user._id
       }
     });
 
   } catch (error) {
-    console.error('❌ Admin: Error generating QR code:', error);
+    console.error('❌ Admin: Error generating voucher code:', error);
     if (error instanceof AppError) {
       throw error;
     }
-    throw new AppError('Failed to generate QR code', 500);
+    throw new AppError('Failed to generate voucher code', 500);
   }
 }));
 
-// Mark user as claimed (for QR code scanning)
+// Mark user as claimed (for voucher code)
 router.post('/mark-claimed', catchAsync(async (req, res) => {
-  const { qrCode } = req.body;
+  const { voucherCode } = req.body;
   
-  console.log('🏆 Admin: Scanning QR code for claim...', { qrCode });
+  console.log('🏆 Admin: Processing voucher code for claim...', { voucherCode });
 
-  if (!qrCode) {
-    throw new AppError('QR code is required', 400);
+  if (!voucherCode) {
+    throw new AppError('Voucher code is required', 400);
   }
 
   try {
-    // Find user by QR code
-    const user = await User.findOne({ claimQRCode: qrCode });
+    // Find user by voucher code
+    const user = await User.findOne({ voucherCode: voucherCode.toUpperCase() });
     if (!user) {
-      throw new AppError('Invalid QR code or user not found', 404);
+      throw new AppError('Invalid voucher code or user not found', 404);
     }
 
     // Check if already claimed
@@ -174,7 +199,7 @@ router.post('/mark-claimed', catchAsync(async (req, res) => {
         phoneNumber: user.phoneNumber,
         userId: user._id,
         isClaimed: true,
-        qrCode: user.claimQRCode
+        voucherCode: user.voucherCode
       }
     });
 
@@ -212,6 +237,48 @@ router.get('/check-claimed/:phoneNumber', catchAsync(async (req, res) => {
       throw error;
     }
     throw new AppError('Failed to check claim status', 500);
+  }
+}));
+
+// Toggle claim status for user
+router.post('/toggle-claim-status', catchAsync(async (req, res) => {
+  const { userId } = req.body;
+  
+  console.log('🔄 Admin: Toggling claim status...', { userId });
+
+  if (!userId) {
+    throw new AppError('User ID is required', 400);
+  }
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    // Toggle claim status
+    user.isClaimed = !user.isClaimed;
+    await user.save();
+
+    console.log(`🔄 Admin: Successfully toggled claim status for user ${user.phoneNumber} to ${user.isClaimed}`);
+
+    res.status(200).json({
+      success: true,
+      message: `User ${user.phoneNumber} claim status updated successfully!`,
+      data: {
+        phoneNumber: user.phoneNumber,
+        userId: user._id,
+        isClaimed: user.isClaimed,
+        voucherCode: user.voucherCode
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Admin: Error toggling claim status:', error);
+    if (error instanceof AppError) {
+      throw error;
+    }
+    throw new AppError('Failed to toggle claim status', 500);
   }
 }));
 

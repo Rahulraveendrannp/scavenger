@@ -60,9 +60,11 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  claimQRCode: {
+  voucherCode: {
     type: String,
-    default: null
+    default: null,
+    unique: true,
+    sparse: true
   },
   preferences: {
     notifications: {
