@@ -187,6 +187,21 @@ const AdminPage: React.FC<AdminPageProps> = () => {
               </div>
             </div>
           </div>
+          
+          <div className="bg-green-500/5 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-green-500/10 p-2 rounded-lg">
+                <CheckCircle className="w-6 h-6 text-green-500" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Scavenger Hunt Completed</p>
+                <p className="text-2xl font-['TT_Commons_Pro_ExtraBold'] text-green-600">
+                  {isLoading ? "..." : usersList.filter(user => user.scavengerCompleted).length}
+                </p>
+                <p className="text-xs text-gray-500">(4+ checkpoints)</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Claim Message */}
@@ -239,6 +254,9 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                 />
               </div>
             </div>
+            <p className="text-xs text-gray-500 mt-2">
+              💡 Scavenger Hunt is marked complete when users find 4+ checkpoints (half completion)
+            </p>
           </div>
 
           {isLoading ? (
@@ -268,6 +286,9 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                       </th>
                       <th className="hidden sm:table-cell text-center py-4 px-6 font-['TT_Commons_Pro_DemiBold'] text-gray-700 text-xs uppercase tracking-wider">
                         Scavenger Hunt
+                        <div className="text-xs font-normal text-gray-500 mt-1">
+                          (4/8 = Complete)
+                        </div>
                       </th>
                       <th className="text-center py-4 px-6 font-['TT_Commons_Pro_DemiBold'] text-gray-700 text-xs uppercase tracking-wider">
                         Voucher Code
@@ -296,9 +317,14 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                         </td>
                         <td className="hidden sm:table-cell py-4 px-6 text-center">
                           <div className="flex items-center justify-center">
-                            <div className="bg-purple-100 rounded-full px-3 py-1">
-                              <span className="text-purple-800 font-['TT_Commons_Pro_DemiBold'] text-sm">
+                            <div className={`rounded-full px-3 py-1 ${
+                              user.scavengerCompleted 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-purple-100 text-purple-800'
+                            }`}>
+                              <span className="font-['TT_Commons_Pro_DemiBold'] text-sm">
                                 {user.scavengerProgress || '0/8'}
+                                {user.scavengerCompleted ? ' ✓' : ''}
                               </span>
                             </div>
                           </div>
@@ -340,6 +366,42 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Summary Statistics */}
+              <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-center">
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wider">Dashboard Games</p>
+                    <p className="text-lg font-['TT_Commons_Pro_ExtraBold'] text-[#FF5900]">
+                      {usersList.reduce((total, user) => {
+                        const [completed] = (user.completedGames || '0/4').split('/').map(Number);
+                        return total + completed;
+                      }, 0)}/{usersList.length * 4}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wider">Scavenger Hunt</p>
+                    <p className="text-lg font-['TT_Commons_Pro_ExtraBold'] text-green-600">
+                      {usersList.reduce((total, user) => {
+                        const [completed] = (user.scavengerProgress || '0/8').split('/').map(Number);
+                        return total + completed;
+                      }, 0)}/{usersList.length * 8}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wider">Completed Users</p>
+                    <p className="text-lg font-['TT_Commons_Pro_ExtraBold'] text-blue-600">
+                      {usersList.filter(user => user.scavengerCompleted).length}/{usersList.length}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wider">Claimed Rewards</p>
+                    <p className="text-lg font-['TT_Commons_Pro_ExtraBold'] text-purple-600">
+                      {usersList.filter(user => user.isClaimed).length}/{usersList.length}
+                    </p>
+                  </div>
+                </div>
               </div>
 
               {/* Pagination */}

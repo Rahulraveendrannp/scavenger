@@ -159,17 +159,20 @@ const Dashboard: React.FC<DashboardProps> = ({
         // Update games based on database progress
         const updatedGames: Game[] = defaultGames.map((game) => {
           if (game.id === "scavenger-hunt") {
-            // For scavenger hunt, check if all 8 checkpoints are completed
-            const scavengerCompleted =
-              scavengerProgressResponse.success &&
-              scavengerProgressResponse.data &&
-              scavengerProgressResponse.data.totalFound >= 8;
+            // For scavenger hunt, check if at least 4 checkpoints are completed (half completion)
             const completedCount =
               scavengerProgressResponse.success &&
               scavengerProgressResponse.data
                 ? scavengerProgressResponse.data.totalFound || 0
                 : 0;
-
+            
+            // Use the isCompleted field from API if available, otherwise calculate based on 4+ checkpoints
+            const scavengerCompleted = 
+              scavengerProgressResponse.success &&
+              scavengerProgressResponse.data?.isCompleted !== undefined
+                ? scavengerProgressResponse.data.isCompleted
+                : completedCount >= 4;
+            
             // Check if scavenger hunt has been started (QR scanned)
             const scavengerStarted =
               progressResponse.success &&
@@ -181,7 +184,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               isCompleted: scavengerCompleted || false,
               isStarted: scavengerStarted || false,
               description: scavengerCompleted
-                ? `Find all 8 checkpoints (${completedCount}/8 completed)`
+                ? `Scavenger Hunt Completed! (${completedCount}/8 checkpoints found)`
                 : scavengerStarted
                   ? `Continue your adventure! (${completedCount}/8 completed)`
                   : `Start your treasure hunt adventure!`,
@@ -274,6 +277,16 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const completedGames = games.filter((game) => game.isCompleted).length;
   const progressPercentage = (completedGames / games.length) * 100;
+  
+  // Get scavenger hunt progress for display
+  const scavengerGame = games.find(game => game.id === "scavenger-hunt");
+  const scavengerProgress = scavengerGame?.isStarted 
+    ? (() => {
+        // Extract progress from description if available
+        const match = scavengerGame.description.match(/\((\d+)\/8/);
+        return match ? parseInt(match[1]) : 0;
+      })()
+    : 0;
 
   // NEW: Function to get expected QR code for each game
   const getExpectedQRCode = (gameId: string): string => {
@@ -557,8 +570,12 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
               {game.isCompleted && (
                 <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-['TT_Commons_Pro_DemiBold']">
-                  <span className="hidden sm:inline">✓ COMPLETED</span>
-                  <span className="sm:hidden">✓</span>
+                  <span className="hidden sm:inline">
+                    {game.id === "scavenger-hunt" ? "✓ HALF COMPLETE" : "✓ COMPLETED"}
+                  </span>
+                  <span className="sm:hidden">
+                    {game.id === "scavenger-hunt" ? "✓" : "✓"}
+                  </span>
                 </div>
               )}
             </div>
@@ -747,10 +764,16 @@ const ClaimVoucherModal: React.FC<{
           const scavengerProgress = scavengerProgressResponse.data?.totalFound || 0;
           const scavengerStarted = dashboardGames?.scavengerHunt?.isStarted || false;
           
+          // Use the isCompleted field from API if available, otherwise calculate based on 4+ checkpoints
+          const scavengerCompleted = 
+            scavengerProgressResponse.data?.isCompleted !== undefined
+              ? scavengerProgressResponse.data.isCompleted
+              : scavengerProgress >= 4;
+          
           setGameStatus({
             lunchboxMatcher: dashboardGames?.lunchboxMatcher?.isCompleted || false,
             cityRun: dashboardGames?.cityRun?.isCompleted || false,
-            scavengerHunt: scavengerProgress >= 8,
+            scavengerHunt: scavengerCompleted,
             scavengerStarted: scavengerStarted,
             scavengerProgress: scavengerProgress
           });

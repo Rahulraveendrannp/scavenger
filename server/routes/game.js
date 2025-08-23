@@ -51,7 +51,10 @@ router.get('/progress', authMiddleware, asyncHandler(async (req, res, next) => {
   if (completionPercentage >= 80) currentTier = 'Gold';
   else if (completionPercentage >= 50) currentTier = 'Silver';
 
-  console.log('🎮 Game Progress API: Progress found:', { totalFound, totalCheckpoints, currentTier });
+  // Check if scavenger hunt is completed (half completion rule)
+  const isCompleted = totalFound >= 4;
+
+  console.log('🎮 Game Progress API: Progress found:', { totalFound, totalCheckpoints, currentTier, isCompleted });
 
   res.status(200).json({
     success: true,
@@ -59,6 +62,7 @@ router.get('/progress', authMiddleware, asyncHandler(async (req, res, next) => {
       totalFound,
       totalCheckpoints,
       currentTier,
+      isCompleted,
       hintCredits: scavengerProgress.hintCredits || 3
     }
   });

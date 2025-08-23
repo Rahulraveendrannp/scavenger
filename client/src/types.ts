@@ -61,5 +61,6 @@ export interface GameProgress {
   totalFound: number;
   totalCheckpoints: number;
   currentTier: RewardTier;
+  isCompleted: boolean;
   hintCredits: number;
 }

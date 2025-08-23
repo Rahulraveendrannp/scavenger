@@ -47,12 +47,16 @@ router.get('/all-users', catchAsync(async (req, res) => {
           // Get scavenger hunt progress
           const scavengerProgress = userProgress?.scavengerHuntProgress?.completedCheckpoints?.length || 0;
           
+          // Check if scavenger hunt is completed (4+ checkpoints = half completion)
+          const scavengerCompleted = scavengerProgress >= 4;
+          
           return {
             _id: user._id,
             phoneNumber: user.phoneNumber,
             createdAt: user.createdAt,
             completedGames: `${completedGames}/4`,
             scavengerProgress: `${scavengerProgress}/8`,
+            scavengerCompleted: scavengerCompleted,
             isClaimed: user.isClaimed || false,
             voucherCode: user.voucherCode || null
           };
