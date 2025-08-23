@@ -93,10 +93,10 @@ const QRScanner: React.FC<QRScannerProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center">
-      <div className="bg-white rounded-xl p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-[#F4EDE3] rounded-xl p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-800">{title}</h2>
+          <h2 className="text-xl font-['TT_Commons_Pro_ExtraBold'] text-gray-800">{title}</h2>
           <button
             onClick={handleClose}
             className="text-gray-500 hover:text-gray-700 p-2"
@@ -139,7 +139,7 @@ const QRScanner: React.FC<QRScannerProps> = ({
         {/* Status */}
         <div className="mt-4 text-center">
           <div
-            className={`inline-flex items-center px-3 py-2 rounded-full text-sm font-medium ${
+            className={`inline-flex items-center px-3 py-2 rounded-full text-sm font-['TT_Commons_Pro_DemiBold'] ${
               isScanning
                 ? "bg-green-100 text-green-800"
                 : "bg-gray-100 text-gray-800"

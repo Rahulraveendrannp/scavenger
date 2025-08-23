@@ -73,9 +73,9 @@ router.post('/dashboard/:gameId/complete', authMiddleware, async (req, res) => {
     console.log('🎮 Dashboard Game API: Completing game:', gameId, 'for phone:', phoneNumber);
     
     const gameMapping = {
-      'card-game': 'cardGame',
-      'puzzle': 'puzzle',
-      'car-race': 'carRace',
+      'lunchbox-matcher': 'lunchboxMatcher',
+      'city-run': 'cityRun',
+      'talabeats': 'talabeats',
       'scavenger-hunt': 'scavengerHunt'
     };
     
@@ -374,6 +374,50 @@ router.post('/complete', authMiddleware, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to complete game'
+    });
+  }
+});
+
+// Start scavenger hunt
+router.post('/scavenger/start', authMiddleware, async (req, res) => {
+  try {
+    const { phoneNumber } = req.user;
+    
+    console.log('🎯 Scavenger Hunt API: Starting hunt for phone:', phoneNumber);
+    
+    let progress = await UserProgress.findOne({ phoneNumber });
+    if (!progress) {
+      return res.status(404).json({
+        success: false,
+        error: 'User progress not found'
+      });
+    }
+    
+    // Mark scavenger hunt as started
+    if (!progress.dashboardGames.scavengerHunt.isStarted) {
+      progress.dashboardGames.scavengerHunt.isStarted = true;
+      progress.dashboardGames.scavengerHunt.startedAt = new Date();
+      await progress.save();
+      
+      console.log('✅ Scavenger Hunt API: Hunt marked as started for user:', phoneNumber);
+    } else {
+      console.log('ℹ️ Scavenger Hunt API: Hunt already started for user:', phoneNumber);
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        message: 'Scavenger hunt started successfully',
+        isStarted: true,
+        startedAt: progress.dashboardGames.scavengerHunt.startedAt
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error starting scavenger hunt:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to start scavenger hunt'
     });
   }
 });

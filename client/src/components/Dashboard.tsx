@@ -91,7 +91,9 @@ const Dashboard: React.FC<DashboardProps> = ({
           ]);
 
         // Check if user is claimed
+        console.log("🔍 Dashboard: Claim response structure:", claimResponse);
         if (claimResponse.success && claimResponse.data?.isClaimed) {
+          console.log("✅ Dashboard: User is claimed, setting isClaimed to true");
           setIsClaimed(true);
         }
 
@@ -181,8 +183,8 @@ const Dashboard: React.FC<DashboardProps> = ({
               description: scavengerCompleted
                 ? `Find all 8 checkpoints (${completedCount}/8 completed)`
                 : scavengerStarted
-                  ? `Start your adventure! (${completedCount}/8 completed)`
-                  : `Scan QR to enter the treasure hunt`,
+                  ? `Continue your adventure! (${completedCount}/8 completed)`
+                  : `Start your treasure hunt adventure!`,
             };
           } else {
             // For other games, check dashboard progress from UserProgress model
@@ -277,9 +279,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   const getExpectedQRCode = (gameId: string): string => {
     const expectedQRCodes = {
       "lunchbox-matcher": "TALABAT_LUNCHBOX_MATCHER_COMPLETE",
-      cityRun: "TALABAT_CITY_RUN_COMPLETE",
-      scavengerHunt: "TALABAT_SCAVENGER_ENTRY",
-      talabeats: "TALABAT_TALABEATS_COMPLETE",
+      "city-run": "TALABAT_CITY_RUN_COMPLETE",
+      "talabeats": "TALABAT_TALABEATS_COMPLETE",
     };
 
     return expectedQRCodes[gameId as keyof typeof expectedQRCodes] || "";
@@ -380,6 +381,14 @@ const Dashboard: React.FC<DashboardProps> = ({
         console.log("Game already completed, cannot scan again:", gameId);
         return;
       }
+      
+      // Don't allow QR scanning for scavenger hunt games
+      if (game.type === "scavenger") {
+        console.log("Scavenger hunt games don't need QR scanning, starting directly:", gameId);
+        onStartScavengerHunt();
+        return;
+      }
+      
       setSelectedGame(game);
       setShowQRScanner(true);
     }
@@ -401,60 +410,29 @@ const Dashboard: React.FC<DashboardProps> = ({
     // The validation is now handled inside SimpleQRScanner
     // This function will only be called if the QR code is valid
 
-         if (selectedGame.type === "scavenger") {
-               // For scavenger hunt, mark as started (not completed)
-        const updatedGames = games.map((game) =>
-          game.id === selectedGame.id
-            ? {
-              ...game,
-              isStarted: true,
-              description: "Start your adventure! (0/8 completed)",
-            }
-            : game
-        );
-        setGames(updatedGames);
+    // For offline games, mark as completed and return to dashboard immediately
+    const updatedGames = games.map((game) =>
+      game.id === selectedGame.id ? { ...game, isCompleted: true } : game
+    );
+    setGames(updatedGames);
 
-        // Save progress to localStorage  
-        const progressData = updatedGames.reduce((acc, game) => {
-          acc[game.id] = game.isCompleted || game.isStarted || false;
-          return acc;
-        }, {} as Record<string, boolean>);
-       localStorage.setItem(
-         "talabat_user_progress",
-         JSON.stringify(progressData)
-       );
+    // Save progress to localStorage
+    const progressData = updatedGames.reduce((acc, game) => {
+      acc[game.id] = game.isCompleted;
+      return acc;
+    }, {} as Record<string, boolean>);
+    localStorage.setItem(
+      "talabat_user_progress",
+      JSON.stringify(progressData)
+    );
 
-      // Save to database - mark as started, not completed
-      console.log("Saving dashboard game progress for:", selectedGame.id);
-      saveDashboardGameProgress(selectedGame.id);
+    // Save progress to database
+    saveDashboardGameProgress(selectedGame.id);
 
-      setShowQRScanner(false);
-      onStartScavengerHunt();
-    } else {
-      // For offline games, mark as completed and return to dashboard immediately
-      const updatedGames = games.map((game) =>
-        game.id === selectedGame.id ? { ...game, isCompleted: true } : game
-      );
-      setGames(updatedGames);
+    // Close QR scanner immediately and return to dashboard
+    setShowQRScanner(false);
 
-      // Save progress to localStorage
-      const progressData = updatedGames.reduce((acc, game) => {
-        acc[game.id] = game.isCompleted;
-        return acc;
-      }, {} as Record<string, boolean>);
-      localStorage.setItem(
-        "talabat_user_progress",
-        JSON.stringify(progressData)
-      );
-
-      // Save progress to database
-      saveDashboardGameProgress(selectedGame.id);
-
-      // Close QR scanner immediately and return to dashboard
-      setShowQRScanner(false);
-
-      setScanSuccess(false);
-    }
+    setScanSuccess(false);
   };
 
   const closeQRScanner = () => {
@@ -466,7 +444,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#FF5900] flex items-center justify-center">
-        <div className="bg-white rounded-xl p-6 text-center">
+        <div className="bg-[#F4EDE3] rounded-sm p-6 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF5900] mx-auto mb-4"></div>
           <p className="text-gray-600">Loading your progress...</p>
         </div>
@@ -492,12 +470,12 @@ const Dashboard: React.FC<DashboardProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-[#FF5900] p-2 sm:p-4">
+    <div className="min-h-screen bg-[#FF5900] p-4 font-['TT_Commons_Pro_DemiBold']">
       {/* Header */}
-      <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
+      <div className="bg-[#F4EDE3] rounded-sm shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#FF5900] mb-1">
+            <h1 className="text-2xl sm:text-3xl font-['TT_Commons_Pro_ExtraBold'] text-[#FF5900] mb-1">
               <span className="text-2xl sm:text-3xl">talabat</span>{" "}
               <span className="text-xl sm:text-2xl">Game Zone</span>
             </h1>
@@ -507,7 +485,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
           <div className="text-right">
             <p className="text-xs sm:text-sm text-gray-500">Welcome</p>
-            <p className="text-sm sm:text-base font-semibold text-gray-700 truncate max-w-[120px] sm:max-w-none">
+            <p className="text-sm sm:text-base font-['TT_Commons_Pro_DemiBold'] text-gray-700 truncate max-w-[120px] sm:max-w-none">
               {phoneNumber}
             </p>
           </div>
@@ -516,7 +494,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         {/* Progress Bar */}
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs sm:text-sm font-medium text-gray-700">
+            <span className="text-xs sm:text-sm font-['TT_Commons_Pro_DemiBold'] text-gray-700">
               You've completed {completedGames}/4 games
             </span>
           </div>
@@ -547,7 +525,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           <button
             onClick={handleClaimClick}
             disabled={isClaimed}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
+            className={`px-3 py-1 rounded-lg text-xs font-['TT_Commons_Pro_DemiBold'] transition-colors ${
               isClaimed
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                 : "bg-[#FF5900] hover:bg-[#E54D00] text-white"
@@ -563,7 +541,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         {games.map((game) => (
           <div
             key={game.id}
-            className={`bg-white rounded-xl shadow-lg p-4 sm:p-6 transition-all duration-300 hover:shadow-xl ${
+            className={`bg-[#F4EDE3] rounded-sm shadow-lg p-4 sm:p-6 transition-all duration-300 hover:shadow-xl ${
               game.isCompleted ? "ring-2 ring-green-500" : ""
             }`}
           >
@@ -578,47 +556,40 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <div className="w-6 h-6 sm:w-8 sm:h-8">{game.icon}</div>
               </div>
               {game.isCompleted && (
-                <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-['TT_Commons_Pro_DemiBold']">
                   <span className="hidden sm:inline">✓ COMPLETED</span>
                   <span className="sm:hidden">✓</span>
                 </div>
               )}
             </div>
 
-            <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2 min-h-[3rem] sm:min-h-[2.5rem] leading-tight">
+            <h3 className="text-sm sm:text-lg font-['TT_Commons_Pro_ExtraBold'] text-gray-800 mb-2 min-h-[2rem] sm:min-h-[2.5rem] leading-tight">
               {game.title}
             </h3>
-            <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">
+            <p className="text-sm font-['TT_Commons_Pro_DemiBold'] sm:text-base text-gray-600 mb-3 sm:mb-4">
               {game.description}
             </p>
 
             <button
               onClick={() => {
-                if (
-                  game.type === "scavenger" &&
-                  (game.isStarted || game.isCompleted)
-                ) {
-                  // If scavenger hunt is started or completed, go directly to hunt
+                if (game.type === "scavenger") {
+                  // For scavenger hunt, always go directly to hunt (no QR scanning needed)
                   onStartScavengerHunt();
                 } else if (!game.isCompleted) {
-                  // Only show QR scanner if game is not completed
+                  // For other games, show QR scanner if not completed
                   handleScanQR(game.id);
                 }
               }}
               disabled={game.isCompleted || isClaimed}
-              className={`w-full py-2 sm:py-3 px-3 sm:px-4 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base ${
+              className={`w-full py-2 sm:py-3 px-3 sm:px-4 rounded-lg font-['TT_Commons_Pro_DemiBold'] flex items-center justify-center gap-2 transition-colors text-sm sm:text-base ${
                 game.isCompleted
                   ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                  : game.type === "scavenger" &&
-                    (game.isStarted || game.isCompleted)
-                  ? "bg-green-500 hover:bg-green-600 text-white"
                   : game.type === "scavenger"
                   ? "bg-purple-500 hover:bg-purple-600 text-white"
                   : "bg-[#FF5900] hover:bg-[#E54D00] text-white"
               }`}
             >
-              {game.type === "scavenger" &&
-              (game.isStarted || game.isCompleted) ? (
+              {game.type === "scavenger" ? (
                 <Search className="w-4 h-4 sm:w-5 sm:h-5" />
               ) : (
                 <QrCode className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -629,7 +600,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   : game.type === "scavenger" && game.isStarted
                   ? "Resume Hunt"
                   : game.type === "scavenger"
-                  ? "Scan to Enter Hunt"
+                  ? "Start Hunt"
                   : "Scan to Complete"}
               </span>
               <span className="sm:hidden">
@@ -638,7 +609,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   : game.type === "scavenger" && game.isStarted
                   ? "Resume"
                   : game.type === "scavenger"
-                  ? "Enter Hunt"
+                  ? "Start"
                   : "Complete"}
               </span>
             </button>
@@ -650,7 +621,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       <div className="text-center mt-6">
         <button
           onClick={onLogout}
-          className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors text-sm sm:text-base font-medium"
+          className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors text-sm sm:text-base font-['TT_Commons_Pro_DemiBold']"
         >
           🔐 Logout
         </button>
@@ -680,7 +651,7 @@ const QRScannerModal: React.FC<{
 }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
-      <div className="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-[#F4EDE3] rounded-sm p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
         {isSuccess ? (
           <div className="text-center">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -698,13 +669,11 @@ const QRScannerModal: React.FC<{
                 />
               </svg>
             </div>
-            <h3 className="text-lg sm:text-xl font-bold text-green-600 mb-2">
+            <h3 className="text-lg sm:text-xl font-['TT_Commons_Pro_ExtraBold'] text-green-600 mb-2">
               Success!
             </h3>
             <p className="text-sm sm:text-base text-gray-600 mb-4">
-              {gameType === "scavenger" 
-                ? "Start hunting! 🎯" 
-                : `${gameName} completed successfully!`}
+              {gameName} completed successfully!
             </p>
             <div className="text-sm text-gray-500">
               Returning to dashboard...
@@ -712,17 +681,11 @@ const QRScannerModal: React.FC<{
           </div>
         ) : (
           <>
-            <h3 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
+            <h3 className="text-lg sm:text-xl font-['TT_Commons_Pro_ExtraBold'] mb-3 sm:mb-4">
               Scan QR Code
             </h3>
             <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">
-              {gameType === "scavenger" ? (
-                `Scan the specific checkpoint QR code to enter the ${gameName} adventure!`
-              ) : (
-                <>
-                  Scan the checkpoint QR code for: <strong>{gameName}</strong>
-                </>
-              )}
+              Scan the checkpoint QR code for: <strong>{gameName}</strong>
             </p>
 
             {/* Direct QR Scanner with expected QR code validation */}
@@ -812,9 +775,9 @@ const ClaimVoucherModal: React.FC<{
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
-      <div className="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-sm p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="text-center">
-          <h3 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
+          <h3 className="text-lg sm:text-xl font-['TT_Commons_Pro_ExtraBold'] mb-3 sm:mb-4">
             Claim Your Reward
           </h3>
           <p className="text-sm sm:text-base text-gray-600 mb-4">
@@ -834,16 +797,18 @@ const ClaimVoucherModal: React.FC<{
               ) : error ? (
                 <div className="text-red-500 text-sm">{error}</div>
               ) : (
-                <div className="bg-white p-4 rounded border-2 border-dashed border-gray-300">
+                <div className="bg-[#F4EDE3] p-4 rounded-sm border-2 border-dashed border-gray-300">
                   <div 
                     className={`relative inline-block cursor-pointer ${
                       isScratched ? 'pointer-events-none' : ''
                     }`}
                     onClick={handleScratch}
                   >
-                    <div className="bg-gray-300 rounded-lg p-4 min-w-[120px] text-center">
+                    <div className={`rounded-sm p-4 min-w-[120px] text-center ${
+                      isScratched ? 'bg-[#F4EDE3]' : 'bg-gray-300'
+                    }`}>
                       {isScratched ? (
-                        <span className="text-2xl font-bold text-[#8B4513] tracking-wider">
+                        <span className="text-2xl font-['TT_Commons_Pro_ExtraBold'] text-[#8B4513] tracking-wider">
                           {voucherCode}
                         </span>
                       ) : (
@@ -855,7 +820,7 @@ const ClaimVoucherModal: React.FC<{
                     
                     {!isScratched && (
                       <div className="absolute inset-0 bg-gradient-to-r from-gray-400 to-gray-300 rounded-lg flex items-center justify-center">
-                        <span className="text-gray-600 text-sm font-medium">👆 Scratch Here</span>
+                        <span className="text-gray-600 text-sm font-['TT_Commons_Pro_DemiBold']">👆 Scratch Here</span>
                       </div>
                     )}
                   </div>
@@ -872,9 +837,9 @@ const ClaimVoucherModal: React.FC<{
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Lunchbox Matcher</span>
+                  <span className="text-sm font-['TT_Commons_Pro_DemiBold']">Lunchbox Matcher</span>
                   <span
-                    className={`px-2 py-1 rounded text-xs font-bold ${
+                    className={`px-2 py-1 rounded text-xs font-['TT_Commons_Pro_ExtraBold'] ${
                       gameStatus.lunchboxMatcher
                         ? "bg-green-100 text-green-700"
                         : "bg-gray-100 text-gray-600"
@@ -884,9 +849,9 @@ const ClaimVoucherModal: React.FC<{
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">City Run</span>
+                  <span className="text-sm font-['TT_Commons_Pro_DemiBold']">City Run</span>
                   <span
-                    className={`px-2 py-1 rounded text-xs font-bold ${
+                    className={`px-2 py-1 rounded text-xs font-['TT_Commons_Pro_ExtraBold'] ${
                       gameStatus.cityRun
                         ? "bg-green-100 text-green-700"
                         : "bg-gray-100 text-gray-600"
@@ -896,9 +861,9 @@ const ClaimVoucherModal: React.FC<{
                   </span>
                 </div>
                                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Scavenger Hunt</span>
+                    <span className="text-sm font-['TT_Commons_Pro_DemiBold']">Scavenger Hunt</span>
                     <span
-                      className={`px-2 py-1 rounded text-xs font-bold ${
+                      className={`px-2 py-1 rounded text-xs font-['TT_Commons_Pro_ExtraBold'] ${
                         gameStatus.scavengerHunt
                           ? "bg-green-100 text-green-700"
                           : gameStatus.scavengerStarted
@@ -914,9 +879,9 @@ const ClaimVoucherModal: React.FC<{
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Talabeats</span>
+                    <span className="text-sm font-['TT_Commons_Pro_DemiBold']">Talabeats</span>
                     <span
-                      className={`px-2 py-1 rounded text-xs font-bold ${
+                      className={`px-2 py-1 rounded text-xs font-['TT_Commons_Pro_ExtraBold'] ${
                         gameStatus.talabeats
                           ? "bg-green-100 text-green-700"
                           : "bg-gray-100 text-gray-600"
@@ -931,7 +896,7 @@ const ClaimVoucherModal: React.FC<{
 
           <button
             onClick={onClose}
-            className="bg-[#FF5900] text-white px-6 py-2 rounded-lg hover:bg-[#E54D00] transition-colors text-sm sm:text-base font-medium"
+            className="bg-[#FF5900] text-white px-6 py-2 rounded-lg hover:bg-[#E54D00] transition-colors text-sm sm:text-base font-['TT_Commons_Pro_DemiBold']"
           >
             Close
           </button>

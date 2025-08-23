@@ -141,6 +141,41 @@ export class ScavengerAPI {
     }
   }
 
+  static async startScavengerHunt(): Promise<ApiResponse<any>> {
+    try {
+      const token = getToken();
+      if (!token) {
+        return {
+          success: false,
+          error: "No authentication token found",
+        };
+      }
+
+      console.log("🎯 Starting scavenger hunt...");
+
+      const response = await fetch(
+        `${API_BASE}/progress/scavenger/start`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      const data = await response.json();
+      console.log("🎯 Scavenger hunt start response:", data);
+      return data;
+    } catch (error) {
+      console.error("❌ Error starting scavenger hunt:", error);
+      return {
+        success: false,
+        error: "Failed to start scavenger hunt",
+      };
+    }
+  }
+
   static async completeCheckpoint(
     checkpointId: number,
     location: string,
@@ -688,7 +723,7 @@ export class ScavengerAPI {
         return { success: false, error: data?.message || 'Failed to check claim status' };
       }
 
-      return { success: true, data: data };
+      return { success: true, data: data.data };
     } catch (error: any) {
       console.error('Failed to check claim status:', error);
       return { success: false, error: error?.message || 'Network error' };

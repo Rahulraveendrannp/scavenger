@@ -62,9 +62,7 @@ const userSchema = new mongoose.Schema({
   },
   voucherCode: {
     type: String,
-    default: null,
-    unique: true,
-    sparse: true
+    default: null
   },
   preferences: {
     notifications: {
@@ -100,7 +98,7 @@ const userSchema = new mongoose.Schema({
 userSchema.index({ phoneNumber: 1 });
 userSchema.index({ createdAt: -1 });
 userSchema.index({ 'gameStats.bestTime': 1 });
-
+userSchema.index({ voucherCode: 1 }, { sparse: true, unique: true });
 
 
 // Pre-save middleware to hash OTP
@@ -179,6 +177,61 @@ userSchema.statics.getLeaderboard = function(limit = 10) {
 // Static method to find by phone number
 userSchema.statics.findByPhoneNumber = function(phoneNumber) {
   return this.findOne({ phoneNumber });
+};
+
+// Static method to generate and save voucher code
+userSchema.statics.generateVoucherCode = async function(userId) {
+  const generateCode = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 4; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  };
+
+  let attempts = 0;
+  const maxAttempts = 10;
+
+  while (attempts < maxAttempts) {
+    const voucherCode = generateCode();
+    
+    try {
+      // Try to update the user with the new voucher code
+      const result = await this.updateOne(
+        { _id: userId, voucherCode: { $exists: false } },
+        { $set: { voucherCode } }
+      );
+      
+      if (result.modifiedCount > 0) {
+        return voucherCode;
+      }
+      
+      // If no document was modified, try to find if this code already exists
+      const existingUser = await this.findOne({ voucherCode });
+      if (!existingUser) {
+        // Code doesn't exist, try to set it
+        const updateResult = await this.updateOne(
+          { _id: userId },
+          { $set: { voucherCode } }
+        );
+        if (updateResult.modifiedCount > 0) {
+          return voucherCode;
+        }
+      }
+    } catch (error) {
+      // If there's a duplicate key error, try again
+      if (error.code === 11000) {
+        attempts++;
+        continue;
+      }
+      throw error;
+    }
+    
+    attempts++;
+  }
+  
+  throw new Error('Failed to generate unique voucher code after maximum attempts');
 };
 
 module.exports = mongoose.model('User', userSchema);

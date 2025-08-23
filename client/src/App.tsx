@@ -129,8 +129,26 @@ const DashboardWrapper: React.FC = () => {
     setCurrentCheckpoint,
   } = React.useContext(AppContext);
 
-  const handleStartScavengerHunt = () => {
-    navigate("/game");
+  const handleStartScavengerHunt = async () => {
+    try {
+      console.log("🎯 App: Starting scavenger hunt...");
+      
+      // Mark scavenger hunt as started in the database
+      const response = await ScavengerAPI.startScavengerHunt();
+      
+      if (response.success) {
+        console.log("✅ App: Scavenger hunt marked as started");
+        navigate("/game");
+      } else {
+        console.error("❌ App: Failed to start scavenger hunt:", response.error);
+        // Still navigate to game even if marking as started fails
+        navigate("/game");
+      }
+    } catch (error) {
+      console.error("❌ App: Error starting scavenger hunt:", error);
+      // Still navigate to game even if there's an error
+      navigate("/game");
+    }
   };
 
   const handleLogout = () => {
@@ -268,7 +286,7 @@ const ScavengerHuntPageWrapper: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#FF5900] flex items-center justify-center">
-        <div className="bg-white rounded-xl p-6 text-center">
+        <div className="bg-[#F4EDE3] rounded-xl p-6 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF5900] mx-auto mb-4"></div>
           <p className="text-gray-600">Loading scavenger hunt...</p>
         </div>

@@ -50,7 +50,7 @@ const ClaimPrize: React.FC<ClaimPrizeProps> = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#F5F5DC] p-4 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F5F5DC] p-4 flex items-center justify-center font-['TT_Commons_Pro_DemiBold']">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B4513] mx-auto mb-4"></div>
           <p className="text-lg text-[#8B4513]">Loading your voucher...</p>
@@ -61,15 +61,15 @@ const ClaimPrize: React.FC<ClaimPrizeProps> = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#F5F5DC] p-4 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F5F5DC] p-4 flex items-center justify-center font-['TT_Commons_Pro_DemiBold']">
         <div className="text-center">
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            <p className="font-bold">Error</p>
+            <p className="font-['TT_Commons_Pro_ExtraBold']">Error</p>
             <p>{error}</p>
           </div>
           <button
             onClick={loadVoucherCode}
-            className="bg-[#8B4513] text-white px-6 py-2 rounded-lg hover:bg-[#A0522D] transition-colors"
+            className="bg-[#8B4513] text-white px-6 py-2 rounded-lg hover:bg-[#A0522D] transition-colors font-['TT_Commons_Pro_DemiBold']"
           >
             Try Again
           </button>
@@ -79,9 +79,9 @@ const ClaimPrize: React.FC<ClaimPrizeProps> = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F5DC] p-4">
+    <div className="min-h-screen bg-[#F5F5DC] p-4 font-['TT_Commons_Pro_DemiBold']">
       <div className="max-w-md mx-auto">
-        <h1 className="text-4xl font-bold text-center text-[#8B4513] mt-10 mb-4">
+        <h1 className="text-4xl font-['TT_Commons_Pro_ExtraBold'] text-center text-[#8B4513] mt-10 mb-4">
           Claim Your Prize
         </h1>
         <p className="text-center text-lg text-[#8B4513] mb-8">
@@ -89,8 +89,8 @@ const ClaimPrize: React.FC<ClaimPrizeProps> = () => {
           claimed by showing the voucher code below at booth 5.
         </p>
 
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <h2 className="text-xl font-bold text-center text-[#8B4513] mb-4">
+        <div className="bg-[#F4EDE3] rounded-xl shadow-lg p-6 mb-6">
+          <h2 className="text-xl font-['TT_Commons_Pro_ExtraBold'] text-center text-[#8B4513] mb-4">
             Your Voucher Code
           </h2>
           
@@ -105,7 +105,7 @@ const ClaimPrize: React.FC<ClaimPrizeProps> = () => {
             >
               <div className="bg-gray-300 rounded-lg p-4 min-w-[120px] text-center">
                 {isScratched ? (
-                  <span className="text-2xl font-bold text-[#8B4513] tracking-wider">
+                  <span className="text-2xl font-['TT_Commons_Pro_ExtraBold'] text-[#8B4513] tracking-wider">
                     {voucherCode}
                   </span>
                 ) : (
@@ -117,7 +117,7 @@ const ClaimPrize: React.FC<ClaimPrizeProps> = () => {
               
               {!isScratched && (
                 <div className="absolute inset-0 bg-gradient-to-r from-gray-400 to-gray-300 rounded-lg flex items-center justify-center">
-                  <span className="text-gray-600 text-sm font-medium">👆 Scratch Here</span>
+                  <span className="text-gray-600 text-sm font-['TT_Commons_Pro_DemiBold']">👆 Scratch Here</span>
                 </div>
               )}
             </div>
@@ -129,7 +129,7 @@ const ClaimPrize: React.FC<ClaimPrizeProps> = () => {
                 Show this code to claim your reward:
               </p>
               <div className="bg-[#8B4513]/10 border-2 border-[#8B4513] rounded-lg p-3">
-                <span className="text-3xl font-bold text-[#8B4513] tracking-wider">
+                <span className="text-3xl font-['TT_Commons_Pro_ExtraBold'] text-[#8B4513] tracking-wider">
                   {voucherCode}
                 </span>
               </div>
@@ -138,7 +138,7 @@ const ClaimPrize: React.FC<ClaimPrizeProps> = () => {
         </div>
 
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="font-bold text-blue-800 mb-2">Instructions:</h3>
+          <h3 className="font-['TT_Commons_Pro_ExtraBold'] text-blue-800 mb-2">Instructions:</h3>
           <ul className="text-sm text-blue-700 space-y-1">
             <li>• Scratch the area above to reveal your voucher code</li>
             <li>• Take a screenshot or remember the code</li>

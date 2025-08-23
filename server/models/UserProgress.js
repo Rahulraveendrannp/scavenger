@@ -15,17 +15,17 @@ const userProgressSchema = new mongoose.Schema({
   
   // Dashboard games progress
   dashboardGames: {
-    cardGame: {
+    lunchboxMatcher: {
       isCompleted: { type: Boolean, default: false },
       completedAt: Date,
       completionTime: Number // in seconds
     },
-    puzzle: {
+    cityRun: {
       isCompleted: { type: Boolean, default: false },
       completedAt: Date,
       completionTime: Number
     },
-    carRace: {
+    talabeats: {
       isCompleted: { type: Boolean, default: false },
       completedAt: Date,
       completionTime: Number

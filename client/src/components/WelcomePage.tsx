@@ -6,7 +6,7 @@ interface WelcomePageProps {
 
 const WelcomePage: React.FC<WelcomePageProps> = ({ onStart }) => {
   return (
-    <div className="min-h-screen bg-[#FF5900] relative overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-[#FF5900] relative overflow-hidden flex flex-col font-['TT_Commons_Pro_DemiBold']">
       {/* Header section with header.svg */}
       <div className="flex-1 flex items-center justify-center px-6 pt-3">
         <img 
@@ -29,7 +29,7 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ onStart }) => {
       <div className="flex justify-center pb-12 px-6">
         <button
           onClick={onStart}
-          className="bg-white text-[#FF5900] px-12 py-2 rounded-full text-md font-bold hover:bg-gray-50 transition-colors shadow-lg w-64 md:w-80"
+                      className="bg-[#F4EDE3] text-[#FF5900] px-12 py-2 rounded-full text-md font-['TT_Commons_Pro_ExtraBold'] hover:bg-gray-50 transition-colors shadow-lg w-64 md:w-80"
         >
           Let's Go
         </button>

@@ -545,7 +545,7 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
       <div className="bg-black text-white rounded-xl p-4 max-w-md w-full mx-4 relative">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-white">{title}</h2>
+          <h2 className="text-lg font-['TT_Commons_Pro_ExtraBold'] text-white">{title}</h2>
           <button
             onClick={() => {
               console.log("🔴 Close button clicked - cleaning up camera");
@@ -582,7 +582,7 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
           {/* Invalid QR Message Display */}
           {invalidQRMessage && (
             <div className="p-3 bg-red-900 border border-red-600 rounded-lg animate-pulse">
-              <p className="text-red-200 text-sm font-semibold flex items-center gap-2">
+              <p className="text-red-200 text-sm font-['TT_Commons_Pro_DemiBold'] flex items-center gap-2">
                 <span>❌</span>
                 <span>Uh oh! You found a QR code, just not the right one. Keep looking!</span>
               </p>
@@ -592,7 +592,7 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
           {/* Scan Result Display */}
           {scanResult && (
             <div className="p-3 bg-green-900 border border-green-600 rounded-lg">
-              <p className="text-green-200 text-sm font-semibold">
+              <p className="text-green-200 text-sm font-['TT_Commons_Pro_DemiBold']">
                 ✅ Valid QR Code Detected!
               </p>
               <p className="text-green-300 text-xs mt-1 font-mono break-all">
@@ -747,7 +747,7 @@ const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
                       />
                     </svg>
                   </div>
-                  <p className="text-green-400 font-semibold text-lg">
+                  <p className="text-green-400 font-['TT_Commons_Pro_DemiBold'] text-lg">
                     Valid QR Code Scanned!
                   </p>
                   <p className="text-gray-300 text-sm">

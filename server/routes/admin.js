@@ -114,36 +114,9 @@ router.post('/generate-voucher', catchAsync(async (req, res) => {
       });
     }
 
-    // Generate unique 4-digit voucher code with letters and numbers
-    const generateVoucherCode = () => {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let result = '';
-      for (let i = 0; i < 4; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return result;
-    };
-
-    let voucherCode;
-    let attempts = 0;
-    const maxAttempts = 10;
-
-    // Keep trying until we get a unique code
-    do {
-      voucherCode = generateVoucherCode();
-      attempts++;
-      const existingUser = await User.findOne({ voucherCode });
-      if (!existingUser) break;
-    } while (attempts < maxAttempts);
-
-    if (attempts >= maxAttempts) {
-      throw new AppError('Failed to generate unique voucher code', 500);
-    }
+    // Generate unique voucher code using the safe method
+    const voucherCode = await User.generateVoucherCode(user._id);
     
-    // Save voucher code to user
-    user.voucherCode = voucherCode;
-    await user.save();
-
     console.log(`🎫 Admin: Generated voucher code for user ${phoneNumber}: ${voucherCode}`);
 
     res.status(200).json({

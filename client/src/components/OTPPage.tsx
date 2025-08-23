@@ -1,6 +1,5 @@
 // components/OTPPage.tsx
 import React, { useState } from "react";
-import { Smartphone } from "lucide-react";
 import { ScavengerAPI } from "../api";
 import { validateOTP } from "../utils";
 import type { GameSession } from "../types";
@@ -51,55 +50,81 @@ const OTPPage: React.FC<OTPPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#FF5900] flex items-center justify-center p-2 sm:p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-8 max-w-md w-full">
-        <div className="text-center mb-4 sm:mb-6">
-                      <Smartphone className="w-10 h-10 sm:w-12 sm:h-12 text-[#FF5900] mx-auto mb-3 sm:mb-4" />
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
-            Verify OTP
-          </h2>
-          <p className="text-sm sm:text-base text-gray-600 mt-2">
-            Enter the 4-digit code sent to {phoneNumber}
-          </p>
+    <div className="min-h-screen bg-[#FF5900] relative overflow-hidden font-['TT_Commons_Pro_DemiBold']">
+
+      {/* Grey center section with bg.svg - 70% of screen height */}
+      <div className="absolute top-[10%] left-[-10%] right-0 h-[80%] w-[120%] bg-[#FF5900]">
+        {/* bg.svg as background */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-100"
+          style={{
+            backgroundImage: 'url(/bg.svg)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+          }}
+        />
+      </div>
+
+      {/* Main content area */}
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6">
+        {/* Phone icon */}
+        <div className="mb-8">
+          <img 
+            src="/phone.svg" 
+            alt="Phone icon" 
+            className="w-16 h-16 mx-auto"
+          />
         </div>
 
-        <div className="space-y-3 sm:space-y-4">
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-              OTP Code
-            </label>
-            <input
-              type="text"
-              value={otpCode}
-              onChange={handleOtpChange}
-              placeholder="Enter 4-digit code"
-              className={`w-full px-3 sm:px-4 py-2 sm:py-3 border rounded-lg focus:ring-2 focus:ring-[#FF5900] focus:border-transparent text-center text-lg sm:text-2xl tracking-widest ${
-                error ? "border-red-500" : "border-gray-300"
-              }`}
-              disabled={isLoading}
-              maxLength={4}
-              inputMode="numeric"
-            />
-            {error && (
-              <p className="mt-2 text-xs sm:text-sm text-red-600">{error}</p>
-            )}
-          </div>
+        {/* Title */}
+        <h1 className="text-2xl font-['TT_Commons_Pro_ExtraBold'] text-[#5D4E37] mb-2">
+          Verify OTP
+        </h1>
+        
+        {/* Subtitle */}
+        <p className="text-gray-600 text-sm mb-8 text-center">
+          Enter the 4-digit code sent to {phoneNumber}
+        </p>
 
+        {/* OTP input */}
+        <div className="w-full max-w-xs mb-6">
+          <input
+            type="text"
+            value={otpCode}
+            onChange={handleOtpChange}
+            placeholder="Enter 4-digit code"
+            className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-center text-2xl tracking-widest font-['TT_Commons_Pro_ExtraBold'] ${
+              error ? "border-red-500" : "border-[#FF5900]"
+            }`}
+            disabled={isLoading}
+            maxLength={4}
+            inputMode="numeric"
+          />
+        </div>
+
+        {/* Error message */}
+        {error && (
+          <p className="text-red-600 text-sm text-center mb-4 max-w-xs">{error}</p>
+        )}
+
+        {/* Verify OTP button */}
+        <div className="w-full max-w-xs mb-4">
           <button
             onClick={handleVerifyOTP}
             disabled={otpCode.length !== 4 || isLoading}
-            className="w-full bg-[#FF5900] text-white py-2 sm:py-3 rounded-lg text-sm sm:text-base font-semibold hover:bg-[#E54D00] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full bg-[#FF5900] text-white py-2 rounded-full text-base font-['TT_Commons_Pro_DemiBold'] hover:bg-[#E54D00] disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg"
           >
             {isLoading ? "Verifying..." : "Verify OTP"}
           </button>
         </div>
 
+        {/* Back button */}
         <button
           onClick={onBack}
           disabled={isLoading}
-          className="w-full mt-3 sm:mt-4 text-gray-500 text-xs sm:text-sm hover:text-gray-700 disabled:opacity-50"
+          className="text-[#5D4E37] text-sm hover:text-[#FF5900] disabled:opacity-50 transition-colors"
         >
-          ← Back
+          ← Back to registration
         </button>
       </div>
     </div>

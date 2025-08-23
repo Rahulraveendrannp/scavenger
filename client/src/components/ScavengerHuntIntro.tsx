@@ -20,28 +20,28 @@ const ScavengerHuntIntro: React.FC<ScavengerHuntIntroProps> = ({ onStart }) => {
 
   if (showInstructions) {
     return (
-      <div className="min-h-screen bg-[#F5F5DC] flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-[#F5F5DC] flex flex-col items-center justify-center p-4 font-['TT_Commons_Pro_DemiBold']">
         <div className="w-full max-w-md mx-auto flex flex-col justify-center items-center text-center space-y-8 min-h-screen">
           {/* Instructions */}
           <div className="flex-1 flex flex-col justify-center space-y-6 px-6">
             <div className="space-y-4 text-[#8B4513]">
               <div className="text-left">
-                <span className="text-2xl font-medium">
+                <span className="text-2xl font-['TT_Commons_Pro_ExtraBold']">
                   1. You'll get 8 clues.
                 </span>
               </div>
               <div className="text-left">
-                <span className="text-2xl font-medium">
+                <span className="text-2xl font-['TT_Commons_Pro_ExtraBold']">
                   2. Find as many checkpoints as you can.
                 </span>
               </div>
               <div className="text-left">
-                <span className="text-2xl font-medium">
+                <span className="text-2xl font-['TT_Commons_Pro_ExtraBold']">
                   3. Scan each QR to mark it as found.
                 </span>
               </div>
               <div className="text-left">
-                <span className="text-2xl font-medium">
+                <span className="text-2xl font-['TT_Commons_Pro_ExtraBold']">
                   4. Return to the booth to claim your prize.
                 </span>
               </div>
@@ -51,7 +51,7 @@ const ScavengerHuntIntro: React.FC<ScavengerHuntIntroProps> = ({ onStart }) => {
           <div className="w-full pb-8">
             <button
               onClick={handleStart}
-              className="w-full bg-[#FF5900] hover:bg-[#E54D00] text-white text-xl font-semibold py-4 px-8 rounded-full transition-colors duration-200 shadow-lg"
+              className="w-full bg-[#FF5900] hover:bg-[#E54D00] text-white text-xl font-['TT_Commons_Pro_DemiBold'] py-4 px-8 rounded-full transition-colors duration-200 shadow-lg"
             >
               Start
             </button>
@@ -62,18 +62,18 @@ const ScavengerHuntIntro: React.FC<ScavengerHuntIntroProps> = ({ onStart }) => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F5DC] flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-[#F5F5DC] flex flex-col items-center justify-center p-4 font-['TT_Commons_Pro_DemiBold']">
       <div className="w-full max-w-md mx-auto flex flex-col justify-center items-center text-center space-y-8 min-h-screen">
         {/* Welcome Text */}
         <div className="flex-1 flex flex-col justify-center space-y-4">
-          <h1 className="text-4xl sm:text-5xl font-bold text-[#8B4513] leading-tight">
+          <h1 className="text-4xl sm:text-5xl font-['TT_Commons_Pro_ExtraBold'] text-[#8B4513] leading-tight">
             Welcome to Tasku's
           </h1>
           <div className="space-y-2">
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#8B4513]">
+            <h2 className="text-3xl sm:text-4xl font-['TT_Commons_Pro_ExtraBold'] text-[#8B4513]">
               SCAVENGER
             </h2>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#8B4513]">
+            <h2 className="text-3xl sm:text-4xl font-['TT_Commons_Pro_ExtraBold'] text-[#8B4513]">
               HUNT
             </h2>
           </div>
@@ -82,7 +82,7 @@ const ScavengerHuntIntro: React.FC<ScavengerHuntIntroProps> = ({ onStart }) => {
         <div className="w-full pb-8">
           <button
             onClick={handleHowItWorks}
-            className="w-full bg-[#FF5900] hover:bg-[#E54D00] text-white text-xl font-semibold py-4 px-8 rounded-full transition-colors duration-200 shadow-lg"
+            className="w-full bg-[#FF5900] hover:bg-[#E54D00] text-white text-xl font-['TT_Commons_Pro_DemiBold'] py-4 px-8 rounded-full transition-colors duration-200 shadow-lg"
           >
             How it works
           </button>
