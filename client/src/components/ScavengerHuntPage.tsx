@@ -144,6 +144,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
       totalFound: completedCount,
       totalCheckpoints: 8,
       currentTier: "Bronze",
+      isCompleted: completedCount >= 4,
       hintCredits: hintCredits,
     };
   });
