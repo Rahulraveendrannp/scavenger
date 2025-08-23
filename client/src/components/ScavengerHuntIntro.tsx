@@ -1,4 +1,7 @@
 import React, { useState } from "react";
+import welcomeScavengerSvg from "../assets/welcome_scavenger.svg";
+import introSvg from "../assets/intro.svg";
+import findPointsSvg from "../assets/find_points.svg";
 
 interface ScavengerHuntIntroProps {
   onStart: () => void;
@@ -12,81 +15,65 @@ const ScavengerHuntIntro: React.FC<ScavengerHuntIntroProps> = ({ onStart }) => {
   };
 
   const handleStart = () => {
+    // Set localStorage to indicate user has read the scavenger rules
+    localStorage.setItem("readScavengerRules", "true");
+    console.log("readScavengerRules set to true");
     if (onStart) onStart();
-    // Optionally keep localStorage logic if needed, but parent now controls flow
-    // localStorage.setItem('readScavengerRules', 'true');
-    // console.log('readScavengerRules set to true');
   };
 
   if (showInstructions) {
     return (
-      <div className="min-h-screen bg-[#F5F5DC] flex flex-col items-center justify-center p-4 font-['TT_Commons_Pro_DemiBold']">
-        <div className="w-full max-w-md mx-auto flex flex-col justify-center items-center text-center space-y-8 min-h-screen">
-          {/* Instructions */}
-          <div className="flex-1 flex flex-col justify-center space-y-6 px-6">
-            <div className="space-y-4 text-[#8B4513]">
-              <div className="text-left">
-                <span className="text-2xl font-['TT_Commons_Pro_ExtraBold']">
-                  1. You'll get 8 clues.
-                </span>
-              </div>
-              <div className="text-left">
-                <span className="text-2xl font-['TT_Commons_Pro_ExtraBold']">
-                  2. Find as many checkpoints as you can.
-                </span>
-              </div>
-              <div className="text-left">
-                <span className="text-2xl font-['TT_Commons_Pro_ExtraBold']">
-                  3. Scan each QR to mark it as found.
-                </span>
-              </div>
-              <div className="text-left">
-                <span className="text-2xl font-['TT_Commons_Pro_ExtraBold']">
-                  4. Return to the booth to claim your prize.
-                </span>
-              </div>
-            </div>
-          </div>
-          {/* Start Button */}
-          <div className="w-full pb-8">
-            <button
-              onClick={handleStart}
-              className="w-full bg-[#FF5900] hover:bg-[#E54D00] text-white text-xl font-['TT_Commons_Pro_DemiBold'] py-4 px-8 rounded-full transition-colors duration-200 shadow-lg"
-            >
-              Start
-            </button>
-          </div>
+      <div className="h-screen bg-[#FF5900] flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 font-['TT_Commons_Pro_DemiBold'] overflow-hidden">
+        {/* Middle - Find Points SVG */}
+        <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 min-h-0">
+          <img
+            src={findPointsSvg}
+            alt="Find Points"
+            className="max-w-full max-h-full w-auto h-auto object-contain"
+          />
+        </div>
+
+        {/* Bottom - Start Button */}
+        <div className="flex-shrink-0 w-full max-w-md mx-auto pb-4 sm:pb-6 lg:pb-8">
+          <button
+            onClick={handleStart}
+            className="w-full bg-white hover:bg-gray-100 text-[#FF5900] text-lg sm:text-xl lg:text-2xl font-['TT_Commons_Pro_DemiBold'] py-3 sm:py-4 lg:py-5 px-6 sm:px-8 lg:px-10 rounded-full transition-colors duration-200 shadow-lg active:scale-95 transform"
+          >
+            Start
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F5DC] flex flex-col items-center justify-center p-4 font-['TT_Commons_Pro_DemiBold']">
-      <div className="w-full max-w-md mx-auto flex flex-col justify-center items-center text-center space-y-8 min-h-screen">
-        {/* Welcome Text */}
-        <div className="flex-1 flex flex-col justify-center space-y-4">
-          <h1 className="text-4xl sm:text-5xl font-['TT_Commons_Pro_ExtraBold'] text-[#8B4513] leading-tight">
-            Welcome to Tasku's
-          </h1>
-          <div className="space-y-2">
-            <h2 className="text-3xl sm:text-4xl font-['TT_Commons_Pro_ExtraBold'] text-[#8B4513]">
-              SCAVENGER
-            </h2>
-            <h2 className="text-3xl sm:text-4xl font-['TT_Commons_Pro_ExtraBold'] text-[#8B4513]">
-              HUNT
-            </h2>
-          </div>
-        </div>
-        {/* How it works Button */}
-        <div className="w-full pb-8">
-          <button
-            onClick={handleHowItWorks}
-            className="w-full bg-[#FF5900] hover:bg-[#E54D00] text-white text-xl font-['TT_Commons_Pro_DemiBold'] py-4 px-8 rounded-full transition-colors duration-200 shadow-lg"
-          >
-            How it works
-          </button>
-        </div>
+    <div className="h-screen bg-[#FF5900] flex flex-col items-center justify-between p-4 sm:p-6 lg:p-8 font-['TT_Commons_Pro_DemiBold'] overflow-hidden">
+      {/* Top layer - Welcome Scavenger SVG */}
+      <div className="flex-shrink-0 flex items-center justify-center pt-2 sm:pt-4 lg:pt-6 px-4 sm:px-6 lg:px-8 max-h-[30vh] sm:max-h-[35vh] lg:max-h-[40vh]">
+        <img
+          src={welcomeScavengerSvg}
+          alt="Welcome Scavenger"
+          className="max-w-full max-h-full w-auto h-auto object-contain"
+        />
+      </div>
+
+      {/* Middle layer - Intro SVG */}
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 min-h-0">
+        <img
+          src={introSvg}
+          alt="Scavenger Hunt Intro"
+          className="max-w-full max-h-full w-auto h-auto object-contain"
+        />
+      </div>
+
+      {/* Bottom layer - Let's Go Button */}
+      <div className="flex-shrink-0 w-full max-w-md mx-auto pb-4 sm:pb-6 lg:pb-8">
+        <button
+          onClick={handleHowItWorks}
+          className="w-full bg-white hover:bg-gray-100 text-[#FF5900] text-lg sm:text-xl lg:text-2xl font-['TT_Commons_Pro_DemiBold'] py-3 sm:py-4 lg:py-5 px-6 sm:px-8 lg:px-10 rounded-full transition-colors duration-200 shadow-lg active:scale-95 transform"
+        >
+          Let's Go
+        </button>
       </div>
     </div>
   );
