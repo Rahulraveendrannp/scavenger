@@ -121,35 +121,35 @@ const Dashboard: React.FC<DashboardProps> = ({
 
         const defaultGames = [
           {
-            id: "card-game",
-            title: "Card Game",
-            description: "Complete the offline card game and scan QR",
+            id: "lunchbox-matcher",
+            title: "Zoomu's Lunchbox Matcher",
+            description: "Pair up and match the lunchbox.",
             icon: <Gamepad2 className="w-8 h-8" />,
             type: "offline" as const,
             isCompleted: false,
           },
           {
-            id: "puzzle",
-            title: "Puzzle",
-            description: "Solve the puzzle and scan QR to complete",
-            icon: <Puzzle className="w-8 h-8" />,
-            type: "offline" as const,
-            isCompleted: false,
-          },
-          {
-            id: "car-race",
-            title: "Car Race",
-            description: "Finish the car race and scan QR",
+            id: "city-run",
+            title: "Flexu's City Run",
+            description: "Beat the clock and grab the goodies.",
             icon: <Car className="w-8 h-8" />,
             type: "offline" as const,
             isCompleted: false,
           },
           {
             id: "scavenger-hunt",
-            title: "Scavenger Hunt",
-            description: "Scan QR to enter the treasure hunt",
+            title: "Tasku's Scavenger Hunt",
+            description: "Get your clues and hunt for hidden codes.",
             icon: <Search className="w-8 h-8" />,
             type: "scavenger" as const,
+            isCompleted: false,
+          },
+          {
+            id: "talabeats",
+            title: "Funzu's talabeats",
+            description: "Tap to the rhythm of the talabat jingle.",
+            icon: <Puzzle className="w-8 h-8" />,
+            type: "offline" as const,
             isCompleted: false,
           },
         ];
@@ -193,14 +193,14 @@ const Dashboard: React.FC<DashboardProps> = ({
 
             if (dashboardGames) {
               switch (game.id) {
-                case "card-game":
-                  isCompleted = dashboardGames.cardGame?.isCompleted || false;
+                case "lunchbox-matcher":
+                  isCompleted = dashboardGames.lunchboxMatcher?.isCompleted || false;
                   break;
-                case "puzzle":
-                  isCompleted = dashboardGames.puzzle?.isCompleted || false;
+                case "city-run":
+                  isCompleted = dashboardGames.cityRun?.isCompleted || false;
                   break;
-                case "car-race":
-                  isCompleted = dashboardGames.carRace?.isCompleted || false;
+                case "talabeats":
+                  isCompleted = dashboardGames.talabeats?.isCompleted || false;
                   break;
               }
             }
@@ -221,35 +221,35 @@ const Dashboard: React.FC<DashboardProps> = ({
         // Fallback to default games
         setGames([
           {
-            id: "card-game",
-            title: "Card Game",
-            description: "Complete the offline card game and scan QR",
+            id: "lunchbox-matcher",
+            title: "Zoomu's Lunchbox Matcher",
+            description: "Pair up and match the lunchbox.",
             icon: <Gamepad2 className="w-8 h-8" />,
             type: "offline" as const,
             isCompleted: false,
           },
           {
-            id: "puzzle",
-            title: "Puzzle",
-            description: "Solve the puzzle and scan QR to complete",
-            icon: <Puzzle className="w-8 h-8" />,
-            type: "offline" as const,
-            isCompleted: false,
-          },
-          {
-            id: "car-race",
-            title: "Car Race",
-            description: "Finish the car race and scan QR",
+            id: "city-run",
+            title: "Flexu's City Run",
+            description: "Beat the clock and grab the goodies.",
             icon: <Car className="w-8 h-8" />,
             type: "offline" as const,
             isCompleted: false,
           },
           {
             id: "scavenger-hunt",
-            title: "Scavenger Hunt",
-            description: "Scan QR to enter the treasure hunt",
+            title: "Tasku's Scavenger Hunt",
+            description: "Get your clues and hunt for hidden codes.",
             icon: <Search className="w-8 h-8" />,
             type: "scavenger" as const,
+            isCompleted: false,
+          },
+          {
+            id: "talabeats",
+            title: "Funzu's talabeats",
+            description: "Tap to the rhythm of the talabat jingle.",
+            icon: <Puzzle className="w-8 h-8" />,
+            type: "offline" as const,
             isCompleted: false,
           },
         ]);
@@ -276,10 +276,10 @@ const Dashboard: React.FC<DashboardProps> = ({
   // NEW: Function to get expected QR code for each game
   const getExpectedQRCode = (gameId: string): string => {
     const expectedQRCodes = {
-      "card-game": "TALABAT_CARD_COMPLETE",
-      puzzle: "TALABAT_PUZZLE_COMPLETE",
-      "car-race": "TALABAT_RACE_COMPLETE",
-      "scavenger-hunt": "TALABAT_SCAVENGER_ENTRY",
+      "lunchbox-matcher": "TALABAT_LUNCHBOX_MATCHER_COMPLETE",
+      cityRun: "TALABAT_CITY_RUN_COMPLETE",
+      scavengerHunt: "TALABAT_SCAVENGER_ENTRY",
+      talabeats: "TALABAT_TALABEATS_COMPLETE",
     };
 
     return expectedQRCodes[gameId as keyof typeof expectedQRCodes] || "";
@@ -497,10 +497,13 @@ const Dashboard: React.FC<DashboardProps> = ({
       <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#FF5900]">
-              talabat
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#FF5900] mb-1">
+              <span className="text-2xl sm:text-3xl">talabat</span>{" "}
+              <span className="text-xl sm:text-2xl">Game Zone</span>
             </h1>
-            <p className="text-sm sm:text-base text-gray-600">Gaming Hub</p>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">
+              Your digital Back to Something stamp card.
+            </p>
           </div>
           <div className="text-right">
             <p className="text-xs sm:text-sm text-gray-500">Welcome</p>
@@ -514,24 +517,8 @@ const Dashboard: React.FC<DashboardProps> = ({
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs sm:text-sm font-medium text-gray-700">
-              Overall Progress
+              You've completed {completedGames}/4 games
             </span>
-            <div className="flex items-center gap-2">
-              <span className="text-xs sm:text-sm text-gray-500">
-                {completedGames}/{games.length} completed
-              </span>
-              <button
-                onClick={handleClaimClick}
-                disabled={isClaimed}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
-                  isClaimed
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-[#FF5900] hover:bg-[#E54D00] text-white"
-                }`}
-              >
-                {isClaimed ? "CLAIMED" : "CLAIM"}
-              </button>
-            </div>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3">
             <div
@@ -542,19 +529,32 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* Stats */}
-        <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm">
-          <div className="flex items-center gap-1">
-            <Trophy className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500" />
-            <span className="hidden sm:inline">{completedGames} Completed</span>
-            <span className="sm:hidden">{completedGames}</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4 text-xs sm:text-sm">
+            <div className="flex items-center gap-1">
+              <Trophy className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500" />
+              <span className="hidden sm:inline">{completedGames} Completed</span>
+              <span className="sm:hidden">{completedGames}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Star className="w-3 h-3 sm:w-4 sm:h-4 text-blue-500" />
+              <span className="hidden sm:inline">
+                {games.length - completedGames} Remaining
+              </span>
+              <span className="sm:hidden">{games.length - completedGames}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1">
-            <Star className="w-3 h-3 sm:w-4 sm:h-4 text-blue-500" />
-            <span className="hidden sm:inline">
-              {games.length - completedGames} Remaining
-            </span>
-            <span className="sm:hidden">{games.length - completedGames}</span>
-          </div>
+          <button
+            onClick={handleClaimClick}
+            disabled={isClaimed}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
+              isClaimed
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "bg-[#FF5900] hover:bg-[#E54D00] text-white"
+            }`}
+          >
+            {isClaimed ? "CLAIMED" : "CLAIM"}
+          </button>
         </div>
       </div>
 
@@ -585,7 +585,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               )}
             </div>
 
-            <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2 min-h-[3rem] sm:min-h-[2.5rem] leading-tight">
               {game.title}
             </h3>
             <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">
@@ -650,7 +650,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       <div className="text-center mt-6">
         <button
           onClick={onLogout}
-          className="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 transition-colors text-sm sm:text-base font-medium"
+          className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors text-sm sm:text-base font-medium"
         >
           🔐 Logout
         </button>
@@ -785,9 +785,8 @@ const ClaimVoucherModal: React.FC<{
           const scavengerStarted = dashboardGames?.scavengerHunt?.isStarted || false;
           
           setGameStatus({
-            cardGame: dashboardGames?.cardGame?.isCompleted || false,
-            puzzle: dashboardGames?.puzzle?.isCompleted || false,
-            carRace: dashboardGames?.carRace?.isCompleted || false,
+            lunchboxMatcher: dashboardGames?.lunchboxMatcher?.isCompleted || false,
+            cityRun: dashboardGames?.cityRun?.isCompleted || false,
             scavengerHunt: scavengerProgress >= 8,
             scavengerStarted: scavengerStarted,
             scavengerProgress: scavengerProgress
@@ -873,59 +872,59 @@ const ClaimVoucherModal: React.FC<{
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Card Game</span>
+                  <span className="text-sm font-medium">Lunchbox Matcher</span>
                   <span
                     className={`px-2 py-1 rounded text-xs font-bold ${
-                      gameStatus.cardGame
+                      gameStatus.lunchboxMatcher
                         ? "bg-green-100 text-green-700"
                         : "bg-gray-100 text-gray-600"
                     }`}
                   >
-                    {gameStatus.cardGame ? "✓ Completed" : "✗ Pending"}
+                    {gameStatus.lunchboxMatcher ? "✓ Completed" : "✗ Pending"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Puzzle</span>
+                  <span className="text-sm font-medium">City Run</span>
                   <span
                     className={`px-2 py-1 rounded text-xs font-bold ${
-                      gameStatus.puzzle
+                      gameStatus.cityRun
                         ? "bg-green-100 text-green-700"
                         : "bg-gray-100 text-gray-600"
                     }`}
                   >
-                    {gameStatus.puzzle ? "✓ Completed" : "✗ Pending"}
+                    {gameStatus.cityRun ? "✓ Completed" : "✗ Pending"}
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Car Race</span>
-                  <span
-                    className={`px-2 py-1 rounded text-xs font-bold ${
-                      gameStatus.carRace
-                        ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    {gameStatus.carRace ? "✓ Completed" : "✗ Pending"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Scavenger Hunt</span>
-                  <span
-                    className={`px-2 py-1 rounded text-xs font-bold ${
-                      gameStatus.scavengerHunt
-                        ? "bg-green-100 text-green-700"
+                                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Scavenger Hunt</span>
+                    <span
+                      className={`px-2 py-1 rounded text-xs font-bold ${
+                        gameStatus.scavengerHunt
+                          ? "bg-green-100 text-green-700"
+                          : gameStatus.scavengerStarted
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {gameStatus.scavengerHunt
+                        ? "✓ Completed"
                         : gameStatus.scavengerStarted
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    {gameStatus.scavengerHunt
-                      ? "✓ Completed"
-                      : gameStatus.scavengerStarted
-                      ? `${gameStatus.scavengerProgress}/8`
-                      : "✗ Pending"}
-                  </span>
-                </div>
+                        ? `${gameStatus.scavengerProgress}/8`
+                        : "✗ Pending"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Talabeats</span>
+                    <span
+                      className={`px-2 py-1 rounded text-xs font-bold ${
+                        gameStatus.talabeats
+                          ? "bg-green-100 text-green-700"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {gameStatus.talabeats ? "✓ Completed" : "✗ Pending"}
+                    </span>
+                  </div>
               </div>
             </div>
           )}
