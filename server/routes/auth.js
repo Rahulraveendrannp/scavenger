@@ -72,7 +72,7 @@ router.post('/register', validatePhoneNumber, asyncHandler(async (req, res, next
 
     // Create or update user
     if (!user) {
-      user = new User({
+      user = await User.createUserWithVoucherCode({
         phoneNumber: normalizedPhone,
         otpCode,
         otpExpires,

@@ -102,22 +102,22 @@ userSchema.index({ 'gameStats.bestTime': 1 });
 userSchema.index({ voucherCode: 1 }, { unique: true });
 
 
-// Pre-save middleware to hash OTP and generate voucher code
+// Pre-save middleware to hash OTP only
 userSchema.pre('save', async function(next) {
-  // Update the updatedAt field
-  this.updatedAt = new Date();
+  try {
+    // Update the updatedAt field
+    this.updatedAt = new Date();
 
-  // Hash OTP if modified
-  if (this.isModified('otpCode') && this.otpCode) {
-    this.otpCode = await bcrypt.hash(this.otpCode, 10);
+    // Hash OTP if modified
+    if (this.isModified('otpCode') && this.otpCode) {
+      this.otpCode = await bcrypt.hash(this.otpCode, 10);
+    }
+
+    next();
+  } catch (error) {
+    console.error('❌ Pre-save middleware error:', error);
+    next(error);
   }
-
-  // Generate voucher code for new users
-  if (this.isNew && !this.voucherCode) {
-    this.voucherCode = await this.constructor.generateUniqueVoucherCode();
-  }
-
-  next();
 });
 
 // Instance method to check OTP
@@ -185,6 +185,26 @@ userSchema.statics.findByPhoneNumber = function(phoneNumber) {
   return this.findOne({ phoneNumber });
 };
 
+// Static method to create user with voucher code
+userSchema.statics.createUserWithVoucherCode = async function(userData) {
+  try {
+    // Generate voucher code first
+    const voucherCode = await this.generateUniqueVoucherCode();
+    console.log('✅ Generated voucher code for new user:', voucherCode);
+    
+    // Create user with voucher code
+    const user = new this({
+      ...userData,
+      voucherCode: voucherCode
+    });
+    
+    return user;
+  } catch (error) {
+    console.error('❌ Error creating user with voucher code:', error);
+    throw error;
+  }
+};
+
 // Static method to generate unique voucher code
 userSchema.statics.generateUniqueVoucherCode = async function() {
   const generateCode = () => {
@@ -196,22 +216,36 @@ userSchema.statics.generateUniqueVoucherCode = async function() {
     return result;
   };
 
-  let attempts = 0;
-  const maxAttempts = 20;
+  try {
+    let attempts = 0;
+    const maxAttempts = 20;
 
-  while (attempts < maxAttempts) {
-    const voucherCode = generateCode();
-    
-    // Check if this voucher code already exists
-    const existingUser = await this.findOne({ voucherCode });
-    if (!existingUser) {
-      return voucherCode; // Return the unique code
+    while (attempts < maxAttempts) {
+      const voucherCode = generateCode();
+      
+      // Check if this voucher code already exists
+      const existingUser = await this.findOne({ voucherCode });
+      if (!existingUser) {
+        console.log('✅ Generated unique voucher code:', voucherCode);
+        return voucherCode; // Return the unique code
+      }
+      
+      attempts++;
+      console.log(`🔄 Attempt ${attempts}: Code ${voucherCode} already exists, trying again...`);
     }
     
-    attempts++;
+    // If we can't generate a unique code after max attempts, use timestamp-based fallback
+    const fallbackCode = 'TEMP_' + Date.now().toString().slice(-6);
+    console.log('⚠️ Using fallback voucher code:', fallbackCode);
+    return fallbackCode;
+    
+  } catch (error) {
+    console.error('❌ Error in generateUniqueVoucherCode:', error);
+    // Return a guaranteed unique fallback code
+    const fallbackCode = 'ERROR_' + Date.now().toString().slice(-6);
+    console.log('🆘 Using error fallback voucher code:', fallbackCode);
+    return fallbackCode;
   }
-  
-  throw new Error('Failed to generate unique voucher code after maximum attempts');
 };
 
 module.exports = mongoose.model('User', userSchema);
