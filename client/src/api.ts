@@ -8,12 +8,13 @@ import type {
 } from "./types";
 
 const API_BASE =
-  (import.meta as any).env?.VITE_API_BASE || "http://localhost:8080/api";
+  (import.meta as any).env?.VITE_API_BASE ||
+  "https://talabat-scavenger-hunt-backend-657638641053.us-central1.run.app/api";
 
 function setToken(token: string) {
   console.log(
     "🔐 setToken: Saving token to localStorage:",
-    token ? "Token provided" : "No token",
+    token ? "Token provided" : "No token"
   );
   localStorage.setItem("jwt_token", token);
   console.log("🔐 setToken: Token saved successfully");
@@ -22,7 +23,7 @@ function getToken(): string | null {
   const token = localStorage.getItem("jwt_token");
   console.log(
     "🔐 getToken: Retrieved token from localStorage:",
-    token ? "Token exists" : "No token found",
+    token ? "Token exists" : "No token found"
   );
   return token;
 }
@@ -58,7 +59,7 @@ export class ScavengerAPI {
       const token = getToken();
       console.log(
         "🔍 getUserProgress: Token result:",
-        token ? "Token found" : "No token",
+        token ? "Token found" : "No token"
       );
 
       if (!token) {
@@ -104,7 +105,7 @@ export class ScavengerAPI {
 
   static async completeDashboardGame(
     gameId: string,
-    completionTime?: number,
+    completionTime?: number
   ): Promise<ApiResponse<any>> {
     try {
       const token = getToken();
@@ -126,7 +127,7 @@ export class ScavengerAPI {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ completionTime }),
-        },
+        }
       );
 
       const data = await response.json();
@@ -153,16 +154,13 @@ export class ScavengerAPI {
 
       console.log("🎯 Starting scavenger hunt...");
 
-      const response = await fetch(
-        `${API_BASE}/progress/scavenger/start`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+      const response = await fetch(`${API_BASE}/progress/scavenger/start`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+      });
 
       const data = await response.json();
       console.log("🎯 Scavenger hunt start response:", data);
@@ -178,7 +176,7 @@ export class ScavengerAPI {
 
   static async completeCheckpoint(
     checkpointId: number,
-    location: string,
+    location: string
   ): Promise<ApiResponse<any>> {
     try {
       const token = getToken();
@@ -193,7 +191,7 @@ export class ScavengerAPI {
       console.log("🔍 Completing checkpoint:", { checkpointId, location });
       console.log(
         "🔍 API URL:",
-        `${API_BASE}/progress/scavenger/checkpoint/${checkpointId}/complete`,
+        `${API_BASE}/progress/scavenger/checkpoint/${checkpointId}/complete`
       );
       console.log("🔍 Token available:", token ? "Yes" : "No");
 
@@ -206,7 +204,7 @@ export class ScavengerAPI {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ location }),
-        },
+        }
       );
 
       console.log("🔍 Response status:", response.status);
@@ -263,7 +261,7 @@ export class ScavengerAPI {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-        },
+        }
       );
 
       const data = await response.json();
@@ -279,7 +277,7 @@ export class ScavengerAPI {
 
   static async updateCurrentState(
     currentPage: string,
-    checkpoint?: number,
+    checkpoint?: number
   ): Promise<ApiResponse<any>> {
     try {
       const token = getToken();
@@ -297,7 +295,7 @@ export class ScavengerAPI {
       });
       console.log(
         "🔍 updateCurrentState: API URL:",
-        `${API_BASE}/progress/state`,
+        `${API_BASE}/progress/state`
       );
 
       const response = await fetch(`${API_BASE}/progress/state`, {
@@ -326,7 +324,7 @@ export class ScavengerAPI {
 
   static async completeGame(
     finalScore?: number,
-    timeElapsed?: number,
+    timeElapsed?: number
   ): Promise<ApiResponse<any>> {
     try {
       const token = getToken();
@@ -378,7 +376,7 @@ export class ScavengerAPI {
   }
   // Send OTP using Qatar SMS API
   static async registerUser(
-    phoneNumber: string,
+    phoneNumber: string
   ): Promise<ApiResponse<{ otpSent: boolean; isTestNumber?: boolean }>> {
     try {
       console.log("Sending SMS OTP to:", phoneNumber);
@@ -418,7 +416,7 @@ export class ScavengerAPI {
   // Verify OTP using Qatar SMS API
   static async verifyOTP(
     phoneNumber: string,
-    otpCode: string,
+    otpCode: string
   ): Promise<OTPVerificationResponse> {
     try {
       console.log("Verifying SMS OTP for:", phoneNumber, "Code:", otpCode);
@@ -433,7 +431,7 @@ export class ScavengerAPI {
       console.log("🔐 API: Server response data:", data);
       console.log(
         "🔐 API: Checking if token exists in response:",
-        data.data?.token ? "Token found" : "No token in response",
+        data.data?.token ? "Token found" : "No token in response"
       );
 
       if (data.success && data.data?.token) {
@@ -445,7 +443,7 @@ export class ScavengerAPI {
         const savedToken = getToken();
         console.log(
           "🔐 API: Verified saved token:",
-          savedToken ? "Token exists" : "No token found",
+          savedToken ? "Token exists" : "No token found"
         );
 
         // Create game session
@@ -487,7 +485,7 @@ export class ScavengerAPI {
 
   // Resend OTP using Qatar SMS API
   static async resendOTP(
-    phoneNumber: string,
+    phoneNumber: string
   ): Promise<ApiResponse<{ otpSent: boolean }>> {
     try {
       const response = await fetch(`${API_BASE}/auth/resend-otp`, {
@@ -532,8 +530,6 @@ export class ScavengerAPI {
     }
   }
 
-
-
   static async getGameProgress(): Promise<ApiResponse<GameProgress>> {
     try {
       const token = getToken();
@@ -561,7 +557,7 @@ export class ScavengerAPI {
       // Check if token is invalid
       if (response.status === 401 || json.error?.includes("token")) {
         console.log(
-          "🔍 getGameProgress: Token invalid, clearing and redirecting",
+          "🔍 getGameProgress: Token invalid, clearing and redirecting"
         );
         // Clear invalid token and redirect to registration
         clearToken();
@@ -581,7 +577,7 @@ export class ScavengerAPI {
 
       console.log(
         "🔍 getGameProgress: Successfully loaded progress:",
-        json.data,
+        json.data
       );
       return { success: true, data: json.data };
     } catch (error: any) {
@@ -596,7 +592,7 @@ export class ScavengerAPI {
       console.log("📊 API: Getting all users...");
 
       const response = await fetch(`${API_BASE}/admin/all-users`, {
-        method: 'GET',
+        method: "GET",
         headers: {
           "Content-Type": "application/json",
         },
@@ -619,142 +615,162 @@ export class ScavengerAPI {
     }
   }
 
-
-
   // New Admin API methods for claim functionality
   static async getTotalUsers(): Promise<ApiResponse<any>> {
     try {
-      console.log('📊 API: Getting total users count...');
+      console.log("📊 API: Getting total users count...");
 
       const response = await fetch(`${API_BASE}/admin/total-users`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json'
-        }
+          "Content-Type": "application/json",
+        },
       });
 
       const data = await response.json();
-      console.log('📊 API: Get total users response:', data);
+      console.log("📊 API: Get total users response:", data);
 
       if (!response.ok) {
-        return { success: false, error: data?.message || 'Failed to load total users' };
+        return {
+          success: false,
+          error: data?.message || "Failed to load total users",
+        };
       }
 
       return { success: true, data: data };
     } catch (error: any) {
-      console.error('Failed to load total users:', error);
-      return { success: false, error: error?.message || 'Network error' };
+      console.error("Failed to load total users:", error);
+      return { success: false, error: error?.message || "Network error" };
     }
   }
 
   static async generateVoucher(phoneNumber: string): Promise<ApiResponse<any>> {
     try {
-      console.log('🎫 API: Generating voucher code...', { phoneNumber });
+      console.log("🎫 API: Generating voucher code...", { phoneNumber });
 
       const response = await fetch(`${API_BASE}/admin/generate-voucher`, {
-        method: 'POST',
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          phoneNumber
-        })
+          phoneNumber,
+        }),
       });
 
       const data = await response.json();
-      console.log('🎫 API: Generate voucher response:', data);
+      console.log("🎫 API: Generate voucher response:", data);
 
       if (!response.ok) {
-        return { success: false, error: data?.message || 'Failed to generate voucher code' };
+        return {
+          success: false,
+          error: data?.message || "Failed to generate voucher code",
+        };
       }
 
-      console.log('🎫 API: Voucher code retrieved/generated for user');
+      console.log("🎫 API: Voucher code retrieved/generated for user");
 
       return { success: true, data: data.data };
     } catch (error: any) {
-      console.error('Failed to generate voucher code:', error);
-      return { success: false, error: error?.message || 'Network error' };
+      console.error("Failed to generate voucher code:", error);
+      return { success: false, error: error?.message || "Network error" };
     }
   }
 
-  static async markUserAsClaimed(voucherCode: string): Promise<ApiResponse<any>> {
+  static async markUserAsClaimed(
+    voucherCode: string
+  ): Promise<ApiResponse<any>> {
     try {
-      console.log('🏆 API: Marking user as claimed...', { voucherCode });
+      console.log("🏆 API: Marking user as claimed...", { voucherCode });
 
       const response = await fetch(`${API_BASE}/admin/mark-claimed`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          voucherCode
-        })
+          voucherCode,
+        }),
       });
 
       const data = await response.json();
-      console.log('🏆 API: Mark claimed response:', data);
+      console.log("🏆 API: Mark claimed response:", data);
 
       if (!response.ok) {
-        return { success: false, error: data?.message || 'Failed to mark user as claimed' };
+        return {
+          success: false,
+          error: data?.message || "Failed to mark user as claimed",
+        };
       }
 
       return { success: true, data: data };
     } catch (error: any) {
-      console.error('Failed to mark user as claimed:', error);
-      return { success: false, error: error?.message || 'Network error' };
+      console.error("Failed to mark user as claimed:", error);
+      return { success: false, error: error?.message || "Network error" };
     }
   }
 
-  static async checkUserClaimed(phoneNumber: string): Promise<ApiResponse<any>> {
+  static async checkUserClaimed(
+    phoneNumber: string
+  ): Promise<ApiResponse<any>> {
     try {
-      console.log('🔍 API: Checking if user is claimed...', { phoneNumber });
+      console.log("🔍 API: Checking if user is claimed...", { phoneNumber });
 
-      const response = await fetch(`${API_BASE}/admin/check-claimed/${phoneNumber}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
+      const response = await fetch(
+        `${API_BASE}/admin/check-claimed/${phoneNumber}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
         }
-      });
+      );
 
       const data = await response.json();
-      console.log('🔍 API: Check claimed response:', data);
+      console.log("🔍 API: Check claimed response:", data);
 
       if (!response.ok) {
-        return { success: false, error: data?.message || 'Failed to check claim status' };
+        return {
+          success: false,
+          error: data?.message || "Failed to check claim status",
+        };
       }
 
       return { success: true, data: data.data };
     } catch (error: any) {
-      console.error('Failed to check claim status:', error);
-      return { success: false, error: error?.message || 'Network error' };
+      console.error("Failed to check claim status:", error);
+      return { success: false, error: error?.message || "Network error" };
     }
   }
 
   static async toggleClaimStatus(userId: string): Promise<ApiResponse<any>> {
     try {
-      console.log('🔄 API: Toggling claim status...', { userId });
+      console.log("🔄 API: Toggling claim status...", { userId });
 
       const response = await fetch(`${API_BASE}/admin/toggle-claim-status`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          userId
-        })
+          userId,
+        }),
       });
 
       const data = await response.json();
-      console.log('🔄 API: Toggle claim status response:', data);
+      console.log("🔄 API: Toggle claim status response:", data);
 
       if (!response.ok) {
-        return { success: false, error: data?.message || 'Failed to toggle claim status' };
+        return {
+          success: false,
+          error: data?.message || "Failed to toggle claim status",
+        };
       }
 
       return { success: true, data: data };
     } catch (error: any) {
-      console.error('Failed to toggle claim status:', error);
-      return { success: false, error: error?.message || 'Network error' };
+      console.error("Failed to toggle claim status:", error);
+      return { success: false, error: error?.message || "Network error" };
     }
   }
 }
