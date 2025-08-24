@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ScavengerAPI } from "../api";
 import { useNavigate } from "react-router-dom";
 
@@ -19,62 +19,97 @@ function ScavengerHuntFinish() {
     if (response) setProgress(response?.data);
   };
 
-  const handleClaimPrize = () => {
-    console.log("Generate claim QR and redirect to /claim");
+  const handleFinish = () => {
     navigate("/dashboard");
   };
 
-  const gameState =
-    progress?.totalFound > 0
-      ? progress?.totalFound <= 3
-        ? "Bronze"
-        : progress?.totalFound <= 6
-        ? "Silver"
-        : "Gold"
-      : "No";
+  // Decide which finish view to show
+  const variant = useMemo(() => {
+    const found = progress?.totalFound ?? 0;
+    const total = progress?.totalCheckpoints ?? 8;
+    if (found >= total && total > 0) return "all"; // Crushed it
+    if (found >= 4) return "mid"; // Good progress (prize eligible in your rules)
+    return "low"; // Needs more to win
+  }, [progress]);
 
   return (
-    <div className="h-screen bg-[#F5F5DC] flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 font-['TT_Commons_Pro_DemiBold'] overflow-hidden">
-      <div className="w-full max-w-md sm:max-w-2xl lg:max-w-4xl mx-auto flex flex-col justify-center items-center text-center space-y-4 sm:space-y-6 lg:space-y-8 h-full">
-        <div className="flex items-center justify-start w-full flex-shrink-0">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-4xl font-['TT_Commons_Pro_ExtraBold'] text-[#8B4513] leading-tight text-left">
-            Scavenger Hunt
-          </h1>
-        </div>
-        {/* Welcome Text */}
-        <div className="flex-1 flex flex-col justify-center space-y-3 sm:space-y-4 lg:space-y-6 min-h-0">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-4xl font-['TT_Commons_Pro_ExtraBold'] text-[#8B4513] leading-tight px-2">
-            You have found {progress?.totalFound} out of{" "}
-            {progress?.totalCheckpoints} checkpoints!
-          </h1>
-          <div className="space-y-2 sm:space-y-3 lg:space-y-4">
-            <h2 className="text-lg sm:text-xl lg:text-2xl xl:text-2xl font-['TT_Commons_Pro_ExtraBold'] text-[#8B4513] px-2">
-              Collect your prize at the booth!
-            </h2>
-          </div>
+    <div className="h-screen relative font-['TT_Commons_Pro_DemiBold'] overflow-hidden">
+      {/* Background layout image */}
+      <div className="absolute inset-0 w-full h-full">
+        <img src="/final.svg" alt="Finish Background" className="w-full h-full object-cover" />
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 h-full flex flex-col items-center justify-between py-6 px-4 text-center">
+        {/* Top spacer for header area already baked into SVG */}
+        <div />
+
+        {/* Middle content */}
+        <div className="space-y-3 mt-[60%]">
+          {variant === "all" ? (
+            <>
+              <h1 className="text-3xl sm:text-3xl font-['TT_Commons_Pro_ExtraBold'] text-[#411517]">Crushed it!</h1>
+              <p className="text-md w-[90%] mx-auto sm:text-base text-[#411517]">You found all the checkpoints. Fantastic job!</p>
+              <div className="flex items-center justify-center pt-2">
+                <img src="/star.svg" alt="Star" className="w-32 h-32" />
+              </div>
+            </>
+          ) : variant === "mid" ? (
+            <>
+              <h1 className="text-3xl mx-auto w-[80%] sm:text-3xl font-['TT_Commons_Pro_ExtraBold'] text-[#411517]">
+                You found {progress?.totalFound}/{progress?.totalCheckpoints} checkpoints!
+              </h1>
+              <p className="text-md sm:text-base text-[#411517]">Great job! But there's still more.</p>
+              <div className="flex items-center justify-center pt-2">
+                <img src="/thump.svg" alt="Thumb" className="w-16 h-16" />
+              </div>
+              <p className="text-md sm:text-sm text-[#411517] mt-2">
+                Are you sure you want to finish?<br />
+                You can't go back.
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-3xl w-[80%] mx-auto sm:text-3xl font-['TT_Commons_Pro_ExtraBold'] text-[#411517]">
+                You found {progress?.totalFound}/{progress?.totalCheckpoints} checkpoints!
+              </h1>
+              <p className="text-md sm:text-base text-[#411517]">You need more to win a prize.</p>
+              <div className="flex items-center justify-center pt-2">
+                <img src="/heart.svg" alt="Heart" className="w-16 h-16" />
+              </div>
+              <p className="mt-2 text-md sm:text-sm text-[#411517]">
+                Are you sure you want to finish?<br />
+                You can't go back.
+              </p>
+            </>
+          )}
         </div>
 
-        <div className="px-2 flex-shrink-0">
-          <h2 className="text-lg sm:text-xl lg:text-2xl xl:text-2xl font-['TT_Commons_Pro_ExtraBold'] text-[#8B4513] leading-relaxed">
-            Want to go for more? The higher your tier, the bigger your prize!
-          </h2>
-        </div>
-
-        {/* Buttons */}
-        <div className="w-full flex flex-col sm:flex-row gap-3 sm:gap-4 lg:gap-6 px-2 flex-shrink-0 pb-4 lg:pb-8">
-          <button
-            onClick={() => navigate("/game")}
-            className="flex-1 bg-[#F4EDE3] hover:bg-[#F4EDE3] text-[#FF5900] border border-[#FF5900] text-base sm:text-lg lg:text-xl font-['TT_Commons_Pro_DemiBold'] py-2 sm:py-4 lg:py-4 px-6 sm:px-8 lg:px-10 rounded-full transition-colors duration-200 shadow-lg"
-          >
-            Continue hunt
-          </button>
-
-          <button
-            onClick={handleClaimPrize}
-            className="flex-1 bg-[#FF5900] hover:bg-[#E54D00] text-white text-base sm:text-lg lg:text-xl font-['TT_Commons_Pro_DemiBold'] py-2 sm:py-4 lg:py-4 px-6 sm:px-8 lg:px-10 rounded-full transition-colors duration-200 shadow-lg"
-          >
-            Claim prize
-          </button>
+        {/* Bottom actions */}
+        <div className="w-full max-w-md mx-auto flex gap-3 pb-2">
+          {variant === "all" ? (
+            <button
+              onClick={handleFinish}
+              className="flex-1 bg-[#411517] text-white py-3 font-bold rounded-full text-sm sm:text-base font-['TT_Commons_Pro_ExtraBold']"
+            >
+              Return to Home
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={() => navigate("/game")}
+                className="flex-1 bg-[#FF5900] text-white py-3 rounded-full text-base font-['TT_Commons_Pro_ExtraBold']"
+              >
+                Keep hunting
+              </button>
+              <button
+                onClick={handleFinish}
+                className="flex-1 bg-[#411517] text-white py-3 rounded-full text-base font-['TT_Commons_Pro_ExtraBold']"
+              >
+                Finish
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

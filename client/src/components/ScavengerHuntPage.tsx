@@ -51,8 +51,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
     return new Set();
   });
   const [checkpoints, setCheckpoints] = useState<ClueItem[]>(() => {
-    // Load saved scavenger hunt progress
-    const savedProgress = localStorage.getItem("talabat_scavenger_progress");
+    // Initialize with default checkpoints, but don't load completed status from localStorage
     const defaultCheckpoints = [
       {
         id: 1,
@@ -120,36 +119,25 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
       },
     ];
 
-    if (savedProgress) {
-      try {
-        const parsed = JSON.parse(savedProgress);
-        return defaultCheckpoints.map((checkpoint) => ({
-          ...checkpoint,
-          isCompleted:
-            parsed.completedCheckpoints?.includes(checkpoint.id) || false,
-        }));
-      } catch (error) {
-        console.error("Error parsing scavenger progress:", error);
-        return defaultCheckpoints;
-      }
-    }
-
     return defaultCheckpoints;
   });
 
   const [progress, setProgress] = useState<GameProgress>(() => {
-    // Calculate initial progress from loaded checkpoints
-    const completedCount = checkpoints.filter((cp) => cp.isCompleted).length;
+    // Initialize with default progress, will be updated from backend
     return {
-      totalFound: completedCount,
+      totalFound: 0,
       totalCheckpoints: 8,
       currentTier: "Bronze",
-      isCompleted: completedCount >= 4,
+      isCompleted: false,
       hintCredits: hintCredits,
     };
   });
 
-  const [expandedId, setExpandedId] = useState<number | null>(1);
+  const [expandedId, setExpandedId] = useState<number | null>(() => {
+    // Find the first uncompleted checkpoint to expand on load
+    const firstUncompleted = checkpoints.find(cp => !cp.isCompleted);
+    return firstUncompleted ? firstUncompleted.id : null;
+  });
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [scannerCheckpointId, setScannerCheckpointId] = useState<number | null>(
     null
@@ -157,18 +145,105 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
   const [scannerError, setScannerError] = useState<string>("");
 
   useEffect(() => {
-    // Load initial progress
+    // Load initial progress from backend
     loadProgress();
+    
+    // Set up interval to refresh data every 30 seconds to keep it in sync
+    const refreshInterval = setInterval(() => {
+      console.log("🔄 Auto-refreshing progress from backend...");
+      loadProgress();
+    }, 30000); // 30 seconds
+    
+    return () => {
+      clearInterval(refreshInterval);
+    };
   }, []);
+
+
 
   const loadProgress = async () => {
     try {
+      console.log("🔄 Loading latest progress from backend...");
       const response = await ScavengerAPI.getGameProgress();
+      
       if (response.success && response.data) {
+        console.log("✅ Backend progress loaded:", response.data);
+        
+        // Update progress state
         setProgress(response.data);
+        
+        // Update checkpoints with completed status from backend
+        const updatedCheckpoints = checkpoints.map((checkpoint) => {
+          // Check if this checkpoint is completed based on backend data
+          // We'll use the totalFound count to determine which checkpoints are completed
+          // For now, we'll assume checkpoints are completed in order (1, 2, 3, etc.)
+          const isCompleted = checkpoint.id <= (response.data?.totalFound || 0);
+          
+          return {
+            ...checkpoint,
+            isCompleted: isCompleted,
+          };
+        });
+        
+        setCheckpoints(updatedCheckpoints);
+        console.log("✅ Checkpoints updated with backend completion status:", updatedCheckpoints);
+        
+        // Also load hint credits from backend if available
+        if (response.data.hintCredits !== undefined) {
+          setHintCredits(response.data.hintCredits);
+        }
+        
+        // Load revealed hints from backend if available (safely handle optional property)
+        if (response.data && 'revealedHints' in response.data && Array.isArray(response.data.revealedHints)) {
+          setRevealedHints(new Set(response.data.revealedHints));
+        }
+        
+      } else {
+        console.error("❌ Failed to load progress from backend:", response.error);
+        // Fallback to localStorage if backend fails
+        loadFromLocalStorage();
       }
     } catch (error) {
-      console.error("Failed to load progress:", error);
+      console.error("❌ Error loading progress from backend:", error);
+      // Fallback to localStorage if backend fails
+      loadFromLocalStorage();
+    }
+  };
+
+  // Fallback function to load from localStorage
+  const loadFromLocalStorage = () => {
+    try {
+      const savedProgress = localStorage.getItem("talabat_scavenger_progress");
+      if (savedProgress) {
+        const parsed = JSON.parse(savedProgress);
+        console.log("📱 Loading fallback data from localStorage:", parsed);
+        
+        // Update checkpoints with localStorage data
+        const updatedCheckpoints = checkpoints.map((checkpoint) => ({
+          ...checkpoint,
+          isCompleted: parsed.completedCheckpoints?.includes(checkpoint.id) || false,
+        }));
+        
+        setCheckpoints(updatedCheckpoints);
+        
+        // Update progress
+        const completedCount = updatedCheckpoints.filter((cp) => cp.isCompleted).length;
+        setProgress(prev => ({
+          ...prev,
+          totalFound: completedCount,
+          isCompleted: completedCount >= 4,
+        }));
+        
+        // Update hint credits and revealed hints
+        if (parsed.hintCredits !== undefined) {
+          setHintCredits(parsed.hintCredits);
+        }
+        if (parsed.revealedHints) {
+          setRevealedHints(new Set(parsed.revealedHints));
+        }
+      }
+    } catch (error) {
+      console.error("❌ Error loading from localStorage:", error);
     }
   };
 
@@ -387,94 +462,108 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
 
   return (
     <>
-      <div className="min-h-screen bg-[#F5F5DC] p-2 sm:p-4 font-['TT_Commons_Pro_DemiBold']">
-        {/* Header */}
-        <div className="text-center mb-4 sm:mb-6">
-          <h1 className="text-2xl sm:text-3xl font-['TT_Commons_Pro_ExtraBold'] text-[#8B4513] mb-2">
-            Scavenger Hunt
-          </h1>
-          <p className="text-[#8B4513] text-base sm:text-lg font-['TT_Commons_Pro_DemiBold']">
-            You can do these in any order.
-          </p>
-
-          {/* Progress and Hint Credits */}
-          <div className="flex flex-col sm:flex-row items-center justify-between mt-2 gap-2">
-            {/* Progress Counter and Hint Credits in one line on mobile */}
-            <div className="flex items-center">
-              <div className="bg-green-100 px-3 py-1 rounded-full">
-                <span className="text-sm sm:text-base text-green-700 font-['TT_Commons_Pro_ExtraBold']">
-                  {progress.totalFound}/{progress.totalCheckpoints} Completed
-                </span>
-              </div>
-            </div>
-
-            {/* Hint Credits */}
-            <div className="flex items-center">
-              <Lightbulb className="w-4 h-4 sm:w-5 sm:h-5 text-[#FF8C00] mr-2" />
-              <span className="text-sm sm:text-base text-[#8B4513] font-['TT_Commons_Pro_DemiBold']">
-                {hintCredits} hint credits
-              </span>
-            </div>
-          </div>
+      <div className="min-h-screen relative font-['TT_Commons_Pro_DemiBold']">
+        {/* Background Image */}
+        <div className="absolute inset-0 w-full h-full">
+          <img
+            src="/sh-bg.svg"
+            alt="Scavenger Hunt Background"
+            className="w-full h-full object-cover"
+          />
         </div>
 
-        {/* Checkpoints List */}
-        <div className="space-y-2 sm:space-y-3 mb-16 sm:mb-20">
-          {checkpoints.map((checkpoint) => (
-            <div
-              key={checkpoint.id}
-              className="bg-[#F4EDE3] rounded-lg shadow-md overflow-hidden"
-            >
-              {/* Checkpoint Header */}
-              <div
-                className={`flex items-center justify-between p-3 sm:p-4 ${
-                  checkpoint.isCompleted ? "" : "cursor-pointer"
-                }`}
-                onClick={() =>
-                  !checkpoint.isCompleted && toggleExpanded(checkpoint.id)
-                }
-              >
-                <div className="flex items-center space-x-2 sm:space-x-3">
-                  {checkpoint.isCompleted ? (
-                    <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
-                  ) : (
-                    <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-gray-300 rounded-full"></div>
-                  )}
-                  <span
-                    className={`text-sm sm:text-base font-['TT_Commons_Pro_ExtraBold'] ${
-                      checkpoint.isCompleted
-                        ? "text-green-600 line-through"
-                        : "text-[#8B4513]"
-                    }`}
-                  >
-                    {checkpoint.location}
-                    {checkpoint.isCompleted && " ✓"}
+        {/* Content Overlay */}
+        <div className="relative z-10 p-4 sm:p-6">
+          {/* Header */}
+          <div className="mb-6">
+            {/* Top Section with Hint Credits */}
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex-1">
+                <h1 className="text-2xl font-['TT_Commons_Pro_ExtraBold'] text-[#411517] leading-none">
+                  Scavenger
+                </h1>
+                <h1 className="text-2xl font-['TT_Commons_Pro_ExtraBold'] text-[#411517] leading-none relative inline-block">
+                  <span className="relative">
+                    Checklist
+                    <span className="absolute bottom-1 left-0 w-full h-[20%] bg-[#CFFF00] -z-10"></span>
                   </span>
-                </div>
-                {/* Only show expand/collapse icons for incomplete checkpoints */}
-                {!checkpoint.isCompleted && (
-                  <>
-                    {expandedId === checkpoint.id ? (
-                      <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5 text-[#8B4513]" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-[#8B4513]" />
-                    )}
-                  </>
-                )}
+                </h1>
               </div>
+              
+                             <div className="flex items-center">
+                 {/* Hint Credits - Top Right */}
+                <div className="flex items-center bg-[#CFFF00] px-3 py-1 rounded-full">
+                  <Lightbulb className="w-5 h-5 text-[#411517] stroke-2" />
+                  <span className="text-2xl text-[#411517] font-black mr-1">
+                      {hintCredits} 
+                    </span>
+                   <div className="flex flex-col -space-y-1">
+                     <span className="text-md text-[#411517] font-['TT_Commons_Pro_ExtraBold'] leading-none">
+                       hints
+                     </span>
+                     <span className="text-md text-[#411517] font-['TT_Commons_Pro_DemiBold'] leading-none">
+                       available
+                     </span>
+                   </div>
+                </div>
+              </div>
+            </div>
+            
+            <p className="text-[#411517] text-sm font-['TT_Commons_Pro_DemiBold'] mb-4">
+              There's no specific order — it's your call.
+            </p>
+          </div>
+
+          {/* Checkpoints List */}
+          <div className="space-y-3 mb-20">
+            {checkpoints.map((checkpoint) => (
+              <div
+                key={checkpoint.id}
+                className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden border border-gray-200"
+              >
+                {/* Checkpoint Header */}
+                <div
+                  className={`flex items-center justify-between p-4 ${
+                    checkpoint.isCompleted ? "" : "cursor-pointer"
+                  }`}
+                  onClick={() =>
+                    !checkpoint.isCompleted && toggleExpanded(checkpoint.id)
+                  }
+                >
+                                    <div className="flex items-center space-x-3">
+                    {checkpoint.isCompleted ? (
+                      <div className="w-6 h-6 bg-[#FF5900] rounded-full flex items-center justify-center">
+                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    ) : (
+                       <div className="w-6 h-6 border-2 border-[#FF5900] rounded-full"></div>
+                    )}
+                    <span className="text-base font-['TT_Commons_Pro_ExtraBold'] text-[#411517]">
+                      {checkpoint.location}
+                    </span>
+                  </div>
+                  {/* Show expand/collapse icons for all checkpoints */}
+                  {expandedId === checkpoint.id ? (
+                    <ChevronUp className="w-5 h-5 text-[#411517]" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-[#411517]" />
+                  )}
+                </div>
 
               {/* Expanded Content */}
               {expandedId === checkpoint.id && (
-                <div className="px-3 sm:px-4 pb-3 sm:pb-4 border-t border-gray-100">
-                  <div className="mt-2 sm:mt-3 space-y-2 sm:space-y-3">
-                    <p className="text-sm sm:text-base text-[#8B4513] font-['TT_Commons_Pro_DemiBold']">
+                <div className="px-4 pb-4 border-t border-gray-200">
+                  <div className="mt-3 space-y-3">
+                    <p className="text-sm text-[#411517] font-['TT_Commons_Pro_DemiBold']">
                       {checkpoint.clue}
                     </p>
 
                     {/* Hint Section */}
                     {revealedHints.has(checkpoint.id) && (
-                      <div className="bg-green-50 p-2 sm:p-3 rounded border border-green-200">
-                        <p className="text-sm sm:text-base text-green-700 font-['TT_Commons_Pro_DemiBold']">
+                      <div className="bg-[#CFFF00]/20 p-3 rounded-lg border border-[#CFFF00]">
+                        <p className="text-sm text-[#411517] font-['TT_Commons_Pro_DemiBold']">
                           💡 Hint: {checkpoint.hint}
                         </p>
                       </div>
@@ -487,13 +576,13 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
                         disabled={
                           hintCredits <= 0 && !revealedHints.has(checkpoint.id)
                         }
-                        className={`flex-1 py-2 px-3 sm:px-4 rounded-lg flex items-center justify-center space-x-2 disabled:opacity-50 text-sm sm:text-base font-['TT_Commons_Pro_DemiBold'] ${
+                        className={`flex-1 py-3 px-4 rounded-lg flex items-center justify-center space-x-2 disabled:opacity-50 text-sm font-['TT_Commons_Pro_ExtraBold'] ${
                           revealedHints.has(checkpoint.id)
-                            ? "bg-green-200 text-green-700"
-                            : "bg-gray-200 text-[#8B4513]"
+                            ? "bg-[#F4EDE3] text-[#411517]"
+                            : "bg-[#F4EDE3] text-[#411517]"
                         }`}
                       >
-                        <Lightbulb className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <Lightbulb className="w-4 h-4" />
                         <span>
                           {revealedHints.has(checkpoint.id)
                             ? "View hint"
@@ -502,9 +591,9 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
                       </button>
                       <button
                         onClick={() => scanQR(checkpoint.id)}
-                        className="flex-1 bg-[#8B4513] text-white py-2 px-3 sm:px-4 rounded-lg flex items-center justify-center space-x-2 text-sm sm:text-base font-['TT_Commons_Pro_DemiBold']"
+                        className="flex-1 bg-[#FF5900] text-white py-3 px-4 rounded-lg flex items-center justify-center space-x-2 text-sm font-['TT_Commons_Pro_ExtraBold'] hover:bg-[#411517]/80"
                       >
-                        <QrCode className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <QrCode className="w-4 h-4" />
                         <span>Scan QR</span>
                       </button>
                     </div>
@@ -526,43 +615,21 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
           ))}
         </div>
 
-        {/* Progress Footer */}
-        <div className="fixed bottom-0 left-0 right-0 bg-[#F4EDE3] border-t border-gray-200 p-3 sm:p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="text-sm sm:text-base text-[#8B4513] font-['TT_Commons_Pro_ExtraBold']">
-                Progress: {progress.totalFound}/{progress.totalCheckpoints}
+          {/* Progress Footer */}
+          <div className="fixed bottom-4 left-4 right-4">
+            <div className="bg-[#411517] rounded-full flex items-center overflow-hidden">
+              <div className="flex-1 px-6 py-3">
+                <span className="text-white font-['TT_Commons_Pro_ExtraBold']">
+                  Total found: {progress.totalFound}
+                </span>
               </div>
-              {/* Progress Bar */}
-              <div className="w-20 sm:w-32 bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-green-500 h-2 rounded-full transition-all duration-500"
-                  style={{
-                    width: `${
-                      (progress.totalFound / progress.totalCheckpoints) * 100
-                    }%`,
-                  }}
-                ></div>
-              </div>
-              <span className="text-xs sm:text-sm text-gray-500 font-['TT_Commons_Pro_DemiBold']">
-                {Math.round(
-                  (progress.totalFound / progress.totalCheckpoints) * 100
-                )}
-                %
-              </span>
+              <button
+                onClick={handleFinish}
+                className="bg-[#CFFF00] hover:bg-[#CFFF00]/80 text-[#411517] px-8 py-3 font-bold font-['TT_Commons_Pro_ExtraBold'] transition-colors rounded-full ml-2"
+              >
+                Finish
+              </button>
             </div>
-            <button
-              onClick={handleFinish}
-              className={`px-4 sm:px-8 py-2 sm:py-3 rounded-lg text-sm sm:text-base font-['TT_Commons_Pro_ExtraBold'] transition-colors ${
-                progress.totalFound === progress.totalCheckpoints
-                  ? "bg-green-600 hover:bg-green-700 text-white"
-                  : "bg-[#FF8C00] hover:bg-[#FF7F00] text-white"
-              }`}
-            >
-              {progress.totalFound === progress.totalCheckpoints
-                ? "🎉 Complete!"
-                : "Finish Early"}
-            </button>
           </div>
         </div>
       </div>

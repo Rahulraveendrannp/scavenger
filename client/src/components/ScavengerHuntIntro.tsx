@@ -1,7 +1,4 @@
 import React, { useState } from "react";
-import welcomeScavengerSvg from "../assets/welcome_scavenger.svg";
-import introSvg from "../assets/intro.svg";
-import findPointsSvg from "../assets/find_points.svg";
 
 interface ScavengerHuntIntroProps {
   onStart: () => void;
@@ -10,7 +7,7 @@ interface ScavengerHuntIntroProps {
 const ScavengerHuntIntro: React.FC<ScavengerHuntIntroProps> = ({ onStart }) => {
   const [showInstructions, setShowInstructions] = useState(false);
 
-  const handleHowItWorks = () => {
+  const handleHowToPlay = () => {
     setShowInstructions(true);
   };
 
@@ -23,57 +20,54 @@ const ScavengerHuntIntro: React.FC<ScavengerHuntIntroProps> = ({ onStart }) => {
 
   if (showInstructions) {
     return (
-      <div className="h-screen bg-[#FF5900] flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 font-['TT_Commons_Pro_DemiBold'] overflow-hidden">
-        {/* Middle - Find Points SVG */}
-        <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 min-h-0">
+      <div className="h-screen relative overflow-hidden font-['TT_Commons_Pro_DemiBold']">
+        {/* Background SVG - intro.svg with all content */}
+        <div className="absolute inset-0 w-full h-full">
           <img
-            src={findPointsSvg}
-            alt="Find Points"
-            className="max-w-full max-h-full w-auto h-auto object-contain"
+            src="/intro.svg"
+            alt="How to Play Instructions"
+            className="w-full h-full object-cover"
           />
         </div>
 
-        {/* Bottom - Start Button */}
-        <div className="flex-shrink-0 w-full max-w-md mx-auto pb-4 sm:pb-6 lg:pb-8">
-          <button
-            onClick={handleStart}
-            className="w-full bg-white hover:bg-gray-100 text-[#FF5900] text-lg sm:text-xl lg:text-2xl font-['TT_Commons_Pro_DemiBold'] py-3 sm:py-4 lg:py-5 px-6 sm:px-8 lg:px-10 rounded-full transition-colors duration-200 shadow-lg active:scale-95 transform"
-          >
-            Start
-          </button>
+        {/* Content overlay - only button at bottom */}
+        <div className="relative z-10 h-full flex flex-col justify-end pb-8">
+          {/* Let's Go Button - positioned at bottom center */}
+          <div className="flex w-full justify-center px-4">
+            <button
+              onClick={handleStart}
+              className="w-[70%] bg-[#411517] text-white text-lg font-semibold sm:text-xl lg:text-2xl font-['TT_Commons_Pro_ExtraBold'] py-2 sm:py-4 lg:py-5 px-8 sm:px-10 lg:px-12 rounded-full transition-colors duration-200 shadow-lg active:scale-95 transform"
+            >
+              Let's Go
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen bg-[#FF5900] flex flex-col items-center justify-between p-4 sm:p-6 lg:p-8 font-['TT_Commons_Pro_DemiBold'] overflow-hidden">
-      {/* Top layer - Welcome Scavenger SVG */}
-      <div className="flex-shrink-0 flex items-center justify-center pt-2 sm:pt-4 lg:pt-6 px-4 sm:px-6 lg:px-8 max-h-[30vh] sm:max-h-[35vh] lg:max-h-[40vh]">
+    <div className="h-screen relative overflow-hidden font-['TT_Commons_Pro_DemiBold']">
+      {/* Background SVG - covers entire screen */}
+      <div className="absolute inset-0 w-full h-full">
         <img
-          src={welcomeScavengerSvg}
-          alt="Welcome Scavenger"
-          className="max-w-full max-h-full w-auto h-auto object-contain"
+          src="/splash.svg"
+          alt="Scavenger Hunt Splash"
+          className="w-full h-full object-cover"
         />
       </div>
 
-      {/* Middle layer - Intro SVG */}
-      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 min-h-0">
-        <img
-          src={introSvg}
-          alt="Scavenger Hunt Intro"
-          className="max-w-full max-h-full w-auto h-auto object-contain"
-        />
-      </div>
-
-      {/* Bottom layer - Let's Go Button */}
-      <div className="flex-shrink-0 w-full max-w-md mx-auto pb-4 sm:pb-6 lg:pb-8">
-        <button
-          onClick={handleHowItWorks}
-          className="w-full bg-white hover:bg-gray-100 text-[#FF5900] text-lg sm:text-xl lg:text-2xl font-['TT_Commons_Pro_DemiBold'] py-3 sm:py-4 lg:py-5 px-6 sm:px-8 lg:px-10 rounded-full transition-colors duration-200 shadow-lg active:scale-95 transform"
-        >
-          Let's Go
-        </button>
+      {/* Content overlay */}
+      <div className="relative z-10 h-full flex flex-col justify-end pb-8">
+        {/* How to Play Button - positioned at bottom center */}
+                 <div className="flex w-full justify-center px-4">
+           <button
+             onClick={handleHowToPlay}
+             className="w-[70%] bg-[#F4EDE3] hover:bg-gray-100 text-[#411517] text-lg font-semibold sm:text-xl lg:text-2xl font-['TT_Commons_Pro_ExtraBold'] py-2 sm:py-4 lg:py-5 px-8 sm:px-10 lg:px-12 rounded-full transition-colors duration-200 shadow-lg active:scale-95 transform"
+           >
+             How to Play
+           </button>
+         </div>
       </div>
     </div>
   );

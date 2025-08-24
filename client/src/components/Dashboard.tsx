@@ -506,7 +506,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               <span className="text-2xl sm:text-3xl">talabat</span>{" "}
               <span className="text-xl sm:text-2xl">Game Zone</span>
             </h1>
-            <p className="text-sm sm:text-base text-gray-600 mt-1">
+            <p className="text-sm w-[80%] sm:text-base text-gray-600 mt-1">
               Your digital Back to Something stamp card.
             </p>
           </div>
