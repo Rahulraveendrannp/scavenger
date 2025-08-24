@@ -188,20 +188,6 @@ const AdminPage: React.FC<AdminPageProps> = () => {
             </div>
           </div>
           
-          <div className="bg-green-500/5 rounded-xl p-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-green-500/10 p-2 rounded-lg">
-                <CheckCircle className="w-6 h-6 text-green-500" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Scavenger Hunt Completed</p>
-                <p className="text-2xl font-['TT_Commons_Pro_ExtraBold'] text-green-600">
-                  {isLoading ? "..." : usersList.filter(user => user.scavengerCompleted).length}
-                </p>
-                <p className="text-xs text-gray-500">(4+ checkpoints)</p>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Claim Message */}
@@ -240,7 +226,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
         <div className="bg-[#F4EDE3] rounded-xl shadow-lg overflow-hidden">
           <div className="p-6 border-b border-gray-200">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <h3 className="text-xl font-['TT_Commons_Pro_ExtraBold'] text-gray-800">Users Progress & Claim Status</h3>
+              <h3 className="text-xl font-['TT_Commons_Pro_ExtraBold'] text-gray-800">Users Progress</h3>
               
               {/* Search Bar */}
               <div className="relative">
@@ -368,41 +354,6 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                 </table>
               </div>
 
-              {/* Summary Statistics */}
-              <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-center">
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wider">Dashboard Games</p>
-                    <p className="text-lg font-['TT_Commons_Pro_ExtraBold'] text-[#FF5900]">
-                      {usersList.reduce((total, user) => {
-                        const [completed] = (user.completedGames || '0/4').split('/').map(Number);
-                        return total + completed;
-                      }, 0)}/{usersList.length * 4}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wider">Scavenger Hunt</p>
-                    <p className="text-lg font-['TT_Commons_Pro_ExtraBold'] text-green-600">
-                      {usersList.reduce((total, user) => {
-                        const [completed] = (user.scavengerProgress || '0/8').split('/').map(Number);
-                        return total + completed;
-                      }, 0)}/{usersList.length * 8}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wider">Completed Users</p>
-                    <p className="text-lg font-['TT_Commons_Pro_ExtraBold'] text-blue-600">
-                      {usersList.filter(user => user.scavengerCompleted).length}/{usersList.length}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wider">Claimed Rewards</p>
-                    <p className="text-lg font-['TT_Commons_Pro_ExtraBold'] text-purple-600">
-                      {usersList.filter(user => user.isClaimed).length}/{usersList.length}
-                    </p>
-                  </div>
-                </div>
-              </div>
 
               {/* Pagination */}
               {totalPages > 1 && (

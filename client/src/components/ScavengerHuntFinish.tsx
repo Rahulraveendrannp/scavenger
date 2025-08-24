@@ -49,9 +49,6 @@ function ScavengerHuntFinish() {
           </h1>
           <div className="space-y-2 sm:space-y-3 lg:space-y-4">
             <h2 className="text-lg sm:text-xl lg:text-2xl xl:text-2xl font-['TT_Commons_Pro_ExtraBold'] text-[#8B4513] px-2">
-              That's put you in the {gameState} tier!{" "}
-            </h2>
-            <h2 className="text-lg sm:text-xl lg:text-2xl xl:text-2xl font-['TT_Commons_Pro_ExtraBold'] text-[#8B4513] px-2">
               Collect your prize at the booth!
             </h2>
           </div>
@@ -67,14 +64,14 @@ function ScavengerHuntFinish() {
         <div className="w-full flex flex-col sm:flex-row gap-3 sm:gap-4 lg:gap-6 px-2 flex-shrink-0 pb-4 lg:pb-8">
           <button
             onClick={() => navigate("/game")}
-            className="flex-1 bg-[#F4EDE3] hover:bg-[#F4EDE3] text-[#FF5900] border border-[#FF5900] text-base sm:text-lg lg:text-xl font-['TT_Commons_Pro_DemiBold'] py-3 sm:py-4 lg:py-4 px-6 sm:px-8 lg:px-10 rounded-full transition-colors duration-200 shadow-lg"
+            className="flex-1 bg-[#F4EDE3] hover:bg-[#F4EDE3] text-[#FF5900] border border-[#FF5900] text-base sm:text-lg lg:text-xl font-['TT_Commons_Pro_DemiBold'] py-2 sm:py-4 lg:py-4 px-6 sm:px-8 lg:px-10 rounded-full transition-colors duration-200 shadow-lg"
           >
             Continue hunt
           </button>
 
           <button
             onClick={handleClaimPrize}
-            className="flex-1 bg-[#FF5900] hover:bg-[#E54D00] text-white text-base sm:text-lg lg:text-xl font-['TT_Commons_Pro_DemiBold'] py-3 sm:py-4 lg:py-4 px-6 sm:px-8 lg:px-10 rounded-full transition-colors duration-200 shadow-lg"
+            className="flex-1 bg-[#FF5900] hover:bg-[#E54D00] text-white text-base sm:text-lg lg:text-xl font-['TT_Commons_Pro_DemiBold'] py-2 sm:py-4 lg:py-4 px-6 sm:px-8 lg:px-10 rounded-full transition-colors duration-200 shadow-lg"
           >
             Claim prize
           </button>

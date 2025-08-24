@@ -1,16 +1,30 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  Gamepad2,
-  Puzzle,
-  Car,
-  Search,
   QrCode,
+  Search,
   Star,
   Trophy,
 } from "lucide-react";
 import { ScavengerAPI } from "../api";
 import SimpleQRScanner from "./SimpleQRScanner";
+
+// Custom SVG Icon Components
+const LunchboxIcon: React.FC<{ className?: string }> = ({ className = "w-8 h-8" }) => (
+  <img src="/Lunchbox.svg" alt="Lunchbox" className={className} />
+);
+
+const RunnerIcon: React.FC<{ className?: string }> = ({ className = "w-8 h-8" }) => (
+  <img src="/Runner.svg" alt="Runner" className={className} />
+);
+
+const ScavengerIcon: React.FC<{ className?: string }> = ({ className = "w-8 h-8" }) => (
+  <img src="/Scavenger.svg" alt="Scavenger" className={className} />
+);
+
+const TalabeatIcon: React.FC<{ className?: string }> = ({ className = "w-8 h-8" }) => (
+  <img src="/Talabeat.svg" alt="Talabeat" className={className} />
+);
 
 interface Game {
   id: string;
@@ -121,40 +135,40 @@ const Dashboard: React.FC<DashboardProps> = ({
           return;
         }
 
-        const defaultGames = [
-          {
-            id: "lunchbox-matcher",
-            title: "Zoomu's Lunchbox Matcher",
-            description: "Pair up and match the lunchbox.",
-            icon: <Gamepad2 className="w-8 h-8" />,
-            type: "offline" as const,
-            isCompleted: false,
-          },
-          {
-            id: "city-run",
-            title: "Flexu's City Run",
-            description: "Beat the clock and grab the goodies.",
-            icon: <Car className="w-8 h-8" />,
-            type: "offline" as const,
-            isCompleted: false,
-          },
-          {
-            id: "scavenger-hunt",
-            title: "Tasku's Scavenger Hunt",
-            description: "Get your clues and hunt for hidden codes.",
-            icon: <Search className="w-8 h-8" />,
-            type: "scavenger" as const,
-            isCompleted: false,
-          },
-          {
-            id: "talabeats",
-            title: "Funzu's talabeats",
-            description: "Tap to the rhythm of the talabat jingle.",
-            icon: <Puzzle className="w-8 h-8" />,
-            type: "offline" as const,
-            isCompleted: false,
-          },
-        ];
+                 const defaultGames = [
+           {
+             id: "lunchbox-matcher",
+             title: "Zoomu's Lunchbox Matcher",
+             description: "Pair up and match the lunchbox.",
+             icon: <LunchboxIcon className="w-8 h-8" />,
+             type: "offline" as const,
+             isCompleted: false,
+           },
+           {
+             id: "city-run",
+             title: "Flexu's City Run",
+             description: "Beat the clock and grab the goodies.",
+             icon: <RunnerIcon className="w-8 h-8" />,
+             type: "offline" as const,
+             isCompleted: false,
+           },
+           {
+             id: "scavenger-hunt",
+             title: "Tasku's Scavenger Hunt",
+             description: "Get your clues and hunt for hidden codes.",
+             icon: <ScavengerIcon className="w-8 h-8" />,
+             type: "scavenger" as const,
+             isCompleted: false,
+           },
+           {
+             id: "talabeats",
+             title: "Funzu's talabeats",
+             description: "Tap to the rhythm of the talabat jingle.",
+             icon: <TalabeatIcon className="w-8 h-8" />,
+             type: "offline" as const,
+             isCompleted: false,
+           },
+         ];
 
         // Update games based on database progress
         const updatedGames: Game[] = defaultGames.map((game) => {
@@ -224,40 +238,40 @@ const Dashboard: React.FC<DashboardProps> = ({
       } catch (error) {
         console.error("❌ Dashboard: Error loading progress:", error);
         // Fallback to default games
-        setGames([
-          {
-            id: "lunchbox-matcher",
-            title: "Zoomu's Lunchbox Matcher",
-            description: "Pair up and match the lunchbox.",
-            icon: <Gamepad2 className="w-8 h-8" />,
-            type: "offline" as const,
-            isCompleted: false,
-          },
-          {
-            id: "city-run",
-            title: "Flexu's City Run",
-            description: "Beat the clock and grab the goodies.",
-            icon: <Car className="w-8 h-8" />,
-            type: "offline" as const,
-            isCompleted: false,
-          },
-          {
-            id: "scavenger-hunt",
-            title: "Tasku's Scavenger Hunt",
-            description: "Get your clues and hunt for hidden codes.",
-            icon: <Search className="w-8 h-8" />,
-            type: "scavenger" as const,
-            isCompleted: false,
-          },
-          {
-            id: "talabeats",
-            title: "Funzu's talabeats",
-            description: "Tap to the rhythm of the talabat jingle.",
-            icon: <Puzzle className="w-8 h-8" />,
-            type: "offline" as const,
-            isCompleted: false,
-          },
-        ]);
+                 setGames([
+           {
+             id: "lunchbox-matcher",
+             title: "Zoomu's Lunchbox Matcher",
+             description: "Pair up and match the lunchbox.",
+             icon: <LunchboxIcon className="w-8 h-8" />,
+             type: "offline" as const,
+             isCompleted: false,
+           },
+           {
+             id: "city-run",
+             title: "Flexu's City Run",
+             description: "Beat the clock and grab the goodies.",
+             icon: <RunnerIcon className="w-8 h-8" />,
+             type: "offline" as const,
+             isCompleted: false,
+           },
+           {
+             id: "scavenger-hunt",
+             title: "Tasku's Scavenger Hunt",
+             description: "Get your clues and hunt for hidden codes.",
+             icon: <ScavengerIcon className="w-8 h-8" />,
+             type: "scavenger" as const,
+             isCompleted: false,
+           },
+           {
+             id: "talabeats",
+             title: "Funzu's talabeats",
+             description: "Tap to the rhythm of the talabat jingle.",
+             icon: <TalabeatIcon className="w-8 h-8" />,
+             type: "offline" as const,
+             isCompleted: false,
+           },
+         ]);
       } finally {
         console.log(
           "🏁 Dashboard: Loading completed, setting isLoading to false"
@@ -560,13 +574,9 @@ const Dashboard: React.FC<DashboardProps> = ({
           >
             <div className="flex items-start justify-between mb-3 sm:mb-4">
               <div
-                className={`p-2 sm:p-3 rounded-xl ${
-                  game.isCompleted
-                    ? "bg-green-100 text-green-600"
-                    : "bg-[#FF5900]/10 text-[#FF5900]"
-                }`}
+                className={`p-1 sm:p-3 rounded-xl`}
               >
-                <div className="w-6 h-6 sm:w-8 sm:h-8">{game.icon}</div>
+                <div className="w-8 h-6 sm:w-8 sm:h-8">{game.icon}</div>
               </div>
               {game.isCompleted && (
                 <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-['TT_Commons_Pro_DemiBold']">
@@ -587,48 +597,54 @@ const Dashboard: React.FC<DashboardProps> = ({
               {game.description}
             </p>
 
-            <button
-              onClick={() => {
-                if (game.type === "scavenger") {
-                  // For scavenger hunt, always go directly to hunt (no QR scanning needed)
-                  onStartScavengerHunt();
-                } else if (!game.isCompleted) {
-                  // For other games, show QR scanner if not completed
-                  handleScanQR(game.id);
-                }
-              }}
-              disabled={game.isCompleted || isClaimed}
-              className={`w-full py-2 sm:py-3 px-3 sm:px-4 rounded-lg font-['TT_Commons_Pro_DemiBold'] flex items-center justify-center gap-2 transition-colors text-sm sm:text-base ${
-                game.isCompleted
-                  ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                  : game.type === "scavenger"
-                  ? "bg-purple-500 hover:bg-purple-600 text-white"
-                  : "bg-[#FF5900] hover:bg-[#E54D00] text-white"
-              }`}
-            >
-              {game.type === "scavenger" ? (
-                <Search className="w-4 h-4 sm:w-5 sm:h-5" />
-              ) : (
-                <QrCode className="w-4 h-4 sm:w-5 sm:h-5" />
-              )}
-              <span className="hidden sm:inline">
-                {game.isCompleted
-                  ? "Completed"
-                  : game.type === "scavenger" && game.isStarted
-                  ? "Resume Hunt"
-                  : game.type === "scavenger"
-                  ? "Start Hunt"
-                  : "Scan to Complete"}
-              </span>
-              <span className="sm:hidden">
-                {game.isCompleted
-                  ? "Done"
-                  : game.type === "scavenger" && game.isStarted
-                  ? "Resume"
-                  : game.type === "scavenger"
-                  ? "Start"
-                  : "Complete"}
-              </span>
+                         <button
+               onClick={() => {
+                 if (game.type === "scavenger") {
+                   // For scavenger hunt, always go directly to hunt (no QR scanning needed)
+                   onStartScavengerHunt();
+                 } else if (!game.isCompleted) {
+                   // For other games, show QR scanner if not completed
+                   handleScanQR(game.id);
+                 }
+               }}
+               disabled={isClaimed}
+               className={`w-full py-2 sm:py-3 px-3 sm:px-4 rounded-lg font-['TT_Commons_Pro_DemiBold'] flex items-center justify-center gap-2 transition-colors text-sm sm:text-base ${
+                 game.isCompleted
+                   ? game.type === "scavenger"
+                     ? "bg-purple-500 hover:bg-purple-600 text-white"
+                     : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                   : game.type === "scavenger"
+                   ? "bg-purple-500 hover:bg-purple-600 text-white"
+                   : "bg-[#FF5900] hover:bg-[#E54D00] text-white"
+               }`}
+             >
+                             {game.type === "scavenger" ? (
+                 <Search className="w-4 h-4 sm:w-5 sm:h-5" />
+               ) : (
+                 <QrCode className="w-4 h-4 sm:w-5 sm:h-5" />
+               )}
+                             <span className="hidden sm:inline">
+                 {game.isCompleted
+                   ? game.type === "scavenger" 
+                     ? "Resume Hunt"
+                     : "Completed"
+                   : game.type === "scavenger" && game.isStarted
+                   ? "Resume Hunt"
+                   : game.type === "scavenger"
+                   ? "Start Hunt"
+                   : "Scan to Complete"}
+               </span>
+               <span className="sm:hidden">
+                 {game.isCompleted
+                   ? game.type === "scavenger" 
+                     ? "Resume"
+                     : "Done"
+                   : game.type === "scavenger" && game.isStarted
+                   ? "Resume"
+                   : game.type === "scavenger"
+                   ? "Start"
+                   : "Complete"}
+               </span>
             </button>
           </div>
         ))}
@@ -773,6 +789,7 @@ const ClaimVoucherModal: React.FC<{
           setGameStatus({
             lunchboxMatcher: dashboardGames?.lunchboxMatcher?.isCompleted || false,
             cityRun: dashboardGames?.cityRun?.isCompleted || false,
+            talabeats: dashboardGames?.talabeats?.isCompleted || false,
             scavengerHunt: scavengerCompleted,
             scavengerStarted: scavengerStarted,
             scavengerProgress: scavengerProgress
@@ -895,7 +912,7 @@ const ClaimVoucherModal: React.FC<{
                       }`}
                     >
                       {gameStatus.scavengerHunt
-                        ? "✓ Completed"
+                        ? `✓ Completed (${gameStatus.scavengerProgress}/8)`
                         : gameStatus.scavengerStarted
                         ? `${gameStatus.scavengerProgress}/8`
                         : "✗ Pending"}
