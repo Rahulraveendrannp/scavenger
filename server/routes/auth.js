@@ -198,7 +198,7 @@ router.post('/verify-otp', validateOTP, asyncHandler(async (req, res, next) => {
  * @desc    Resend OTP
  * @access  Public
  */
-router.post('/resend-otp', otpLimiter, validatePhoneNumber, asyncHandler(async (req, res, next) => {
+router.post('/resend-otp', validatePhoneNumber, asyncHandler(async (req, res, next) => {
   const { phoneNumber } = req.body;
   const normalizedPhone = phoneNumber.replace(/\s/g, '');
 
