@@ -1,6 +1,5 @@
 // server/routes/auth.js
 const express = require('express');
-const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const smsService = require('../services/smsService');
@@ -11,25 +10,7 @@ require('dotenv').config();
 
 const router = express.Router();
 
-// Rate limiting for OTP requests
-const otpLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 OTP requests per windowMs
-  message: {
-    success: false,
-    error: 'Too many OTP requests, please try again later'
-  }
-});
 
-// Rate limiting for OTP verification
-const verifyLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Limit each IP to 10 verification attempts per windowMs
-  message: {
-    success: false,
-    error: 'Too many verification attempts, please try again later'
-  }
-});
 
 // Validation middleware
 const validatePhoneNumber = [
@@ -50,7 +31,7 @@ const validateOTP = [
  * @desc    Register user and send OTP
  * @access  Public
  */
-router.post('/register', otpLimiter, validatePhoneNumber, asyncHandler(async (req, res, next) => {
+router.post('/register', validatePhoneNumber, asyncHandler(async (req, res, next) => {
   // Check for validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -126,7 +107,7 @@ router.post('/register', otpLimiter, validatePhoneNumber, asyncHandler(async (re
  * @desc    Verify OTP and authenticate user
  * @access  Public
  */
-router.post('/verify-otp', verifyLimiter, validateOTP, asyncHandler(async (req, res, next) => {
+router.post('/verify-otp', validateOTP, asyncHandler(async (req, res, next) => {
   // Check for validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {

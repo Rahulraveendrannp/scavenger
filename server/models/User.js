@@ -62,7 +62,8 @@ const userSchema = new mongoose.Schema({
   },
   voucherCode: {
     type: String,
-    default: null
+    required: true,
+    unique: true
   },
   preferences: {
     notifications: {
@@ -98,10 +99,10 @@ const userSchema = new mongoose.Schema({
 userSchema.index({ phoneNumber: 1 });
 userSchema.index({ createdAt: -1 });
 userSchema.index({ 'gameStats.bestTime': 1 });
-userSchema.index({ voucherCode: 1 }, { sparse: true, unique: true });
+userSchema.index({ voucherCode: 1 }, { unique: true });
 
 
-// Pre-save middleware to hash OTP
+// Pre-save middleware to hash OTP and generate voucher code
 userSchema.pre('save', async function(next) {
   // Update the updatedAt field
   this.updatedAt = new Date();
@@ -109,6 +110,11 @@ userSchema.pre('save', async function(next) {
   // Hash OTP if modified
   if (this.isModified('otpCode') && this.otpCode) {
     this.otpCode = await bcrypt.hash(this.otpCode, 10);
+  }
+
+  // Generate voucher code for new users
+  if (this.isNew && !this.voucherCode) {
+    this.voucherCode = await this.constructor.generateUniqueVoucherCode();
   }
 
   next();
@@ -179,8 +185,8 @@ userSchema.statics.findByPhoneNumber = function(phoneNumber) {
   return this.findOne({ phoneNumber });
 };
 
-// Static method to generate and save voucher code
-userSchema.statics.generateVoucherCode = async function(userId) {
+// Static method to generate unique voucher code
+userSchema.statics.generateUniqueVoucherCode = async function() {
   const generateCode = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';
@@ -191,41 +197,15 @@ userSchema.statics.generateVoucherCode = async function(userId) {
   };
 
   let attempts = 0;
-  const maxAttempts = 10;
+  const maxAttempts = 20;
 
   while (attempts < maxAttempts) {
     const voucherCode = generateCode();
     
-    try {
-      // Try to update the user with the new voucher code
-      const result = await this.updateOne(
-        { _id: userId, voucherCode: { $exists: false } },
-        { $set: { voucherCode } }
-      );
-      
-      if (result.modifiedCount > 0) {
-        return voucherCode;
-      }
-      
-      // If no document was modified, try to find if this code already exists
-      const existingUser = await this.findOne({ voucherCode });
-      if (!existingUser) {
-        // Code doesn't exist, try to set it
-        const updateResult = await this.updateOne(
-          { _id: userId },
-          { $set: { voucherCode } }
-        );
-        if (updateResult.modifiedCount > 0) {
-          return voucherCode;
-        }
-      }
-    } catch (error) {
-      // If there's a duplicate key error, try again
-      if (error.code === 11000) {
-        attempts++;
-        continue;
-      }
-      throw error;
+    // Check if this voucher code already exists
+    const existingUser = await this.findOne({ voucherCode });
+    if (!existingUser) {
+      return voucherCode; // Return the unique code
     }
     
     attempts++;
