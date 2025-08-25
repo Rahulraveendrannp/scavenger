@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
+/* Local font faces */
+@font-face {
+  font-family: 'TT_Commons_Pro_DemiBold';
+  src: url('/fonts/TT Commons Pro DemiBold.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'TT_Commons_Pro_ExtraBold';
+  src: url('/fonts/TT Commons Pro ExtraBold.otf') format('opentype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* CSS Variables for font families */
 :root {
   --font-heading: 'TT_Commons_Pro_ExtraBold', 'Arial Black', 'Helvetica Black', sans-serif;
@@ -9,23 +26,23 @@
 /* Global font application */
 body {
   font-family: var(--font-body);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
-  font-weight: 700;
+  font-weight: 800;
 }
 
 /* Custom font classes for consistent usage */
 .font-heading {
   font-family: var(--font-heading);
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .font-body {
   font-family: var(--font-body);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .font-bold-heading {

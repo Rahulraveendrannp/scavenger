@@ -50,6 +50,33 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
     }
     return new Set();
   });
+  // Simple shuffle function based on phone number for load distribution
+  const shuffleCheckpoints = (checkpoints: ClueItem[], phoneNumber: string): ClueItem[] => {
+    // Simple hash from phone number
+    const hash = phoneNumber.split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0);
+    
+    // Use hash to determine shuffle pattern
+    const shuffled = [...checkpoints];
+    const patterns = [   
+      [7,6,5,4,3,2,1,0], // reverse
+      [3,4,5,6,7,0,1,2], // middle first
+      [0,2,4,6,1,3,5,7], // even then odd
+      [1,3,5,7,0,2,4,6], // odd then even
+      [4,5,6,7,0,1,2,3], // second half first
+      [2,3,4,5,6,7,0,1], // skip first
+      [6,7,0,1,2,3,4,5], // skip middle
+      [0,1,2,3,4,5,6,7], // original order
+    ];
+    
+    const patternIndex = Math.abs(hash) % patterns.length;
+    const pattern = patterns[patternIndex];
+    
+    return pattern.map(index => shuffled[index]);
+  };
+
   const [checkpoints, setCheckpoints] = useState<ClueItem[]>(() => {
     // Initialize with default checkpoints, but don't load completed status from localStorage
     const defaultCheckpoints = [
@@ -119,6 +146,15 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
       },
     ];
 
+    // Shuffle checkpoints based on user's phone number for load distribution
+    const phoneNumber = localStorage.getItem("talabat_phone_number");
+    if (phoneNumber) {
+      const shuffledCheckpoints = shuffleCheckpoints(defaultCheckpoints, phoneNumber);
+      console.log("🔄 Checkpoints shuffled for user:", phoneNumber);
+      console.log("📋 Shuffled order:", shuffledCheckpoints.map(cp => cp.location));
+      return shuffledCheckpoints;
+    }
+
     return defaultCheckpoints;
   });
 
@@ -172,18 +208,19 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
         // Update progress state
         setProgress(response.data);
         
-        // Update checkpoints with completed status from backend
-        const updatedCheckpoints = checkpoints.map((checkpoint) => {
-          // Check if this checkpoint is completed based on backend data
-          // We'll use the totalFound count to determine which checkpoints are completed
-          // For now, we'll assume checkpoints are completed in order (1, 2, 3, etc.)
-          const isCompleted = checkpoint.id <= (response.data?.totalFound || 0);
-          
-          return {
-            ...checkpoint,
-            isCompleted: isCompleted,
-          };
-        });
+                 // Update checkpoints with completed status from backend
+         // We need to preserve the shuffled order while updating completion status
+         const updatedCheckpoints = checkpoints.map((checkpoint) => {
+           // Check if this checkpoint is completed based on backend data
+           // We'll use the totalFound count to determine which checkpoints are completed
+           // For now, we'll assume checkpoints are completed in order (1, 2, 3, etc.)
+           const isCompleted = checkpoint.id <= (response.data?.totalFound || 0);
+           
+           return {
+             ...checkpoint,
+             isCompleted: isCompleted,
+           };
+         });
         
         setCheckpoints(updatedCheckpoints);
         console.log("✅ Checkpoints updated with backend completion status:", updatedCheckpoints);
@@ -218,11 +255,12 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
         const parsed = JSON.parse(savedProgress);
         console.log("📱 Loading fallback data from localStorage:", parsed);
         
-        // Update checkpoints with localStorage data
-        const updatedCheckpoints = checkpoints.map((checkpoint) => ({
-          ...checkpoint,
-          isCompleted: parsed.completedCheckpoints?.includes(checkpoint.id) || false,
-        }));
+                 // Update checkpoints with localStorage data
+         // Preserve the shuffled order while updating completion status
+         const updatedCheckpoints = checkpoints.map((checkpoint) => ({
+           ...checkpoint,
+           isCompleted: parsed.completedCheckpoints?.includes(checkpoint.id) || false,
+         }));
         
         setCheckpoints(updatedCheckpoints);
         
@@ -494,7 +532,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
                  {/* Hint Credits - Top Right */}
                 <div className="flex items-center bg-[#CFFF00] px-3 py-1 rounded-full">
                   <Lightbulb className="w-5 h-5 text-[#411517] stroke-2" />
-                  <span className="text-2xl text-[#411517] font-heading mr-1">
+                  <span className="text-2xl text-[#411517] font-body mr-1">
                       {hintCredits} 
                     </span>
                    <div className="flex flex-col -space-y-1">
@@ -564,7 +602,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
                     {revealedHints.has(checkpoint.id) && (
                       <div className="bg-[#CFFF00]/20 p-3 rounded-lg border border-[#CFFF00]">
                         <p className="text-sm text-[#411517] font-body">
-                          💡 Hint: {checkpoint.hint}
+                           Hint: {checkpoint.hint}
                         </p>
                       </div>
                     )}
@@ -576,7 +614,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
                         disabled={
                           hintCredits <= 0 && !revealedHints.has(checkpoint.id)
                         }
-                        className={`flex-1 py-3 px-4 rounded-lg flex items-center justify-center space-x-2 disabled:opacity-50 text-sm font-body ${
+                        className={`flex-1 py-3 px-4 rounded-full flex items-center justify-center space-x-2 disabled:opacity-50 text-sm font-body ${
                           revealedHints.has(checkpoint.id)
                             ? "bg-[#F4EDE3] text-[#411517]"
                             : "bg-[#F4EDE3] text-[#411517]"
@@ -591,7 +629,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
                       </button>
                       <button
                         onClick={() => scanQR(checkpoint.id)}
-                        className="flex-1 bg-[#FF5900] text-white py-3 px-4 rounded-lg flex items-center justify-center space-x-2 text-sm font-body hover:bg-[#411517]/80"
+                        className="flex-1 bg-[#FF5900] text-white py-3 px-4 rounded-full flex items-center justify-center space-x-2 text-sm font-body hover:bg-[#411517]/80"
                       >
                         <QrCode className="w-4 h-4" />
                         <span>Scan QR</span>

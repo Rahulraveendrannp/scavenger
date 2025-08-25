@@ -34,21 +34,23 @@ function ScavengerHuntFinish() {
 
   return (
     <div className="h-screen relative font-body overflow-hidden">
-      {/* Background layout image */}
+      {/* Background image */}
       <div className="absolute inset-0 w-full h-full">
-        <img src="/final.svg" alt="Finish Background" className="w-full h-full object-cover" />
+        <img src="/SH3.svg" alt="Finish Background" className="w-full h-full object-cover" />
       </div>
 
       {/* Content */}
-      <div className="relative z-10 h-full flex flex-col items-center justify-between py-6 px-4 text-center">
-        {/* Top spacer for header area already baked into SVG */}
-        <div />
+      <div className="relative z-10 h-full flex flex-col items-center justify-between py-[20%] px-4 text-center">
+        {/* Top overlay text image */}
+        <div className="w-full flex justify-center pt-4">
+          <img src="/text1.svg" alt="Finish Title" className="w-full  md:max-w-lg" />
+        </div>
 
         {/* Middle content */}
-        <div className="space-y-3 mt-[60%]">
+        <div className="space-y-3 ">
           {variant === "all" ? (
             <>
-              <h1 className="text-3xl sm:text-3xl font-heading text-[#411517]">Crushed it!</h1>
+              <h1 className="text-4xl sm:text-3xl font-heading text-[#411517]">Crushed it!</h1>
               <p className="text-md w-[90%] mx-auto sm:text-base text-[#411517]">You found all the checkpoints. Fantastic job!</p>
               <div className="flex items-center justify-center pt-2">
                 <img src="/star.svg" alt="Star" className="w-32 h-32" />
@@ -56,7 +58,7 @@ function ScavengerHuntFinish() {
             </>
           ) : variant === "mid" ? (
             <>
-              <h1 className="text-3xl mx-auto w-[80%] sm:text-3xl font-heading text-[#411517]">
+              <h1 className="text-4xl mx-auto w-[80%] sm:text-3xl font-heading text-[#411517]">
                 You found {progress?.totalFound}/{progress?.totalCheckpoints} checkpoints!
               </h1>
               <p className="text-md sm:text-base text-[#411517]">Great job! But there's still more.</p>
@@ -70,7 +72,7 @@ function ScavengerHuntFinish() {
             </>
           ) : (
             <>
-              <h1 className="text-3xl w-[80%] mx-auto sm:text-3xl font-heading text-[#411517]">
+              <h1 className="text-4xl w-[80%] mx-auto sm:text-3xl font-heading text-[#411517]">
                 You found {progress?.totalFound}/{progress?.totalCheckpoints} checkpoints!
               </h1>
               <p className="text-md sm:text-base text-[#411517]">You need more to win a prize.</p>

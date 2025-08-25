@@ -7,10 +7,10 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        'heading': ['TT_Commons_Pro_ExtraBold', 'Arial Black', 'Helvetica Black', 'sans-serif'],
-        'body': ['TT_Commons_Pro_DemiBold', 'Arial', 'Helvetica', 'sans-serif'],
-        'demi': ['TT_Commons_Pro_DemiBold', 'Arial', 'Helvetica', 'sans-serif'],
-        'extrabold': ['TT_Commons_Pro_ExtraBold', 'Arial Black', 'Helvetica Black', 'sans-serif'],
+        'heading': ['TT_Commons_Pro_ExtraBold'],
+        'body': ['TT_Commons_Pro_DemiBold'],
+        'demi': ['TT_Commons_Pro_DemiBold'],
+        'extrabold': ['TT_Commons_Pro_ExtraBold'],
       },
       fontWeight: {
         'black': '900',

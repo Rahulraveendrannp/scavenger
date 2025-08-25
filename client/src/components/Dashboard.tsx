@@ -598,13 +598,13 @@ const Dashboard: React.FC<DashboardProps> = ({
           <button
             onClick={handleClaimClick}
             disabled={isClaimed}
-            className={`px-3 py-1 rounded-lg text-xs font-body transition-colors ${
+            className={`px-6 py-2 rounded-full text-sm font-body transition-colors ${
               isClaimed
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                 : "bg-[#FF5900] hover:bg-[#E54D00] text-white"
             }`}
           >
-            {isClaimed ? "CLAIMED" : "CLAIM"}
+            {isClaimed ? "Claimed" : "Claim"}
           </button>
         </div>
       </div>
@@ -655,7 +655,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   }
                 }}
                 disabled={isClaimed}
-                className={`w-full py-2 sm:py-3 px-3 sm:px-4 rounded-lg font-body flex items-center justify-center gap-2 transition-colors text-sm sm:text-base ${
+                className={`w-full py-2 sm:py-3 px-3 sm:px-4 rounded-full font-body flex items-center justify-center gap-2 transition-colors text-sm sm:text-base ${
                   game.isCompleted
                     ? game.type === "scavenger"
                       ? "bg-purple-500 hover:bg-purple-600 text-white"
@@ -690,7 +690,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     ? "Resume"
                     : game.type === "scavenger"
                     ? "Start"
-                    : "Complete"}
+                    : "Scan"}
                 </span>
               </button>
             </div>
@@ -702,13 +702,10 @@ const Dashboard: React.FC<DashboardProps> = ({
       <div className="text-center mt-6">
         <button
           onClick={onLogout}
-          className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors text-sm sm:text-base font-body"
+          className="bg-[#411517] text-white px-4 py-2 rounded-full hover:bg-[#411517]/80 transition-colors text-xs sm:text-base font-body"
         >
-          🔐 Logout
+           Logout
         </button>
-        <p className="text-xs  mt-2">
-          Logout will clear all your session data
-        </p>
       </div>
     </div>
   );
@@ -869,7 +866,7 @@ const ClaimVoucherModal: React.FC<{
             Claim Your Reward
           </h3>
           <p className="text-sm sm:text-base text-gray-600 mb-4">
-            Scratch below to reveal your voucher code and show it to booth staff
+            Tap below to reveal your voucher code and show it to booth staff
           </p>
           
           {/* Voucher Code Display */}
@@ -901,14 +898,14 @@ const ClaimVoucherModal: React.FC<{
                         </span>
                       ) : (
                         <div className="flex items-center justify-center">
-                          <span className="text-gray-500 text-sm">👆 Scratch Here</span>
+                          <span className="text-gray-500 text-sm">Tap Here</span>
                         </div>
                       )}
                     </div>
                     
                     {!isScratched && (
-                      <div className="absolute inset-0 bg-gradient-to-r from-gray-400 to-gray-300 rounded-lg flex items-center justify-center">
-                                                 <span className="text-gray-600 text-sm font-body">👆 Scratch Here</span>
+                      <div className="absolute inset-0 bg-[#411517] rounded-lg flex items-center justify-center">
+                                                 <span className="text-white text-sm font-body"> Tap Here</span>
                       </div>
                     )}
                   </div>

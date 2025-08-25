@@ -92,8 +92,8 @@ const OTPPage: React.FC<OTPPageProps> = ({
             type="text"
             value={otpCode}
             onChange={handleOtpChange}
-            placeholder="Enter 4-digit code"
-                            className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-center text-2xl tracking-widest font-heading ${
+            
+                            className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-center text-sm tracking-widest font-body ${
               error ? "border-red-500" : "border-[#FF5900]"
             }`}
             disabled={isLoading}
