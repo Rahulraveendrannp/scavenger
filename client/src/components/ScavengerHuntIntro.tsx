@@ -18,9 +18,9 @@ const ScavengerHuntIntro: React.FC<ScavengerHuntIntroProps> = ({ onStart }) => {
     if (onStart) onStart();
   };
 
-  if (showInstructions) {
-    return (
-      <div className="h-screen relative overflow-hidden font-['TT_Commons_Pro_DemiBold']">
+           if (showInstructions) {
+        return (
+          <div className="h-[100svh] relative overflow-hidden font-body">
         {/* Background SVG - intro.svg with all content */}
         <div className="absolute inset-0 w-full h-full">
           <img
@@ -31,12 +31,12 @@ const ScavengerHuntIntro: React.FC<ScavengerHuntIntroProps> = ({ onStart }) => {
         </div>
 
         {/* Content overlay - only button at bottom */}
-        <div className="relative z-10 h-full flex flex-col justify-end pb-8">
+        <div className="relative z-10 h-full flex flex-col justify-end pb-6">
           {/* Let's Go Button - positioned at bottom center */}
           <div className="flex w-full justify-center px-4">
             <button
               onClick={handleStart}
-              className="w-[70%] bg-[#411517] text-white text-lg font-semibold sm:text-xl lg:text-2xl font-['TT_Commons_Pro_ExtraBold'] py-2 sm:py-4 lg:py-5 px-8 sm:px-10 lg:px-12 rounded-full transition-colors duration-200 shadow-lg active:scale-95 transform"
+                             className="w-[70%] bg-[#411517] text-white text-lg font-semibold sm:text-xl lg:text-2xl font-heading py-2 sm:py-4 lg:py-5 px-8 sm:px-10 lg:px-12 rounded-full transition-colors duration-200 shadow-lg active:scale-95 transform"
             >
               Let's Go
             </button>
@@ -46,8 +46,8 @@ const ScavengerHuntIntro: React.FC<ScavengerHuntIntroProps> = ({ onStart }) => {
     );
   }
 
-  return (
-    <div className="h-screen relative overflow-hidden font-['TT_Commons_Pro_DemiBold']">
+           return (
+        <div className="h-[100svh] relative overflow-hidden font-body">
       {/* Background SVG - covers entire screen */}
       <div className="absolute inset-0 w-full h-full">
         <img
@@ -58,12 +58,12 @@ const ScavengerHuntIntro: React.FC<ScavengerHuntIntroProps> = ({ onStart }) => {
       </div>
 
       {/* Content overlay */}
-      <div className="relative z-10 h-full flex flex-col justify-end pb-8">
+      <div className="relative z-10 h-full flex flex-col justify-end pb-6">
         {/* How to Play Button - positioned at bottom center */}
                  <div className="flex w-full justify-center px-4">
            <button
              onClick={handleHowToPlay}
-             className="w-[70%] bg-[#F4EDE3] hover:bg-gray-100 text-[#411517] text-lg font-semibold sm:text-xl lg:text-2xl font-['TT_Commons_Pro_ExtraBold'] py-2 sm:py-4 lg:py-5 px-8 sm:px-10 lg:px-12 rounded-full transition-colors duration-200 shadow-lg active:scale-95 transform"
+                           className="w-[70%] bg-[#F4EDE3] hover:bg-gray-100 text-[#411517] text-lg font-semibold sm:text-xl lg:text-2xl font-heading py-2 sm:py-4 lg:py-5 px-8 sm:px-10 lg:px-12 rounded-full transition-colors duration-200 shadow-lg active:scale-95 transform"
            >
              How to Play
            </button>

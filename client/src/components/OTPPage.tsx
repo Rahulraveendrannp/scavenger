@@ -50,7 +50,7 @@ const OTPPage: React.FC<OTPPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#FF5900] relative overflow-hidden font-['TT_Commons_Pro_DemiBold']">
+    <div className="min-h-screen bg-[#FF5900] relative overflow-hidden font-body">
 
       {/* Grey center section with bg.svg - 70% of screen height */}
       <div className="absolute top-[10%] left-[-10%] right-0 h-[80%] w-[120%] bg-[#FF5900]">
@@ -77,7 +77,7 @@ const OTPPage: React.FC<OTPPageProps> = ({
         </div>
 
         {/* Title */}
-        <h1 className="text-2xl font-['TT_Commons_Pro_ExtraBold'] text-[#5D4E37] mb-2">
+        <h1 className="text-2xl font-heading text-[#5D4E37] mb-2">
           Verify OTP
         </h1>
         
@@ -93,7 +93,7 @@ const OTPPage: React.FC<OTPPageProps> = ({
             value={otpCode}
             onChange={handleOtpChange}
             placeholder="Enter 4-digit code"
-            className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-center text-2xl tracking-widest font-['TT_Commons_Pro_ExtraBold'] ${
+                            className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-center text-2xl tracking-widest font-heading ${
               error ? "border-red-500" : "border-[#FF5900]"
             }`}
             disabled={isLoading}
@@ -112,7 +112,7 @@ const OTPPage: React.FC<OTPPageProps> = ({
           <button
             onClick={handleVerifyOTP}
             disabled={otpCode.length !== 4 || isLoading}
-            className="w-full bg-[#FF5900] text-white py-2 rounded-full text-base font-['TT_Commons_Pro_DemiBold'] hover:bg-[#E54D00] disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg"
+            className="w-full bg-[#FF5900] text-white py-2 rounded-full text-base font-body hover:bg-[#E54D00] disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg"
           >
             {isLoading ? "Verifying..." : "Verify OTP"}
           </button>

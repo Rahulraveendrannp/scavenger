@@ -90,7 +90,7 @@ const userProgressSchema = new mongoose.Schema({
 });
 
 // Indexes for performance
-userProgressSchema.index({ phoneNumber: 1 });
+userProgressSchema.index({ phoneNumber: 1 }, { unique: true }); // Make phoneNumber unique
 userProgressSchema.index({ userId: 1 });
 userProgressSchema.index({ 'currentState.currentPage': 1 });
 userProgressSchema.index({ 'scavengerHuntProgress.lastActivityAt': -1 });
@@ -195,6 +195,41 @@ userProgressSchema.methods.updateCurrentState = function(page, checkpoint = null
 // Method to check if scavenger hunt is completed (half completion rule)
 userProgressSchema.methods.isScavengerHuntCompleted = function() {
   return this.scavengerHuntProgress.completedCheckpoints.length >= 4;
+};
+
+// Static method to safely get or create user progress
+userProgressSchema.statics.getOrCreateProgress = async function(phoneNumber, userId) {
+  try {
+    // Try to find existing progress
+    let progress = await this.findOne({ phoneNumber });
+    
+    if (!progress) {
+      console.log('📊 Creating new UserProgress for phone:', phoneNumber);
+      // Create new progress record
+      progress = new this({
+        userId: userId,
+        phoneNumber: phoneNumber,
+        gameStats: {
+          gameStartedAt: new Date(),
+          lastLoginAt: new Date(),
+          loginCount: 1
+        }
+      });
+      await progress.save();
+      console.log('📊 New UserProgress created successfully');
+    } else {
+      console.log('📊 Found existing UserProgress for phone:', phoneNumber);
+      // Update login info
+      progress.gameStats.lastLoginAt = new Date();
+      progress.gameStats.loginCount += 1;
+      await progress.save();
+    }
+    
+    return progress;
+  } catch (error) {
+    console.error('❌ Error in getOrCreateProgress:', error);
+    throw error;
+  }
 };
 
 // Pre-save middleware

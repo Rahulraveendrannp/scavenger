@@ -11,39 +11,18 @@ router.get('/', authMiddleware, async (req, res) => {
     const { phoneNumber } = req.user;
     console.log('📊 Progress API: Fetching progress for phone:', phoneNumber);
     
-    let progress = await UserProgress.findOne({ phoneNumber }).populate('userId', 'phoneNumber profile');
-    
-    if (!progress) {
-      console.log('📊 Progress API: Creating new progress record for user');
-      // Create new progress record if doesn't exist
-      const user = await User.findOne({ phoneNumber });
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          error: 'User not found'
-        });
-      }
-      
-      progress = new UserProgress({
-        userId: user._id,
-        phoneNumber: phoneNumber,
-        gameStats: {
-          gameStartedAt: new Date(),
-          lastLoginAt: new Date(),
-          loginCount: 1
-        }
+    // Find user's progress using the safe method
+    const user = await User.findOne({ phoneNumber });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
       });
-      
-      await progress.save();
-      console.log('📊 Progress API: New progress record created successfully');
-    } else {
-      console.log('📊 Progress API: Updating existing progress record');
-      // Update login info
-      progress.gameStats.lastLoginAt = new Date();
-      progress.gameStats.loginCount += 1;
-      await progress.save();
-      console.log('📊 Progress API: Progress record updated successfully');
     }
+    
+    let progress = await UserProgress.getOrCreateProgress(phoneNumber, user._id);
+    // Populate user data for response
+    progress = await UserProgress.findOne({ phoneNumber }).populate('userId', 'phoneNumber profile');
     
     res.json({
       success: true,
@@ -143,27 +122,16 @@ router.post('/scavenger/checkpoint/:checkpointId/complete', authMiddleware, asyn
     console.log('🔍 Request body:', req.body);
     console.log('🔍 Checkpoint ID type:', typeof checkpointId, 'value:', checkpointId);
     
-    let progress = await UserProgress.findOne({ phoneNumber });
-    if (!progress) {
-      console.log('🔍 Scavenger Hunt API: No progress found, creating new record');
-      const user = await User.findOne({ phoneNumber });
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          error: 'User not found'
-        });
-      }
-      
-      progress = new UserProgress({
-        userId: user._id,
-        phoneNumber: phoneNumber,
-        gameStats: {
-          gameStartedAt: new Date(),
-          lastLoginAt: new Date(),
-          loginCount: 1
-        }
+    // Find user's progress using the safe method
+    const user = await User.findOne({ phoneNumber });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
       });
     }
+    
+    let progress = await UserProgress.getOrCreateProgress(phoneNumber, user._id);
     
     console.log('🔍 Scavenger Hunt API: Before marking checkpoint - completed checkpoints:', progress.scavengerHuntProgress.completedCheckpoints);
     

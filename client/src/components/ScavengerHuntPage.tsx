@@ -462,7 +462,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
 
   return (
     <>
-      <div className="min-h-screen relative font-['TT_Commons_Pro_DemiBold']">
+      <div className="min-h-screen relative font-body">
         {/* Background Image */}
         <div className="absolute inset-0 w-full h-full">
           <img
@@ -479,10 +479,10 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
             {/* Top Section with Hint Credits */}
             <div className="flex justify-between items-start mb-4">
               <div className="flex-1">
-                <h1 className="text-2xl font-['TT_Commons_Pro_ExtraBold'] text-[#411517] leading-none">
+                <h1 className="text-2xl font-heading text-[#411517] leading-none">
                   Scavenger
                 </h1>
-                <h1 className="text-2xl font-['TT_Commons_Pro_ExtraBold'] text-[#411517] leading-none relative inline-block">
+                <h1 className="text-2xl font-heading text-[#411517] leading-none relative inline-block">
                   <span className="relative">
                     Checklist
                     <span className="absolute bottom-1 left-0 w-full h-[20%] bg-[#CFFF00] -z-10"></span>
@@ -494,14 +494,14 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
                  {/* Hint Credits - Top Right */}
                 <div className="flex items-center bg-[#CFFF00] px-3 py-1 rounded-full">
                   <Lightbulb className="w-5 h-5 text-[#411517] stroke-2" />
-                  <span className="text-2xl text-[#411517] font-black mr-1">
+                  <span className="text-2xl text-[#411517] font-heading mr-1">
                       {hintCredits} 
                     </span>
                    <div className="flex flex-col -space-y-1">
-                     <span className="text-md text-[#411517] font-['TT_Commons_Pro_ExtraBold'] leading-none">
+                     <span className="text-md text-[#411517] font-body leading-none">
                        hints
                      </span>
-                     <span className="text-md text-[#411517] font-['TT_Commons_Pro_DemiBold'] leading-none">
+                                           <span className="text-md text-[#411517] font-body leading-none">
                        available
                      </span>
                    </div>
@@ -509,7 +509,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
               </div>
             </div>
             
-            <p className="text-[#411517] text-sm font-['TT_Commons_Pro_DemiBold'] mb-4">
+                            <p className="text-[#411517] text-sm font-body mb-4">
               There's no specific order — it's your call.
             </p>
           </div>
@@ -540,7 +540,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
                     ) : (
                        <div className="w-6 h-6 border-2 border-[#FF5900] rounded-full"></div>
                     )}
-                    <span className="text-base font-['TT_Commons_Pro_ExtraBold'] text-[#411517]">
+                    <span className="text-base font-heading text-[#411517]">
                       {checkpoint.location}
                     </span>
                   </div>
@@ -556,14 +556,14 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
               {expandedId === checkpoint.id && (
                 <div className="px-4 pb-4 border-t border-gray-200">
                   <div className="mt-3 space-y-3">
-                    <p className="text-sm text-[#411517] font-['TT_Commons_Pro_DemiBold']">
+                    <p className="text-sm text-[#411517] font-body">
                       {checkpoint.clue}
                     </p>
 
                     {/* Hint Section */}
                     {revealedHints.has(checkpoint.id) && (
                       <div className="bg-[#CFFF00]/20 p-3 rounded-lg border border-[#CFFF00]">
-                        <p className="text-sm text-[#411517] font-['TT_Commons_Pro_DemiBold']">
+                        <p className="text-sm text-[#411517] font-body">
                           💡 Hint: {checkpoint.hint}
                         </p>
                       </div>
@@ -576,7 +576,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
                         disabled={
                           hintCredits <= 0 && !revealedHints.has(checkpoint.id)
                         }
-                        className={`flex-1 py-3 px-4 rounded-lg flex items-center justify-center space-x-2 disabled:opacity-50 text-sm font-['TT_Commons_Pro_ExtraBold'] ${
+                        className={`flex-1 py-3 px-4 rounded-lg flex items-center justify-center space-x-2 disabled:opacity-50 text-sm font-body ${
                           revealedHints.has(checkpoint.id)
                             ? "bg-[#F4EDE3] text-[#411517]"
                             : "bg-[#F4EDE3] text-[#411517]"
@@ -591,7 +591,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
                       </button>
                       <button
                         onClick={() => scanQR(checkpoint.id)}
-                        className="flex-1 bg-[#FF5900] text-white py-3 px-4 rounded-lg flex items-center justify-center space-x-2 text-sm font-['TT_Commons_Pro_ExtraBold'] hover:bg-[#411517]/80"
+                        className="flex-1 bg-[#FF5900] text-white py-3 px-4 rounded-lg flex items-center justify-center space-x-2 text-sm font-body hover:bg-[#411517]/80"
                       >
                         <QrCode className="w-4 h-4" />
                         <span>Scan QR</span>
@@ -599,12 +599,12 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
                     </div>
 
                     {hintCredits <= 0 && !revealedHints.has(checkpoint.id) && (
-                      <p className="text-xs sm:text-sm text-red-500 text-center font-['TT_Commons_Pro_DemiBold']">
+                      <p className="text-xs sm:text-sm text-red-500 text-center font-body">
                         No hint credits remaining!
                       </p>
                     )}
                     {!revealedHints.has(checkpoint.id) && hintCredits > 0 && (
-                      <p className="text-xs sm:text-sm text-gray-500 text-center font-['TT_Commons_Pro_DemiBold']">
+                      <p className="text-xs sm:text-sm text-gray-500 text-center font-body">
                         Costs 1 hint credit
                       </p>
                     )}
@@ -619,13 +619,13 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
           <div className="fixed bottom-4 left-4 right-4">
             <div className="bg-[#411517] rounded-full flex items-center overflow-hidden">
               <div className="flex-1 px-6 py-3">
-                <span className="text-white font-['TT_Commons_Pro_ExtraBold']">
+                <span className="text-white font-body">
                   Total found: {progress.totalFound}
                 </span>
               </div>
               <button
                 onClick={handleFinish}
-                className="bg-[#CFFF00] hover:bg-[#CFFF00]/80 text-[#411517] px-8 py-3 font-bold font-['TT_Commons_Pro_ExtraBold'] transition-colors rounded-full ml-2"
+                className="bg-[#CFFF00] hover:bg-[#CFFF00]/80 text-[#411517] px-8 py-3 font-semibold transition-colors rounded-full ml-2"
               >
                 Finish
               </button>
@@ -649,7 +649,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
 
       {/* Scanner Error Toast */}
       {scannerError && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm z-50 font-['TT_Commons_Pro_DemiBold']">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm z-50 font-body">
           {scannerError}
         </div>
       )}

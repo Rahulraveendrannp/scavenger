@@ -44,7 +44,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ onSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FF5900] relative overflow-hidden font-['TT_Commons_Pro_DemiBold']">
+    <div className="min-h-screen bg-[#FF5900] relative overflow-hidden font-body">
 
       {/* Grey center section with bg.svg - 70% of screen height */}
       <div className="absolute top-[10%] left-[-10%] right-0 h-[80%] w-[120%] bg-[#FF5900]">
@@ -71,7 +71,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ onSuccess }) => {
         </div>
 
         {/* Title */}
-        <h1 className="text-2xl font-['TT_Commons_Pro_ExtraBold'] text-[#5D4E37] mb-2">
+        <h1 className="text-2xl font-heading text-[#5D4E37] mb-2">
           Register to play
         </h1>
         
@@ -84,7 +84,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ onSuccess }) => {
         <div className="w-full max-w-xs mb-6">
           <div className="flex bg-[#F4EDE3] border-2 border-[#FF5900] rounded-lg overflow-hidden shadow-lg">
             <div className="px-4 py-3 bg-gray-50 border-r border-[#FF5900]">
-              <span className="text-[#5D4E37] font-['TT_Commons_Pro_DemiBold']">+974</span>
+              <span className="text-[#5D4E37] font-body">+974</span>
             </div>
             <input
               type="tel"
@@ -94,7 +94,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ onSuccess }) => {
                 setLocalPhone(val);
                 if (error) setError("");
               }}
-              className="flex-1 px-3 py-3 text-[#5D4E37] focus:outline-none font-['TT_Commons_Pro_DemiBold']"
+                              className="flex-1 px-3 py-3 text-[#5D4E37] focus:outline-none font-body"
               placeholder="12345678"
               disabled={isLoading}
               maxLength={8}
@@ -113,7 +113,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ onSuccess }) => {
           <button
             onClick={handleSubmit}
             disabled={isLoading || localPhone.length !== 8}
-            className="w-full bg-[#FF5900] text-white py-2 rounded-full text-base font-['TT_Commons_Pro_DemiBold'] hover:bg-[#E54D00] disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg"
+            className="w-full bg-[#FF5900] text-white py-2 rounded-full text-base font-body hover:bg-[#E54D00] disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg"
           >
             {isLoading ? "Sending OTP..." : "Send OTP"}
           </button>

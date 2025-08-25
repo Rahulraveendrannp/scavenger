@@ -33,7 +33,7 @@ function ScavengerHuntFinish() {
   }, [progress]);
 
   return (
-    <div className="h-screen relative font-['TT_Commons_Pro_DemiBold'] overflow-hidden">
+    <div className="h-screen relative font-body overflow-hidden">
       {/* Background layout image */}
       <div className="absolute inset-0 w-full h-full">
         <img src="/final.svg" alt="Finish Background" className="w-full h-full object-cover" />
@@ -48,7 +48,7 @@ function ScavengerHuntFinish() {
         <div className="space-y-3 mt-[60%]">
           {variant === "all" ? (
             <>
-              <h1 className="text-3xl sm:text-3xl font-['TT_Commons_Pro_ExtraBold'] text-[#411517]">Crushed it!</h1>
+              <h1 className="text-3xl sm:text-3xl font-heading text-[#411517]">Crushed it!</h1>
               <p className="text-md w-[90%] mx-auto sm:text-base text-[#411517]">You found all the checkpoints. Fantastic job!</p>
               <div className="flex items-center justify-center pt-2">
                 <img src="/star.svg" alt="Star" className="w-32 h-32" />
@@ -56,7 +56,7 @@ function ScavengerHuntFinish() {
             </>
           ) : variant === "mid" ? (
             <>
-              <h1 className="text-3xl mx-auto w-[80%] sm:text-3xl font-['TT_Commons_Pro_ExtraBold'] text-[#411517]">
+              <h1 className="text-3xl mx-auto w-[80%] sm:text-3xl font-heading text-[#411517]">
                 You found {progress?.totalFound}/{progress?.totalCheckpoints} checkpoints!
               </h1>
               <p className="text-md sm:text-base text-[#411517]">Great job! But there's still more.</p>
@@ -70,7 +70,7 @@ function ScavengerHuntFinish() {
             </>
           ) : (
             <>
-              <h1 className="text-3xl w-[80%] mx-auto sm:text-3xl font-['TT_Commons_Pro_ExtraBold'] text-[#411517]">
+              <h1 className="text-3xl w-[80%] mx-auto sm:text-3xl font-heading text-[#411517]">
                 You found {progress?.totalFound}/{progress?.totalCheckpoints} checkpoints!
               </h1>
               <p className="text-md sm:text-base text-[#411517]">You need more to win a prize.</p>
@@ -90,7 +90,7 @@ function ScavengerHuntFinish() {
           {variant === "all" ? (
             <button
               onClick={handleFinish}
-              className="flex-1 bg-[#411517] text-white py-3 font-bold rounded-full text-sm sm:text-base font-['TT_Commons_Pro_ExtraBold']"
+                              className="flex-1 bg-[#411517] text-white py-3 font-bold rounded-full text-sm sm:text-base font-body"
             >
               Return to Home
             </button>
@@ -98,13 +98,13 @@ function ScavengerHuntFinish() {
             <>
               <button
                 onClick={() => navigate("/game")}
-                className="flex-1 bg-[#FF5900] text-white py-3 rounded-full text-base font-['TT_Commons_Pro_ExtraBold']"
+                className="flex-1 bg-[#FF5900] text-white py-3 rounded-full text-base font-body"
               >
                 Keep hunting
               </button>
               <button
                 onClick={handleFinish}
-                className="flex-1 bg-[#411517] text-white py-3 rounded-full text-base font-['TT_Commons_Pro_ExtraBold']"
+                className="flex-1 bg-[#411517] text-white py-3 rounded-full text-base font-body"
               >
                 Finish
               </button>

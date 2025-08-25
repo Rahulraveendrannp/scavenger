@@ -7,10 +7,10 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        'heading': ['Poppins', 'Inter', 'Arial Black', 'Helvetica Black', 'sans-serif'],
-        'body': ['Inter', 'Arial', 'Helvetica', 'sans-serif'],
-        'poppins': ['Poppins', 'sans-serif'],
-        'inter': ['Inter', 'sans-serif'],
+        'heading': ['TT_Commons_Pro_ExtraBold', 'Arial Black', 'Helvetica Black', 'sans-serif'],
+        'body': ['TT_Commons_Pro_DemiBold', 'Arial', 'Helvetica', 'sans-serif'],
+        'demi': ['TT_Commons_Pro_DemiBold', 'Arial', 'Helvetica', 'sans-serif'],
+        'extrabold': ['TT_Commons_Pro_ExtraBold', 'Arial Black', 'Helvetica Black', 'sans-serif'],
       },
       fontWeight: {
         'black': '900',

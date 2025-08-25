@@ -17,28 +17,13 @@ router.get('/progress', authMiddleware, asyncHandler(async (req, res, next) => {
   const { phoneNumber } = req.user;
   console.log('🎮 Game Progress API: Fetching progress for phone:', phoneNumber);
 
-  // Find user's progress
-  let userProgress = await UserProgress.findOne({ phoneNumber });
-  if (!userProgress) {
-    console.log('🎮 Game Progress API: No user progress found, creating new record');
-    // Create new progress record if doesn't exist
-    const user = await User.findOne({ phoneNumber });
-    if (!user) {
-      return next(new AppError('User not found', 404));
-    }
-    
-    userProgress = new UserProgress({
-      userId: user._id,
-      phoneNumber: phoneNumber,
-      gameStats: {
-        gameStartedAt: new Date(),
-        lastLoginAt: new Date(),
-        loginCount: 1
-      }
-    });
-    await userProgress.save();
-    console.log('🎮 Game Progress API: New progress record created');
+  // Find user's progress using the safe method
+  const user = await User.findOne({ phoneNumber });
+  if (!user) {
+    return next(new AppError('User not found', 404));
   }
+  
+  let userProgress = await UserProgress.getOrCreateProgress(phoneNumber, user._id);
 
   // Get scavenger hunt progress
   const scavengerProgress = userProgress.scavengerHuntProgress;
