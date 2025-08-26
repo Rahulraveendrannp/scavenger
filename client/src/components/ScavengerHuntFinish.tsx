@@ -26,9 +26,9 @@ function ScavengerHuntFinish() {
   // Decide which finish view to show
   const variant = useMemo(() => {
     const found = progress?.totalFound ?? 0;
-    const total = progress?.totalCheckpoints ?? 8;
+    const total = progress?.totalCheckpoints ?? 11;
     if (found >= total && total > 0) return "all"; // Crushed it
-    if (found >= 4) return "mid"; // Good progress (prize eligible in your rules)
+    if (found >= 5) return "mid"; // Good progress (prize eligible in your rules)
     return "low"; // Needs more to win
   }, [progress]);
 

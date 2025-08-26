@@ -61,14 +61,14 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
     // Use hash to determine shuffle pattern
     const shuffled = [...checkpoints];
     const patterns = [   
-      [7,6,5,4,3,2,1,0], // reverse
-      [3,4,5,6,7,0,1,2], // middle first
-      [0,2,4,6,1,3,5,7], // even then odd
-      [1,3,5,7,0,2,4,6], // odd then even
-      [4,5,6,7,0,1,2,3], // second half first
-      [2,3,4,5,6,7,0,1], // skip first
-      [6,7,0,1,2,3,4,5], // skip middle
-      [0,1,2,3,4,5,6,7], // original order
+      [10,9,8,7,6,5,4,3,2,1,0], // reverse
+      [5,6,7,8,9,10,0,1,2,3,4], // middle first
+      [0,2,4,6,8,10,1,3,5,7,9], // even then odd
+      [1,3,5,7,9,0,2,4,6,8,10], // odd then even
+      [5,6,7,8,9,10,0,1,2,3,4], // second half first
+      [2,3,4,5,6,7,8,9,10,0,1], // skip first
+      [8,9,10,0,1,2,3,4,5,6,7], // skip middle
+      [0,1,2,3,4,5,6,7,8,9,10], // original order
     ];
     
     const patternIndex = Math.abs(hash) % patterns.length;
@@ -78,69 +78,93 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
   };
 
   const [checkpoints, setCheckpoints] = useState<ClueItem[]>(() => {
-    // Initialize with default checkpoints, but don't load completed status from localStorage
+    // Initialize with actual scavenger hunt checkpoints from the image
     const defaultCheckpoints = [
       {
         id: 1,
-        location: "Reception Desk",
-        clue: "Where visitors first arrive and greet the team, this place holds the main gateway.",
-        hint: "Look near the main entrance for a welcome sign.",
+        location: "Food Zone",
+        clue: "Hungry crowds head South to dine, Between the seats, you'll spot a sign. A wall divides the bigger space, Look low, your clue's not far away.",
+        hint: "A white vertical surface near the **South** **Food Court** seating.",
         isCompleted: false,
         isExpanded: false,
       },
       {
         id: 2,
-        location: "Conference Room",
-        clue: "Round tables and big screens, where important meetings convene.",
-        hint: "Check the large room with glass walls.",
+        location: "Mirror Mirror",
+        clue: "A polished ring not far from cheesecake, Reflects the steps that shoppers take. Its hollow core hides something neat, Get closer to unlock the treat.",
+        hint: "A **reflective sculpture** near a popular **cheesecake** place.",
         isCompleted: false,
         isExpanded: false,
       },
       {
         id: 3,
-        location: "Kitchen Area",
-        clue: "Coffee brews and lunch is made, where hungry workers get fed.",
-        hint: "Look for appliances and the coffee machine.",
+        location: "Second Guess",
+        clue: "A glowing frame, a GUESSing game, You're near the mark if that's your claim. The screen is loud, the floor is mute, But something's hiding near your boot.",
+        hint: "Look for an **ad screen**. Don't second- **GUESS**.",
         isCompleted: false,
         isExpanded: false,
       },
       {
         id: 4,
-        location: "Supply Closet",
-        clue: "Papers, pens, and office gear, stored neatly for all to share.",
-        hint: "Find the room with shelves full of office supplies.",
+        location: "Sport Mode",
+        clue: "Massive pillar, standing tall, You've probably walked right past them all. It's near a spot for every sport, From yoga mats to tennis courts.",
+        hint: "A **pillar** next to the big **blue** shop for **all** **the sports**.",
         isCompleted: false,
         isExpanded: false,
       },
       {
         id: 5,
-        location: "Manager Office",
-        clue: "Corner room with the best view, where important decisions come through.",
-        hint: "Look for the private office with windows.",
+        location: "Bin There",
+        clue: "Don't toss this chance, not today. NEXT to trash is where clues may lay. Look around, then take your shot – This bin's hiding more than you thought.",
+        hint: "A **trash bin** by some escalator, right **NEXT** to a stylish stop.",
         isCompleted: false,
         isExpanded: false,
       },
       {
         id: 6,
-        location: "Break Room",
-        clue: "Relax and unwind, leave your work behind, comfy chairs you will find.",
-        hint: "Check the area with couches and recreational items.",
+        location: "Map & Marts",
+        clue: "Need some help or where to go? This stand's designed to let you know. A scan outside a big grocery aisle, Might just make your checklist smile.",
+        hint: "A **screen** where you can get **information**. Next to the **grocery store** that rhymes with Grand Prix.",
         isCompleted: false,
         isExpanded: false,
       },
       {
         id: 7,
-        location: "IT Department",
-        clue: "Cables and servers, tech support that never defers.",
-        hint: "Look for the area with lots of computer equipment.",
+        location: "Pill-ar Prescription",
+        clue: "It's near a place for meds and more, With a name for shoes that walk the floors. This one pill-ar won't heal your pain, But scan it fast, you've much to gain.",
+        hint: "A **pillar** near the **pharmacy** named after a **pair of shoes**.",
         isCompleted: false,
         isExpanded: false,
       },
       {
         id: 8,
-        location: "Main Workspace",
-        clue: "Desks in rows, where daily productivity flows.",
-        hint: "Find the open area with multiple workstations.",
+        location: "Entry Point",
+        clue: "Right by the West doors where it all begins, A screen awaits with info within. Don't rush inside, take one quick glance, This entrance spot's your lucky chance.",
+        hint: "Find the **info screen** by a **West Court 2**.",
+        isCompleted: false,
+        isExpanded: false,
+      },
+      {
+        id: 9,
+        location: "Desert Directions",
+        clue: "It's time for things to escalate, Past a desert hill, don't hesitate. Then walk NINE steps to where WEST leans, The sign you seek is in between.",
+        hint: "An **escalator sign** near two shops: one named after a **sandy hill** and the other one sounds like **coordinates**.",
+        isCompleted: false,
+        isExpanded: false,
+      },
+      {
+        id: 10,
+        location: "Crocodile Hunt",
+        clue: "A wide open space, no walls in sight. Just head below the moving flight. Where crocodiles pose with stylish flair, A code awaits beneath the stair.",
+        hint: "Look beneath an **escalator** in the open court near a certain **reptilian fashion** **icon**.",
+        isCompleted: false,
+        isExpanded: false,
+      },
+      {
+        id: 11,
+        location: "BONUS ",
+        clue: "A bonus clue for eagle eyes, It moves, it stops - a rare surprise. No need to dash, no need to race, Just catch the cart and scan with grace.",
+        hint: "The **mall taxi** carts carry more than passengers. Watch for the code. Walk, don't run!",
         isCompleted: false,
         isExpanded: false,
       },
@@ -162,7 +186,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
     // Initialize with default progress, will be updated from backend
     return {
       totalFound: 0,
-      totalCheckpoints: 8,
+      totalCheckpoints: 11,
       currentTier: "Bronze",
       isCompleted: false,
       hintCredits: hintCredits,
@@ -197,7 +221,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
 
 
 
-  const loadProgress = async () => {
+    const loadProgress = async () => {
     try {
       console.log("🔄 Loading latest progress from backend...");
       const response = await ScavengerAPI.getGameProgress();
@@ -208,19 +232,34 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
         // Update progress state
         setProgress(response.data);
         
-                 // Update checkpoints with completed status from backend
-         // We need to preserve the shuffled order while updating completion status
-         const updatedCheckpoints = checkpoints.map((checkpoint) => {
-           // Check if this checkpoint is completed based on backend data
-           // We'll use the totalFound count to determine which checkpoints are completed
-           // For now, we'll assume checkpoints are completed in order (1, 2, 3, etc.)
-           const isCompleted = checkpoint.id <= (response.data?.totalFound || 0);
-           
-           return {
-             ...checkpoint,
-             isCompleted: isCompleted,
-           };
-         });
+        // Get the completed checkpoint IDs from backend
+        // We need to get the actual completed checkpoint IDs, not just the count
+        let completedCheckpointIds: number[] = [];
+        
+        try {
+          // Try to get detailed progress to see which specific checkpoints are completed
+          const detailedResponse = await ScavengerAPI.getUserProgress();
+          if (detailedResponse.success && detailedResponse.data?.progress?.scavengerHuntProgress?.completedCheckpoints) {
+            completedCheckpointIds = detailedResponse.data.progress.scavengerHuntProgress.completedCheckpoints.map(
+              (cp: any) => cp.checkpointId
+            );
+            console.log("✅ Found completed checkpoint IDs from backend:", completedCheckpointIds);
+          }
+        } catch (error) {
+          console.log("⚠️ Could not get detailed progress, using fallback method");
+        }
+        
+        // Update checkpoints with completed status from backend
+        // Preserve the shuffled order while updating completion status
+        const updatedCheckpoints = checkpoints.map((checkpoint) => {
+          // Check if this specific checkpoint is completed based on backend data
+          const isCompleted = completedCheckpointIds.includes(checkpoint.id);
+          
+          return {
+            ...checkpoint,
+            isCompleted: isCompleted,
+          };
+        });
         
         setCheckpoints(updatedCheckpoints);
         console.log("✅ Checkpoints updated with backend completion status:", updatedCheckpoints);
@@ -264,13 +303,13 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
         
         setCheckpoints(updatedCheckpoints);
         
-        // Update progress
-        const completedCount = updatedCheckpoints.filter((cp) => cp.isCompleted).length;
-        setProgress(prev => ({
-          ...prev,
-          totalFound: completedCount,
-          isCompleted: completedCount >= 4,
-        }));
+                 // Update progress
+         const completedCount = updatedCheckpoints.filter((cp) => cp.isCompleted).length;
+         setProgress(prev => ({
+           ...prev,
+           totalFound: completedCount,
+           isCompleted: completedCount >= 5,
+         }));
         
         // Update hint credits and revealed hints
         if (parsed.hintCredits !== undefined) {
@@ -370,14 +409,17 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
   // Map checkpoint -> expected QR code
   const getExpectedQRCode = (id: number) => {
     const qrCodes: { [key: number]: string } = {
-      1: "TALABAT_HUNT_RECEPTION_DESK",
-      2: "TALABAT_HUNT_CONFERENCE_ROOM",
-      3: "TALABAT_HUNT_KITCHEN_AREA",
-      4: "TALABAT_HUNT_SUPPLY_CLOSET",
-      5: "TALABAT_HUNT_MANAGER_OFFICE",
-      6: "TALABAT_HUNT_BREAK_ROOM",
-      7: "TALABAT_HUNT_IT_DEPARTMENT",
-      8: "TALABAT_HUNT_MAIN_WORKSPACE",
+      1: "TALABAT_HUNT_FOOD_ZONE",
+      2: "TALABAT_HUNT_MIRROR_MIRROR",
+      3: "TALABAT_HUNT_SECOND_GUESS",
+      4: "TALABAT_HUNT_SPORT_MODE",
+      5: "TALABAT_HUNT_BIN_THERE",
+      6: "TALABAT_HUNT_MAP_MARTS",
+      7: "TALABAT_HUNT_PILLAR_PRESCRIPTION",
+      8: "TALABAT_HUNT_ENTRY_POINT",
+      9: "TALABAT_HUNT_DESERT_DIRECTIONS",
+      10: "TALABAT_HUNT_CROCODILE_HUNT",
+      11: "TALABAT_HUNT_BONUS",
     };
     return qrCodes[id] || "";
   };
@@ -498,6 +540,14 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
     onGameComplete(timeElapsed, scannedQRs);
   };
 
+  // Helper function to render bold text from markdown-style formatting
+  const renderBoldText = (text: string) => {
+    // Remove all forward slashes and replace bold text with heading font
+    return text
+      .replace(/\//g, '') // Remove all forward slashes
+      .replace(/\*\*(.*?)\*\*/g, '<span class="font-heading text-[16px]">$1</span>');
+  };
+
   return (
     <>
       <div className="min-h-screen relative font-body">
@@ -529,7 +579,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
               </div>
               
                              <div className="flex items-center">
-                 {/* Hint Credits - Top Right */}
+                {/* Hint Credits - Top Right */}
                 <div className="flex items-center bg-[#CFFF00] px-3 py-1 rounded-full">
                   <Lightbulb className="w-5 h-5 text-[#411517] stroke-2" />
                   <span className="text-2xl text-[#411517] font-body mr-1">
@@ -561,12 +611,8 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
               >
                 {/* Checkpoint Header */}
                 <div
-                  className={`flex items-center justify-between p-4 ${
-                    checkpoint.isCompleted ? "" : "cursor-pointer"
-                  }`}
-                  onClick={() =>
-                    !checkpoint.isCompleted && toggleExpanded(checkpoint.id)
-                  }
+                  className="flex items-center justify-between p-4 cursor-pointer"
+                  onClick={() => toggleExpanded(checkpoint.id)}
                 >
                                     <div className="flex items-center space-x-3">
                     {checkpoint.isCompleted ? (
@@ -594,42 +640,41 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
               {expandedId === checkpoint.id && (
                 <div className="px-4 pb-4 border-t border-gray-200">
                   <div className="mt-3 space-y-3">
-                    <p className="text-sm text-[#411517] font-body">
-                      {checkpoint.clue}
-                    </p>
+                    <p 
+                      className="text-sm text-[#411517] font-body"
+                      dangerouslySetInnerHTML={{ __html: renderBoldText(checkpoint.clue) }}
+                    />
 
                     {/* Hint Section */}
                     {revealedHints.has(checkpoint.id) && (
                       <div className="bg-[#CFFF00]/20 p-3 rounded-lg border border-[#CFFF00]">
-                        <p className="text-sm text-[#411517] font-body">
-                           Hint: {checkpoint.hint}
-                        </p>
+                        <p 
+                          className="text-sm text-[#411517] font-body"
+                          dangerouslySetInnerHTML={{ __html: `Hint: ${renderBoldText(checkpoint.hint || '')}` }}
+                        />
                       </div>
                     )}
 
                     {/* Action Buttons */}
                     <div className="flex flex-row space-x-3">
                       <button
-                        onClick={() => useHint(checkpoint.id)}
+                        onClick={() => !checkpoint.isCompleted && !revealedHints.has(checkpoint.id) && useHint(checkpoint.id)}
                         disabled={
-                          hintCredits <= 0 && !revealedHints.has(checkpoint.id)
+                          checkpoint.isCompleted || revealedHints.has(checkpoint.id) || (hintCredits <= 0 && !revealedHints.has(checkpoint.id))
                         }
-                        className={`flex-1 py-3 px-4 rounded-full flex items-center justify-center space-x-2 disabled:opacity-50 text-sm font-body ${
-                          revealedHints.has(checkpoint.id)
-                            ? "bg-[#F4EDE3] text-[#411517]"
-                            : "bg-[#F4EDE3] text-[#411517]"
+                        className={`flex-1 py-3 px-4 rounded-full flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-body ${
+                          "bg-[#F4EDE3] text-[#411517]"
                         }`}
                       >
                         <Lightbulb className="w-4 h-4" />
                         <span>
-                          {revealedHints.has(checkpoint.id)
-                            ? "View hint"
-                            : "Reveal hint"}
+                          {revealedHints.has(checkpoint.id) ? "Hint revealed" : "Reveal hint"}
                         </span>
                       </button>
                       <button
-                        onClick={() => scanQR(checkpoint.id)}
-                        className="flex-1 bg-[#FF5900] text-white py-3 px-4 rounded-full flex items-center justify-center space-x-2 text-sm font-body hover:bg-[#411517]/80"
+                        onClick={() => !checkpoint.isCompleted && scanQR(checkpoint.id)}
+                        disabled={checkpoint.isCompleted}
+                        className="flex-1 bg-[#FF5900] text-white py-3 px-4 rounded-full flex items-center justify-center space-x-2 text-sm font-body hover:bg-[#411517]/80 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <QrCode className="w-4 h-4" />
                         <span>Scan QR</span>

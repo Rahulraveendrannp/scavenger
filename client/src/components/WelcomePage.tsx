@@ -28,7 +28,7 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ onStart }) => {
         />
         <button
           onClick={onStart}
-          className="mt-12 bg-[#F4EDE3] text-[#FF5900] px-12 py-2 rounded-full text-md font-heading hover:bg-gray-50 transition-colors shadow-lg w-64 md:w-80"
+          className="mt-16 bg-[#F4EDE3] text-[#FF5900] px-12 py-2 rounded-full text-md font-heading hover:bg-gray-50 transition-colors shadow-lg w-64 md:w-80"
         >
           Let's Go
         </button>

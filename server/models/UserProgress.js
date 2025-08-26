@@ -49,7 +49,7 @@ const userProgressSchema = new mongoose.Schema({
     }],
     hintCredits: { type: Number, default: 3 },
     revealedHints: [Number], // Array of checkpoint IDs with revealed hints
-    totalCheckpoints: { type: Number, default: 8 },
+    totalCheckpoints: { type: Number, default: 11 },
     currentCheckpoint: Number, // Last active checkpoint
     startedAt: Date,
     lastActivityAt: Date
@@ -102,8 +102,8 @@ userProgressSchema.virtual('completionPercentage').get(function() {
     return count + (game.isCompleted ? 1 : 0);
   }, 0);
   
-  // Consider scavenger hunt completed when 4+ checkpoints are done (half completion)
-  const scavengerCompleted = this.scavengerHuntProgress.completedCheckpoints.length >= 4 ? 1 : 0;
+  // Consider scavenger hunt completed when 5+ checkpoints are done (half completion)
+  const scavengerCompleted = this.scavengerHuntProgress.completedCheckpoints.length >= 5 ? 1 : 0;
   const totalTasks = 4 + 1; // 4 dashboard games + 1 scavenger hunt task
   
   return Math.round(((dashboardCompleted + scavengerCompleted) / totalTasks) * 100);
@@ -116,7 +116,7 @@ userProgressSchema.virtual('progressSummary').get(function() {
       return count + (game.isCompleted ? 1 : 0);
     }, 0),
     scavengerCheckpointsCompleted: this.scavengerHuntProgress.completedCheckpoints.length,
-    scavengerHuntCompleted: this.scavengerHuntProgress.completedCheckpoints.length >= 4, // Half completion
+    scavengerHuntCompleted: this.scavengerHuntProgress.completedCheckpoints.length >= 5, // Half completion
     totalHintsUsed: this.gameStats.totalHintsUsed,
     hintCreditsRemaining: this.scavengerHuntProgress.hintCredits,
     canResume: this.currentState.canResume,
@@ -194,7 +194,7 @@ userProgressSchema.methods.updateCurrentState = function(page, checkpoint = null
 
 // Method to check if scavenger hunt is completed (half completion rule)
 userProgressSchema.methods.isScavengerHuntCompleted = function() {
-  return this.scavengerHuntProgress.completedCheckpoints.length >= 4;
+  return this.scavengerHuntProgress.completedCheckpoints.length >= 5;
 };
 
 // Static method to safely get or create user progress
@@ -245,8 +245,8 @@ userProgressSchema.pre('save', function(next) {
   const dashboardCompleted = Object.values(this.dashboardGames).every(game => game.isCompleted);
   const scavengerCompleted = this.scavengerHuntProgress.completedCheckpoints.length >= this.scavengerHuntProgress.totalCheckpoints;
   
-  // Mark scavenger hunt as completed in dashboard games when 4+ checkpoints are done (half completion)
-  if (this.scavengerHuntProgress.completedCheckpoints.length >= 4 && !this.dashboardGames.scavengerHunt.isCompleted) {
+  // Mark scavenger hunt as completed in dashboard games when 5+ checkpoints are done (half completion)
+  if (this.scavengerHuntProgress.completedCheckpoints.length >= 5 && !this.dashboardGames.scavengerHunt.isCompleted) {
     this.dashboardGames.scavengerHunt.isCompleted = true;
     this.dashboardGames.scavengerHunt.completedAt = new Date();
   }

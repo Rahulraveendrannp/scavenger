@@ -96,7 +96,7 @@ https://bhsms.net/httpget/?username=descifer&apikey=0OXJ6C2YHQ&to=917907996240&t
 1. **Registration** - User enters phone number
 2. **OTP Verification** - 4-digit code sent via SMS
 3. **Dashboard** - Shows available games and progress
-4. **Scavenger Hunt** - 8 checkpoints with QR scanning
+4. **Scavenger Hunt** - 11 checkpoints with QR scanning
 5. **Progress Tracking** - All progress saved to database
 
 ## API Endpoints

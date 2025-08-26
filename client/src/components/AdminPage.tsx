@@ -241,7 +241,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
               </div>
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              💡 Scavenger Hunt is marked complete when users find 4+ checkpoints (half completion)
+              💡 Scavenger Hunt is marked complete when users find 5+ checkpoints (half completion)
             </p>
           </div>
 
@@ -273,7 +273,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                       <th className="hidden sm:table-cell text-center py-4 px-6 font-['TT_Commons_Pro_DemiBold'] text-gray-700 text-xs uppercase tracking-wider">
                         Scavenger Hunt
                         <div className="text-xs font-normal text-gray-500 mt-1">
-                          (4/8 = Complete)
+                          (5/11 = Complete)
                         </div>
                       </th>
                       <th className="text-center py-4 px-6 font-['TT_Commons_Pro_DemiBold'] text-gray-700 text-xs uppercase tracking-wider">
@@ -309,7 +309,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                                 : 'bg-purple-100 text-purple-800'
                             }`}>
                               <span className="font-['TT_Commons_Pro_DemiBold'] text-sm">
-                                {user.scavengerProgress || '0/8'}
+                                {user.scavengerProgress || '0/11'}
                                 {user.scavengerCompleted ? ' ✓' : ''}
                               </span>
                             </div>

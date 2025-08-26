@@ -198,9 +198,9 @@ const Dashboard: React.FC<DashboardProps> = ({
               isCompleted: scavengerCompleted || false,
               isStarted: scavengerStarted || false,
               description: scavengerCompleted
-                ? `Scavenger Hunt Completed! (${completedCount}/8 checkpoints found)`
+                ? `Scavenger Hunt Completed! (${completedCount}/11 checkpoints found)`
                 : scavengerStarted
-                  ? `Continue your adventure! (${completedCount}/8 completed)`
+                                      ? `Continue your adventure! (${completedCount}/11 completed)`
                   : `Start your treasure hunt adventure!`,
             };
           } else {
@@ -297,7 +297,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const scavengerProgress = scavengerGame?.isStarted 
     ? (() => {
         // Extract progress from description if available
-        const match = scavengerGame.description.match(/\((\d+)\/8/);
+                 const match = scavengerGame.description.match(/\((\d+)\/11/);
         return match ? parseInt(match[1]) : 0;
       })()
     : 0;
@@ -829,7 +829,7 @@ const ClaimVoucherModal: React.FC<{
           const scavengerCompleted = 
             scavengerProgressResponse.data?.isCompleted !== undefined
               ? scavengerProgressResponse.data.isCompleted
-              : scavengerProgress >= 4;
+              : scavengerProgress >= 5;
           
           setGameStatus({
             lunchboxMatcher: dashboardGames?.lunchboxMatcher?.isCompleted || false,
@@ -957,9 +957,9 @@ const ClaimVoucherModal: React.FC<{
                       }`}
                     >
                       {gameStatus.scavengerHunt
-                        ? `✓ Completed (${gameStatus.scavengerProgress}/8)`
-                        : gameStatus.scavengerStarted
-                        ? `${gameStatus.scavengerProgress}/8`
+                                                 ? `✓ Completed (${gameStatus.scavengerProgress}/11)`
+                         : gameStatus.scavengerStarted
+                         ? `${gameStatus.scavengerProgress}/11`
                         : "✗ Pending"}
                     </span>
                   </div>

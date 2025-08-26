@@ -451,7 +451,7 @@ export class ScavengerAPI {
           userId: data.data.session.userId,
           phoneNumber,
           startTime: Date.now(),
-          totalCheckpoints: 8,
+          totalCheckpoints: 11,
           hintCredits: 3,
           qrsScanned: 0,
           route: Array.from({ length: 8 }, (_, i) => ({
