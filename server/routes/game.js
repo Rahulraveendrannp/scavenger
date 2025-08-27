@@ -48,7 +48,8 @@ router.get('/progress', authMiddleware, asyncHandler(async (req, res, next) => {
       totalCheckpoints,
       currentTier,
       isCompleted,
-      hintCredits: scavengerProgress.hintCredits || 3
+      hintCredits: scavengerProgress.hintCredits || 3,
+      revealedHints: scavengerProgress.revealedHints || []
     }
   });
 }));

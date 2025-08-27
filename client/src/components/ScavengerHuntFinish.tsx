@@ -63,11 +63,10 @@ function ScavengerHuntFinish() {
               </h1>
               <p className="text-md sm:text-base text-[#411517]">Great job! But there's still more.</p>
               <div className="flex items-center justify-center pt-2">
-                <img src="/thump.svg" alt="Thumb" className="w-16 h-16" />
+                <img src="/thump.svg" alt="Thumb" className="w-20 h-20" />
               </div>
-              <p className="text-md sm:text-sm text-[#411517] mt-2">
-                Are you sure you want to finish?<br />
-                You can't go back.
+              <p className="text-md sm:text-sm text-[#411517] mt-8">
+                Are you sure you want to finish?.
               </p>
             </>
           ) : (
@@ -75,13 +74,12 @@ function ScavengerHuntFinish() {
               <h1 className="text-4xl w-[80%] mx-auto sm:text-3xl font-heading text-[#411517]">
                 You found {progress?.totalFound}/{progress?.totalCheckpoints} checkpoints!
               </h1>
-              <p className="text-md sm:text-base text-[#411517]">You need more to win a prize.</p>
-              <div className="flex items-center justify-center pt-2">
-                <img src="/heart.svg" alt="Heart" className="w-16 h-16" />
+              <p className="text-md sm:text-base mt-4 text-[#411517]">You need more to win a prize.</p>
+              <div className="flex items-center justify-center pt-4">
+                <img src="/heart.svg" alt="Heart" className="w-20 h-20" />
               </div>
-              <p className="mt-2 text-md sm:text-sm text-[#411517]">
-                Are you sure you want to finish?<br />
-                You can't go back.
+              <p className="mt-8 text-md sm:text-sm text-[#411517]">
+                Are you sure you want to finish?
               </p>
             </>
           )}
@@ -92,7 +90,7 @@ function ScavengerHuntFinish() {
           {variant === "all" ? (
             <button
               onClick={handleFinish}
-                              className="flex-1 bg-[#411517] text-white py-3 font-bold rounded-full text-sm sm:text-base font-body"
+              className="flex-1 bg-[#411517] text-white py-3 font-bold rounded-full text-sm sm:text-base font-body"
             >
               Return to Home
             </button>

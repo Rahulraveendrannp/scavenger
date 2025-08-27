@@ -30,11 +30,15 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        return parsed.hintCredits ?? 3;
+        const credits = parsed.hintCredits ?? 3;
+        console.log("📱 Initial hintCredits from localStorage:", credits);
+        return credits;
       } catch (error) {
+        console.log("📱 Error parsing localStorage, using fallback hintCredits: 3");
         return 3;
       }
     }
+    console.log("📱 No localStorage data, using default hintCredits: 3");
     return 3;
   });
 
@@ -203,6 +207,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
     null
   );
   const [scannerError, setScannerError] = useState<string>("");
+  const [isLoadingProgress, setIsLoadingProgress] = useState(true);
 
   useEffect(() => {
     // Load initial progress from backend
@@ -223,14 +228,36 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
 
     const loadProgress = async () => {
     try {
+      setIsLoadingProgress(true);
       console.log("🔄 Loading latest progress from backend...");
-      const response = await ScavengerAPI.getGameProgress();
+      const response = await ScavengerAPI.getUserProgress();
       
       if (response.success && response.data) {
         console.log("✅ Backend progress loaded:", response.data);
         
-        // Update progress state
-        setProgress(response.data);
+        // Update progress state from the correct nested structure
+        const progressData = response.data.progress?.scavengerHuntProgress;
+        if (progressData) {
+          const totalFound = progressData.completedCheckpoints?.length || 0;
+          const totalCheckpoints = progressData.totalCheckpoints || 11;
+          const isCompleted = totalFound >= 5;
+          
+          setProgress({
+            totalFound,
+            totalCheckpoints,
+            currentTier: totalFound >= 8 ? 'Gold' : totalFound >= 5 ? 'Silver' : 'Bronze',
+            isCompleted,
+            hintCredits: progressData.hintCredits || 3,
+            revealedHints: progressData.revealedHints || []
+          });
+          
+          console.log("✅ Progress state updated:", {
+            totalFound,
+            totalCheckpoints,
+            isCompleted,
+            hintCredits: progressData.hintCredits
+          });
+        }
         
         // Get the completed checkpoint IDs from backend
         // We need to get the actual completed checkpoint IDs, not just the count
@@ -265,13 +292,23 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
         console.log("✅ Checkpoints updated with backend completion status:", updatedCheckpoints);
         
         // Also load hint credits from backend if available
-        if (response.data.hintCredits !== undefined) {
-          setHintCredits(response.data.hintCredits);
-        }
-        
-        // Load revealed hints from backend if available (safely handle optional property)
-        if (response.data && 'revealedHints' in response.data && Array.isArray(response.data.revealedHints)) {
-          setRevealedHints(new Set(response.data.revealedHints));
+        const scavengerProgress = response.data.progress?.scavengerHuntProgress;
+        if (scavengerProgress) {
+          console.log("🔍 Backend hintCredits response:", scavengerProgress.hintCredits);
+          if (scavengerProgress.hintCredits !== undefined) {
+            setHintCredits(scavengerProgress.hintCredits);
+            console.log("✅ Updated hintCredits from backend:", scavengerProgress.hintCredits);
+          } else {
+            console.log("⚠️ No hintCredits in backend response, keeping current value:", hintCredits);
+          }
+          
+          // Load revealed hints from backend if available
+          if (scavengerProgress.revealedHints && Array.isArray(scavengerProgress.revealedHints)) {
+            setRevealedHints(new Set(scavengerProgress.revealedHints));
+            console.log("✅ Loaded revealed hints from backend:", scavengerProgress.revealedHints);
+          } else {
+            console.log("ℹ️ No revealed hints found in backend response, keeping current state");
+          }
         }
         
       } else {
@@ -283,6 +320,8 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
       console.error("❌ Error loading progress from backend:", error);
       // Fallback to localStorage if backend fails
       loadFromLocalStorage();
+    } finally {
+      setIsLoadingProgress(false);
     }
   };
 
@@ -321,6 +360,8 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
       }
     } catch (error) {
       console.error("❌ Error loading from localStorage:", error);
+    } finally {
+      setIsLoadingProgress(false);
     }
   };
 
@@ -550,6 +591,17 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
 
   return (
     <>
+      {/* Loading Overlay */}
+      {isLoadingProgress && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 flex flex-col items-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF5900]"></div>
+            <p className="text-[#411517] font-body text-lg">Loading your progress...</p>
+            <p className="text-gray-500 font-body text-sm">Please wait while we sync with the server</p>
+          </div>
+        </div>
+      )}
+      
       <div className="min-h-screen relative font-body">
         {/* Background Image */}
         <div className="absolute inset-0 w-full h-full">
@@ -660,7 +712,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
                       <button
                         onClick={() => !checkpoint.isCompleted && !revealedHints.has(checkpoint.id) && useHint(checkpoint.id)}
                         disabled={
-                          checkpoint.isCompleted || revealedHints.has(checkpoint.id) || (hintCredits <= 0 && !revealedHints.has(checkpoint.id))
+                          checkpoint.isCompleted || revealedHints.has(checkpoint.id) || (hintCredits <= 0 && !revealedHints.has(checkpoint.id)) || isLoadingProgress
                         }
                         className={`flex-1 py-3 px-4 rounded-full flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-body ${
                           "bg-[#F4EDE3] text-[#411517]"
@@ -673,11 +725,11 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
                       </button>
                       <button
                         onClick={() => !checkpoint.isCompleted && scanQR(checkpoint.id)}
-                        disabled={checkpoint.isCompleted}
+                        disabled={checkpoint.isCompleted || isLoadingProgress}
                         className="flex-1 bg-[#FF5900] text-white py-3 px-4 rounded-full flex items-center justify-center space-x-2 text-sm font-body hover:bg-[#411517]/80 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <QrCode className="w-4 h-4" />
-                        <span>Scan QR</span>
+                        <span>{isLoadingProgress ? "Loading..." : "Scan QR"}</span>
                       </button>
                     </div>
 

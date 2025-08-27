@@ -27,12 +27,13 @@ router.get('/total-users', catchAsync(async (req, res) => {
   }
 }));
 
-// Get all users with progress and claim status
+// Get all users with progress and claim status, sorted by recent QR scan activity
 router.get('/all-users', catchAsync(async (req, res) => {
-  console.log('📊 Admin: Getting all users with progress...');
+  console.log('📊 Admin: Getting all users with progress, sorted by recent QR scan activity...');
 
   try {
-    const users = await User.find().sort({ createdAt: -1 });
+    // Get all users sorted by lastQRScanAt (most recent first)
+    const users = await User.find().sort({ lastQRScanAt: -1, createdAt: -1 });
     console.log(`📊 Admin: Found ${users.length} users`);
 
     const usersWithProgress = await Promise.all(
@@ -47,13 +48,14 @@ router.get('/all-users', catchAsync(async (req, res) => {
           // Get scavenger hunt progress
           const scavengerProgress = userProgress?.scavengerHuntProgress?.completedCheckpoints?.length || 0;
           
-              // Check if scavenger hunt is completed (5+ checkpoints = half completion)
-    const scavengerCompleted = scavengerProgress >= 5;
+          // Check if scavenger hunt is completed (5+ checkpoints = half completion)
+          const scavengerCompleted = scavengerProgress >= 5;
           
           return {
             _id: user._id,
             phoneNumber: user.phoneNumber,
             createdAt: user.createdAt,
+            lastQRScanAt: user.lastQRScanAt,
             completedGames: `${completedGames}/4`,
             scavengerProgress: `${scavengerProgress}/11`,
             scavengerCompleted: scavengerCompleted,
@@ -66,6 +68,7 @@ router.get('/all-users', catchAsync(async (req, res) => {
             _id: user._id,
             phoneNumber: user.phoneNumber,
             createdAt: user.createdAt,
+            lastQRScanAt: user.lastQRScanAt,
             completedGames: '0/4',
             scavengerProgress: '0/11',
             isClaimed: user.isClaimed || false,
@@ -75,7 +78,7 @@ router.get('/all-users', catchAsync(async (req, res) => {
       })
     );
 
-    console.log('📊 Admin: Successfully loaded all users with progress');
+    console.log('📊 Admin: Successfully loaded all users with progress, sorted by recent QR scan activity');
     res.status(200).json({
       success: true,
       users: usersWithProgress

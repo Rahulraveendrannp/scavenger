@@ -66,13 +66,16 @@ router.post('/dashboard/:gameId/complete', authMiddleware, async (req, res) => {
       });
     }
     
-    let progress = await UserProgress.findOne({ phoneNumber });
-    if (!progress) {
+    // Find user's progress using the safe method
+    const user = await User.findOne({ phoneNumber });
+    if (!user) {
       return res.status(404).json({
         success: false,
-        error: 'User progress not found'
+        error: 'User not found'
       });
     }
+    
+    let progress = await UserProgress.getOrCreateProgress(phoneNumber, user._id);
     
     // Handle scavenger hunt differently - mark as started, not completed
     if (gameId === 'scavenger-hunt') {
@@ -92,6 +95,21 @@ router.post('/dashboard/:gameId/complete', authMiddleware, async (req, res) => {
     }
     
     await progress.save();
+    
+    // Update User's lastQRScanAt field for offline games
+    if (gameId !== 'scavenger-hunt') {
+      try {
+        await User.findByIdAndUpdate(
+          progress.userId,
+          { lastQRScanAt: new Date() },
+          { new: true }
+        );
+        console.log('✅ Updated User lastQRScanAt for offline game completion');
+      } catch (error) {
+        console.error('❌ Error updating User lastQRScanAt for offline game:', error);
+      }
+    }
+    
     console.log('🎮 Dashboard Game API: Game completed and saved to database');
     
     res.json({
@@ -187,13 +205,16 @@ router.post('/scavenger/checkpoint/:checkpointId/hint', authMiddleware, async (r
     const { phoneNumber } = req.user;
     const { checkpointId } = req.params;
     
-    let progress = await UserProgress.findOne({ phoneNumber });
-    if (!progress) {
+    // Find user's progress using the safe method
+    const user = await User.findOne({ phoneNumber });
+    if (!user) {
       return res.status(404).json({
         success: false,
-        error: 'User progress not found'
+        error: 'User not found'
       });
     }
+    
+    let progress = await UserProgress.getOrCreateProgress(phoneNumber, user._id);
     
     const checkpointIdNum = parseInt(checkpointId);
     
@@ -240,13 +261,16 @@ router.post('/state', authMiddleware, async (req, res) => {
     const { phoneNumber } = req.user;
     const { currentPage, checkpoint } = req.body;
     
-    let progress = await UserProgress.findOne({ phoneNumber });
-    if (!progress) {
+    // Find user's progress using the safe method
+    const user = await User.findOne({ phoneNumber });
+    if (!user) {
       return res.status(404).json({
         success: false,
-        error: 'User progress not found'
+        error: 'User not found'
       });
     }
+    
+    let progress = await UserProgress.getOrCreateProgress(phoneNumber, user._id);
     
     progress.updateCurrentState(currentPage, checkpoint);
     await progress.save();
@@ -305,13 +329,16 @@ router.post('/complete', authMiddleware, async (req, res) => {
     const { phoneNumber } = req.user;
     const { finalScore, timeElapsed } = req.body;
     
-    let progress = await UserProgress.findOne({ phoneNumber });
-    if (!progress) {
+    // Find user's progress using the safe method
+    const user = await User.findOne({ phoneNumber });
+    if (!user) {
       return res.status(404).json({
         success: false,
-        error: 'User progress not found'
+        error: 'User not found'
       });
     }
+    
+    let progress = await UserProgress.getOrCreateProgress(phoneNumber, user._id);
     
     if (!progress.isGameCompleted) {
       progress.isGameCompleted = true;
@@ -353,13 +380,16 @@ router.post('/scavenger/start', authMiddleware, async (req, res) => {
     
     console.log('🎯 Scavenger Hunt API: Starting hunt for phone:', phoneNumber);
     
-    let progress = await UserProgress.findOne({ phoneNumber });
-    if (!progress) {
+    // Find user's progress using the safe method
+    const user = await User.findOne({ phoneNumber });
+    if (!user) {
       return res.status(404).json({
         success: false,
-        error: 'User progress not found'
+        error: 'User not found'
       });
     }
+    
+    let progress = await UserProgress.getOrCreateProgress(phoneNumber, user._id);
     
     // Mark scavenger hunt as started
     if (!progress.dashboardGames.scavengerHunt.isStarted) {

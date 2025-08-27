@@ -81,6 +81,11 @@ const userSchema = new mongoose.Schema({
     default: true
   },
 
+  lastQRScanAt: {
+    type: Date,
+    default: null
+  },
+
   createdAt: {
     type: Date,
     default: Date.now
@@ -98,6 +103,7 @@ const userSchema = new mongoose.Schema({
 // Indexes
 userSchema.index({ phoneNumber: 1 });
 userSchema.index({ createdAt: -1 });
+userSchema.index({ lastQRScanAt: -1 }); // For sorting by recent QR scans
 userSchema.index({ 'gameStats.bestTime': 1 });
 userSchema.index({ voucherCode: 1 }, { unique: true });
 

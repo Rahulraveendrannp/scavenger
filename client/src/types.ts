@@ -63,4 +63,5 @@ export interface GameProgress {
   currentTier: RewardTier;
   isCompleted: boolean;
   hintCredits: number;
+  revealedHints?: number[];
 }

@@ -91,7 +91,7 @@ const userProgressSchema = new mongoose.Schema({
 
 // Indexes for performance
 userProgressSchema.index({ phoneNumber: 1 }, { unique: true }); // Make phoneNumber unique
-userProgressSchema.index({ userId: 1 });
+userProgressSchema.index({ userId: 1 }, { unique: true }); // Also make userId unique
 userProgressSchema.index({ 'currentState.currentPage': 1 });
 userProgressSchema.index({ 'scavengerHuntProgress.lastActivityAt': -1 });
 userProgressSchema.index({ isGameCompleted: 1 });
@@ -131,6 +131,9 @@ userProgressSchema.methods.markDashboardGameComplete = function(gameName) {
     this.dashboardGames[gameName].completedAt = new Date();
     this.currentState.canResume = true;
     this.markModified('dashboardGames');
+    
+    // Also update the User's lastQRScanAt field for offline games
+    this.updateUserLastQRScan();
   }
 };
 
@@ -163,6 +166,9 @@ userProgressSchema.methods.markCheckpointComplete = function(checkpointId, locat
   this.gameStats.totalScans += 1;
   this.markModified('scavengerHuntProgress');
   this.markModified('gameStats');
+  
+  // Also update the User's lastQRScanAt field
+  this.updateUserLastQRScan();
   
   console.log('🔍 markCheckpointComplete: After update - completed checkpoints:', this.scavengerHuntProgress.completedCheckpoints);
 };
@@ -197,15 +203,39 @@ userProgressSchema.methods.isScavengerHuntCompleted = function() {
   return this.scavengerHuntProgress.completedCheckpoints.length >= 5;
 };
 
-// Static method to safely get or create user progress
+// Method to update User's lastQRScanAt field
+userProgressSchema.methods.updateUserLastQRScan = async function() {
+  try {
+    const User = require('./User');
+    await User.findByIdAndUpdate(
+      this.userId,
+      { lastQRScanAt: new Date() },
+      { new: true }
+    );
+    console.log('✅ Updated User lastQRScanAt for user:', this.phoneNumber);
+  } catch (error) {
+    console.error('❌ Error updating User lastQRScanAt:', error);
+  }
+};
+
+// Static method to safely get or create user progress (race condition safe)
 userProgressSchema.statics.getOrCreateProgress = async function(phoneNumber, userId) {
   try {
-    // Try to find existing progress
-    let progress = await this.findOne({ phoneNumber });
+    // First try to find existing progress
+    let progress = await this.findOne({ phoneNumber: phoneNumber });
     
-    if (!progress) {
-      console.log('📊 Creating new UserProgress for phone:', phoneNumber);
-      // Create new progress record
+    if (progress) {
+      // Update existing progress
+      progress.gameStats.lastLoginAt = new Date();
+      progress.gameStats.loginCount += 1;
+      await progress.save();
+      console.log('📊 Found existing UserProgress for phone:', phoneNumber, 'login count:', progress.gameStats.loginCount);
+      return progress;
+    }
+    
+    // If no existing progress, create new one
+    console.log('📊 Creating new UserProgress for phone:', phoneNumber);
+    try {
       progress = new this({
         userId: userId,
         phoneNumber: phoneNumber,
@@ -215,17 +245,27 @@ userProgressSchema.statics.getOrCreateProgress = async function(phoneNumber, use
           loginCount: 1
         }
       });
+      
       await progress.save();
-      console.log('📊 New UserProgress created successfully');
-    } else {
-      console.log('📊 Found existing UserProgress for phone:', phoneNumber);
-      // Update login info
-      progress.gameStats.lastLoginAt = new Date();
-      progress.gameStats.loginCount += 1;
-      await progress.save();
+      console.log('📊 Successfully created new UserProgress for phone:', phoneNumber);
+      return progress;
+    } catch (saveError) {
+      // If save fails due to duplicate key (race condition), try to find the existing one
+      if (saveError.code === 11000) {
+        console.log('⚠️ Duplicate key error, trying to find existing UserProgress for phone:', phoneNumber);
+        const existingProgress = await this.findOne({ phoneNumber: phoneNumber });
+        if (existingProgress) {
+          // Update login count
+          existingProgress.gameStats.lastLoginAt = new Date();
+          existingProgress.gameStats.loginCount += 1;
+          await existingProgress.save();
+          console.log('📊 Found existing UserProgress after duplicate key error for phone:', phoneNumber);
+          return existingProgress;
+        }
+      }
+      throw saveError;
     }
     
-    return progress;
   } catch (error) {
     console.error('❌ Error in getOrCreateProgress:', error);
     throw error;

@@ -180,12 +180,15 @@ const Dashboard: React.FC<DashboardProps> = ({
                 ? scavengerProgressResponse.data.totalFound || 0
                 : 0;
             
-            // Use the isCompleted field from API if available, otherwise calculate based on 4+ checkpoints
+            // Check if all 11 checkpoints are completed
+            const allCheckpointsCompleted = completedCount >= 11;
+            
+            // Use the isCompleted field from API if available, otherwise calculate based on 5+ checkpoints
             const scavengerCompleted = 
               scavengerProgressResponse.success &&
               scavengerProgressResponse.data?.isCompleted !== undefined
                 ? scavengerProgressResponse.data.isCompleted
-                : completedCount >= 4;
+                : completedCount >= 5;
             
             // Check if scavenger hunt has been started (QR scanned)
             const scavengerStarted =
@@ -197,8 +200,11 @@ const Dashboard: React.FC<DashboardProps> = ({
               ...game,
               isCompleted: scavengerCompleted || false,
               isStarted: scavengerStarted || false,
-              description: scavengerCompleted
-                ? `Scavenger Hunt Completed! (${completedCount}/11 checkpoints found)`
+              allCheckpointsCompleted: allCheckpointsCompleted,
+              description: allCheckpointsCompleted
+                ? `All checkpoints completed!`
+                : scavengerCompleted
+                ? `Prize unlocked! (${completedCount}/11)\nHunt all for bigger prizes!`
                 : scavengerStarted
                                       ? `Continue your adventure! (${completedCount}/11 completed)`
                   : `Start your treasure hunt adventure!`,
@@ -587,13 +593,6 @@ const Dashboard: React.FC<DashboardProps> = ({
               <span className="hidden sm:inline">{completedGames} Completed</span>
               <span className="sm:hidden">{completedGames}</span>
             </div>
-            <div className="flex items-center gap-1">
-              <Star className="w-3 h-3 sm:w-4 sm:h-4 text-blue-500" />
-              <span className="hidden sm:inline">
-                {games.length - completedGames} Remaining
-              </span>
-              <span className="sm:hidden">{games.length - completedGames}</span>
-            </div>
           </div>
           <button
             onClick={handleClaimClick}
@@ -627,7 +626,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               {game.isCompleted && (
                 <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-body">
                   <span className="hidden sm:inline">
-                    {game.id === "scavenger-hunt" ? "✓ HALF COMPLETE" : "✓ COMPLETED"}
+                    {game.id === "scavenger-hunt" && (game as any).allCheckpointsCompleted ? "✓ COMPLETED" : game.id === "scavenger-hunt" ? "✓ HALF COMPLETE" : "✓ COMPLETED"}
                   </span>
                   <span className="sm:hidden">
                     {game.id === "scavenger-hunt" ? "✓" : "✓"}
@@ -647,6 +646,11 @@ const Dashboard: React.FC<DashboardProps> = ({
               <button
                 onClick={() => {
                   if (game.type === "scavenger") {
+                    // For scavenger hunt, check if all checkpoints are completed
+                    if ((game as any).allCheckpointsCompleted) {
+                      console.log("All checkpoints completed, cannot start hunt");
+                      return;
+                    }
                     // For scavenger hunt, always go directly to hunt (no QR scanning needed)
                     onStartScavengerHunt();
                   } else if (!game.isCompleted) {
@@ -654,9 +658,11 @@ const Dashboard: React.FC<DashboardProps> = ({
                     handleScanQR(game.id);
                   }
                 }}
-                disabled={isClaimed}
+                disabled={isClaimed || (game.type === "scavenger" && (game as any).allCheckpointsCompleted)}
                 className={`w-full py-2 sm:py-3 px-3 sm:px-4 rounded-full font-body flex items-center justify-center gap-2 transition-colors text-sm sm:text-base ${
-                  game.isCompleted
+                  (game as any).allCheckpointsCompleted
+                    ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                    : game.isCompleted
                     ? game.type === "scavenger"
                       ? "bg-purple-500 hover:bg-purple-600 text-white"
                       : "bg-gray-200 text-gray-500 cursor-not-allowed"
@@ -671,7 +677,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                   <QrCode className="w-4 h-4 sm:w-5 sm:h-5" />
                 )}
                 <span className="hidden sm:inline">
-                  {game.isCompleted
+                  {(game as any).allCheckpointsCompleted
+                    ? "Done"
+                    : game.isCompleted
                     ? game.type === "scavenger" 
                       ? "Resume Hunt"
                       : "Completed"
@@ -682,7 +690,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                     : "Scan to Complete"}
                 </span>
                 <span className="sm:hidden">
-                  {game.isCompleted
+                  {(game as any).allCheckpointsCompleted
+                    ? "Done"
+                    : game.isCompleted
                     ? game.type === "scavenger" 
                       ? "Resume"
                       : "Done"

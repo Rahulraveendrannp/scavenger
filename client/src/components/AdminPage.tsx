@@ -240,9 +240,12 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                 />
               </div>
             </div>
-            <p className="text-xs text-gray-500 mt-2">
-              💡 Scavenger Hunt is marked complete when users find 5+ checkpoints (half completion)
-            </p>
+                         <p className="text-xs text-gray-500 mt-2">
+               💡 Scavenger Hunt is marked complete when users find 5+ checkpoints (half completion)
+             </p>
+             <p className="text-xs text-gray-500">
+               📊 Users are sorted by recent QR scan activity - most recently active users appear first
+             </p>
           </div>
 
           {isLoading ? (
@@ -276,12 +279,15 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                           (5/11 = Complete)
                         </div>
                       </th>
-                      <th className="text-center py-4 px-6 font-['TT_Commons_Pro_DemiBold'] text-gray-700 text-xs uppercase tracking-wider">
-                        Voucher Code
-                      </th>
-                      <th className="text-center py-4 px-6 font-['TT_Commons_Pro_DemiBold'] text-gray-700 text-xs uppercase tracking-wider">
-                        Claim Status
-                      </th>
+                                             <th className="text-center py-4 px-6 font-['TT_Commons_Pro_DemiBold'] text-gray-700 text-xs uppercase tracking-wider">
+                         Voucher Code
+                       </th>
+                       <th className="text-center py-4 px-6 font-['TT_Commons_Pro_DemiBold'] text-gray-700 text-xs uppercase tracking-wider">
+                         Last QR Scan
+                       </th>
+                       <th className="text-center py-4 px-6 font-['TT_Commons_Pro_DemiBold'] text-gray-700 text-xs uppercase tracking-wider">
+                         Claim Status
+                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-[#F4EDE3] divide-y divide-gray-200">
@@ -315,18 +321,31 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                             </div>
                           </div>
                         </td>
-                        <td className="py-4 px-6 text-center">
-                          <div className="text-sm font-['TT_Commons_Pro_DemiBold'] text-gray-900">
-                            {user.voucherCode ? (
-                              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded font-mono">
-                                {user.voucherCode}
-                              </span>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-4 px-6 text-center">
+                                                 <td className="py-4 px-6 text-center">
+                           <div className="text-sm font-['TT_Commons_Pro_DemiBold'] text-gray-900">
+                             {user.voucherCode ? (
+                               <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded font-mono">
+                                 {user.voucherCode}
+                               </span>
+                             ) : (
+                               <span className="text-gray-400">-</span>
+                             )}
+                           </div>
+                         </td>
+                         <td className="py-4 px-6 text-center">
+                           <div className="text-sm font-['TT_Commons_Pro_DemiBold'] text-gray-900">
+                             {user.lastQRScanAt ? (
+                               <span className="bg-green-100 text-green-800 px-2 py-1 rounded">
+                                 {new Date(user.lastQRScanAt).toLocaleDateString()} {new Date(user.lastQRScanAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                               </span>
+                             ) : (
+                               <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                                 Never
+                               </span>
+                             )}
+                           </div>
+                         </td>
+                         <td className="py-4 px-6 text-center">
                           <button
                             onClick={() => handleToggleClaimStatus(user._id)}
                             className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-sm font-['TT_Commons_Pro_DemiBold'] transition-colors ${
