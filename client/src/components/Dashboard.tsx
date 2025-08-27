@@ -106,8 +106,10 @@ const Dashboard: React.FC<DashboardProps> = ({
 
         // Check if user is claimed
         console.log("🔍 Dashboard: Claim response structure:", claimResponse);
+        let isUserClaimed = false;
         if (claimResponse.success && claimResponse.data?.isClaimed) {
           console.log("✅ Dashboard: User is claimed, setting isClaimed to true");
+          isUserClaimed = true;
           setIsClaimed(true);
         }
 
@@ -201,7 +203,10 @@ const Dashboard: React.FC<DashboardProps> = ({
               isCompleted: scavengerCompleted || false,
               isStarted: scavengerStarted || false,
               allCheckpointsCompleted: allCheckpointsCompleted,
-              description: allCheckpointsCompleted
+              isClaimed: isUserClaimed,
+              description: isUserClaimed
+                ? `Reward claimed! Thank you for playing!`
+                : allCheckpointsCompleted
                 ? `All checkpoints completed!`
                 : scavengerCompleted
                 ? `Prize unlocked! (${completedCount}/11)\nHunt all for bigger prizes!`
@@ -230,7 +235,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               }
             }
 
-            return { ...game, isCompleted: isCompleted || false };
+                         return { ...game, isCompleted: isCompleted || false, isClaimed: isUserClaimed };
           }
         });
 
@@ -645,6 +650,12 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div className="mt-auto">
               <button
                 onClick={() => {
+                  // If user has claimed, don't allow any actions
+                  if ((game as any).isClaimed) {
+                    console.log("User has claimed, no actions allowed");
+                    return;
+                  }
+                  
                   if (game.type === "scavenger") {
                     // For scavenger hunt, check if all checkpoints are completed
                     if ((game as any).allCheckpointsCompleted) {
@@ -658,9 +669,11 @@ const Dashboard: React.FC<DashboardProps> = ({
                     handleScanQR(game.id);
                   }
                 }}
-                disabled={isClaimed || (game.type === "scavenger" && (game as any).allCheckpointsCompleted)}
+                disabled={(game as any).isClaimed || (game.type === "scavenger" && (game as any).allCheckpointsCompleted)}
                 className={`w-full py-2 sm:py-3 px-3 sm:px-4 rounded-full font-body flex items-center justify-center gap-2 transition-colors text-sm sm:text-base ${
-                  (game as any).allCheckpointsCompleted
+                  (game as any).isClaimed
+                    ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                    : (game as any).allCheckpointsCompleted
                     ? "bg-gray-200 text-gray-500 cursor-not-allowed"
                     : game.isCompleted
                     ? game.type === "scavenger"

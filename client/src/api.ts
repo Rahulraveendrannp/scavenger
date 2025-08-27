@@ -773,4 +773,32 @@ export class ScavengerAPI {
       return { success: false, error: error?.message || "Network error" };
     }
   }
+
+  static async getAdminStatistics(): Promise<ApiResponse<any>> {
+    try {
+      console.log("📊 API: Getting admin statistics...");
+
+      const response = await fetch(`${API_BASE}/admin/statistics`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json();
+      console.log("📊 API: Get admin statistics response:", data);
+
+      if (!response.ok) {
+        return {
+          success: false,
+          error: data?.message || "Failed to load statistics",
+        };
+      }
+
+      return { success: true, data: data.data };
+    } catch (error: any) {
+      console.error("Failed to load admin statistics:", error);
+      return { success: false, error: error?.message || "Network error" };
+    }
+  }
 }

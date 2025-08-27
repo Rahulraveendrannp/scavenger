@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // components/ScavengerHuntPage.tsx
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -208,6 +208,13 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
   );
   const [scannerError, setScannerError] = useState<string>("");
   const [isLoadingProgress, setIsLoadingProgress] = useState(true);
+  const [showMap, setShowMap] = useState(false);
+  const [mapZoom, setMapZoom] = useState(1);
+  const [mapPosition, setMapPosition] = useState({ x: 200, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapImageRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     // Load initial progress from backend
@@ -589,6 +596,87 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
       .replace(/\*\*(.*?)\*\*/g, '<span class="font-heading text-[16px]">$1</span>');
   };
 
+  // Map zoom and pan handlers
+  const handleMapZoom = useCallback((delta: number, centerX: number, centerY: number) => {
+    setMapZoom(prevZoom => {
+      const newZoom = Math.max(0.5, Math.min(3, prevZoom + delta));
+      
+      // Adjust position to zoom towards the center point
+      if (mapContainerRef.current) {
+        const container = mapContainerRef.current;
+        const rect = container.getBoundingClientRect();
+        
+        setMapPosition(prev => {
+          const zoomRatio = newZoom / prevZoom;
+          const newX = centerX - (centerX - prev.x) * zoomRatio;
+          const newY = centerY - (centerY - prev.y) * zoomRatio;
+          
+          return { x: newX, y: newY };
+        });
+      }
+      
+      return newZoom;
+    });
+  }, []);
+
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const centerX = e.clientX - rect.left;
+    const centerY = e.clientY - rect.top;
+    handleMapZoom(delta, centerX, centerY);
+  }, [handleMapZoom]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      setIsDragging(true);
+      const touch = e.touches[0];
+      const rect = e.currentTarget.getBoundingClientRect();
+      setDragStart({
+        x: touch.clientX - rect.left - mapPosition.x,
+        y: touch.clientY - rect.top - mapPosition.y
+      });
+    }
+  }, [mapPosition]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    
+    if (e.touches.length === 1 && isDragging) {
+      const touch = e.touches[0];
+      const rect = e.currentTarget.getBoundingClientRect();
+      setMapPosition({
+        x: touch.clientX - rect.left - dragStart.x,
+        y: touch.clientY - rect.top - dragStart.y
+      });
+    } else if (e.touches.length === 2) {
+      // Pinch to zoom
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const distance = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
+      
+      if (mapContainerRef.current) {
+        const rect = mapContainerRef.current.getBoundingClientRect();
+        const centerX = (touch1.clientX + touch2.clientX) / 2 - rect.left;
+        const centerY = (touch1.clientY + touch2.clientY) / 2 - rect.top;
+        
+        // Calculate zoom based on distance change (simplified)
+        const delta = distance > 100 ? 0.05 : -0.05;
+        handleMapZoom(delta, centerX, centerY);
+      }
+    }
+  }, [isDragging, dragStart, handleMapZoom]);
+
+  const handleTouchEnd = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const resetMapView = useCallback(() => {
+    setMapZoom(1);
+    setMapPosition({ x: 0, y: 0 });
+  }, []);
+
   return (
     <>
       {/* Loading Overlay */}
@@ -617,8 +705,8 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
           {/* Header */}
           <div className="mb-6">
             {/* Top Section with Hint Credits */}
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex-1">
+            <div className="flex items-center mb-4">
+              <div className="flex gap-1 items-center">
                 <h1 className="text-2xl font-heading text-[#411517] leading-none">
                   Scavenger
                 </h1>
@@ -632,26 +720,38 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
               
                              <div className="flex items-center">
                 {/* Hint Credits - Top Right */}
-                <div className="flex items-center bg-[#CFFF00] px-3 py-1 rounded-full">
-                  <Lightbulb className="w-5 h-5 text-[#411517] stroke-2" />
-                  <span className="text-2xl text-[#411517] font-body mr-1">
+                
+              </div>
+            </div>
+            
+            <p className="text-[#411517] text-sm font-body mb-4">
+              All checkpoints are on the <strong>ground floor and never inside shops</strong>! There's no specific order — it's your call.
+            </p>
+            
+            {/* Map and Hint Buttons */}
+            <div className="flex space-x-1 mb-4">
+              <button 
+                onClick={() => setShowMap(true)}
+                className="w-[70%] bg-[#FF5900] text-white py-3 px-4 rounded-full flex items-center justify-center space-x-2 text-md font-body"
+              >
+                <img src="/map.svg" alt="Map" className="w-5 h-5" />
+                <span>Open Map</span>
+              </button>
+              <div className="flex items-center text-sm bg-[#CFFF00] px-3 py-1 rounded-full">
+              <img src="/light.svg" alt="Map" className="w-5 h-5" />
+                  <span className="text-2xl text-[#411517]  mr-1">
                       {hintCredits} 
                     </span>
                    <div className="flex flex-col -space-y-1">
-                     <span className="text-md text-[#411517] font-body leading-none">
+                     <span className="text-md text-[#411517]  leading-none">
                        hints
                      </span>
-                                           <span className="text-md text-[#411517] font-body leading-none">
+                                           <span className="text-md text-[#411517]  leading-none">
                        available
                      </span>
                    </div>
                 </div>
-              </div>
             </div>
-            
-                            <p className="text-[#411517] text-sm font-body mb-4">
-              There's no specific order — it's your call.
-            </p>
           </div>
 
           {/* Checkpoints List */}
@@ -780,6 +880,94 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
           }}
           expectedQRCode={getExpectedQRCode(scannerCheckpointId ?? -1)}
         />
+      )}
+
+      {/* Map Modal Overlay */}
+      {showMap && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden relative">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowMap(false)}
+              className="absolute top-2 right-2 z-10 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
+            >
+              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            
+            {/* Zoom Controls */}
+            <div className="absolute top-2 left-2 z-10 flex flex-col space-y-2">
+              <button
+                onClick={() => handleMapZoom(0.2, 0, 0)}
+                className="bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
+              >
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+              </button>
+              <button
+                onClick={() => handleMapZoom(-0.2, 0, 0)}
+                className="bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
+              >
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                </svg>
+              </button>
+              <button
+                onClick={resetMapView}
+                className="bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
+              >
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Zoom Level Indicator */}
+            <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-10 bg-white rounded-full px-3 py-1 shadow-lg">
+              <span className="text-sm text-gray-600 font-medium">
+                {Math.round(mapZoom * 100)}%
+              </span>
+            </div>
+            
+            {/* Map Container */}
+            <div 
+              ref={mapContainerRef}
+              className="w-full h-[80vh] overflow-hidden relative cursor-grab active:cursor-grabbing"
+              onWheel={handleWheel}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              <div 
+                className="w-full h-full flex items-center justify-center"
+                style={{
+                  transform: `translate(${mapPosition.x}px, ${mapPosition.y}px) scale(${mapZoom})`,
+                  transformOrigin: 'center',
+                  transition: isDragging ? 'none' : 'transform 0.1s ease-out'
+                }}
+              >
+                <img 
+                  ref={mapImageRef}
+                  src="/routemap.svg" 
+                  alt="Route Map" 
+                  className="max-w-none max-h-none select-none"
+                  draggable={false}
+                />
+              </div>
+            </div>
+            
+            {/* Instructions */}
+            <div className="absolute bottom-2 left-2 right-2 z-10 bg-white rounded-lg p-3 shadow-lg">
+              <p className="text-sm text-gray-600 text-center">
+                <span className="hidden sm:inline">Use mouse wheel to zoom • </span>
+                <span className="sm:hidden">Pinch to zoom • </span>
+                Drag to pan • Tap reset to return to original view
+              </p>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Scanner Error Toast */}

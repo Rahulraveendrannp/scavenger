@@ -262,6 +262,93 @@ router.post('/toggle-claim-status', catchAsync(async (req, res) => {
   }
 }));
 
+// Get detailed statistics for admin dashboard
+router.get('/statistics', catchAsync(async (req, res) => {
+  console.log('📊 Admin: Getting detailed statistics...');
 
+  try {
+    // Get all users with their progress
+    const users = await User.find();
+    const usersWithProgress = await Promise.all(
+      users.map(async (user) => {
+        try {
+          const userProgress = await UserProgress.findOne({ userId: user._id });
+          
+          // Calculate completed games
+          const dashboardGames = userProgress?.dashboardGames || {};
+          const completedGames = Object.values(dashboardGames).filter(game => game?.isCompleted).length;
+          
+          // Get scavenger hunt progress
+          const scavengerProgress = userProgress?.scavengerHuntProgress?.completedCheckpoints?.length || 0;
+          
+          return {
+            _id: user._id,
+            phoneNumber: user.phoneNumber,
+            isClaimed: user.isClaimed || false,
+            completedGames,
+            scavengerProgress
+          };
+        } catch (err) {
+          return {
+            _id: user._id,
+            phoneNumber: user.phoneNumber,
+            isClaimed: user.isClaimed || false,
+            completedGames: 0,
+            scavengerProgress: 0
+          };
+        }
+      })
+    );
+
+    // Calculate statistics
+    const totalUsers = usersWithProgress.length;
+    const totalClaimed = usersWithProgress.filter(user => user.isClaimed).length;
+    const totalUnclaimed = totalUsers - totalClaimed;
+
+    // Breakdown by completion levels (1/4, 2/4, 3/4, 4/4)
+    const claimedByCompletion = {
+      '1/4': usersWithProgress.filter(user => user.isClaimed && user.completedGames === 1).length,
+      '2/4': usersWithProgress.filter(user => user.isClaimed && user.completedGames === 2).length,
+      '3/4': usersWithProgress.filter(user => user.isClaimed && user.completedGames === 3).length,
+      '4/4': usersWithProgress.filter(user => user.isClaimed && user.completedGames === 4).length,
+      '0/4': usersWithProgress.filter(user => user.isClaimed && user.completedGames === 0).length
+    };
+
+    // Scavenger hunt completion statistics
+    const scavengerStats = {
+      totalCompleted: usersWithProgress.filter(user => user.scavengerProgress >= 5).length,
+      totalIncomplete: usersWithProgress.filter(user => user.scavengerProgress < 5).length,
+      averageProgress: usersWithProgress.length > 0 
+        ? Math.round((usersWithProgress.reduce((sum, user) => sum + user.scavengerProgress, 0) / usersWithProgress.length) * 10) / 10
+        : 0
+    };
+
+    // Additional statistics
+    const additionalStats = {
+      usersWithVoucherCodes: users.filter(user => user.voucherCode).length,
+      usersWithoutVoucherCodes: users.filter(user => !user.voucherCode).length,
+      recentActivity: users.filter(user => user.lastQRScanAt && 
+        new Date(user.lastQRScanAt) > new Date(Date.now() - 24 * 60 * 60 * 1000)).length // Last 24 hours
+    };
+
+    console.log('📊 Admin: Successfully calculated detailed statistics');
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalUsers,
+        totalClaimed,
+        totalUnclaimed,
+        claimedByCompletion,
+        scavengerStats,
+        additionalStats
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Admin: Error getting statistics:', error);
+    throw new AppError('Failed to get statistics', 500);
+  }
+}));
 
 module.exports = router;

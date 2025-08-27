@@ -17,6 +17,8 @@ const AdminPage: React.FC<AdminPageProps> = () => {
   const [voucherInput, setVoucherInput] = useState("");
   const [showVoucherInput, setShowVoucherInput] = useState(false);
   const [voucherError, setVoucherError] = useState("");
+  const [statistics, setStatistics] = useState<any>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
 
   useEffect(() => {
     checkAuthentication();
@@ -25,6 +27,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
   useEffect(() => {
     if (isAuthenticated) {
       loadTotalUsers();
+      loadStatistics();
     }
   }, [isAuthenticated]);
 
@@ -85,6 +88,23 @@ const AdminPage: React.FC<AdminPageProps> = () => {
     }
   };
 
+  const loadStatistics = async () => {
+    try {
+      setIsLoadingStats(true);
+      const response = await ScavengerAPI.getAdminStatistics();
+      
+      if (response.success) {
+        setStatistics(response.data);
+      } else {
+        console.error("Failed to load statistics:", response.error);
+      }
+    } catch (error) {
+      console.error("Error loading statistics:", error);
+    } finally {
+      setIsLoadingStats(false);
+    }
+  };
+
   const handleVoucherClaim = async () => {
     try {
       console.log("Processing voucher code:", voucherInput);
@@ -103,8 +123,9 @@ const AdminPage: React.FC<AdminPageProps> = () => {
         setVoucherInput("");
         setVoucherError("");
         setShowVoucherInput(false);
-        // Refresh total users
+        // Refresh both users and statistics
         loadTotalUsers();
+        loadStatistics();
         setTimeout(() => setClaimMessage(""), 3000);
       } else {
         setVoucherError(`❌ ${response.error || "Invalid voucher code or user not found"}`);
@@ -122,8 +143,9 @@ const AdminPage: React.FC<AdminPageProps> = () => {
       
       if (response.success) {
         setClaimMessage("✅ Claim status updated successfully!");
-        // Refresh total users
+        // Refresh both users and statistics
         loadTotalUsers();
+        loadStatistics();
       } else {
         setClaimMessage(`❌ ${response.error || "Failed to update claim status"}`);
       }
@@ -173,7 +195,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="bg-[#FF5900]/5 rounded-xl p-4">
             <div className="flex items-center gap-3">
               <div className="bg-[#FF5900]/10 p-2 rounded-lg">
@@ -187,8 +209,141 @@ const AdminPage: React.FC<AdminPageProps> = () => {
               </div>
             </div>
           </div>
-          
+
+          <div className="bg-green-500/5 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-green-500/10 p-2 rounded-lg">
+                <CheckCircle className="w-6 h-6 text-green-500" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Total Claimed</p>
+                <p className="text-2xl font-['TT_Commons_Pro_ExtraBold'] text-green-500">
+                  {isLoadingStats ? "..." : statistics?.totalClaimed || 0}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-blue-500/5 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-500/10 p-2 rounded-lg">
+                <CheckCircle className="w-6 h-6 text-blue-500" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Unclaimed</p>
+                <p className="text-2xl font-['TT_Commons_Pro_ExtraBold'] text-blue-500">
+                  {isLoadingStats ? "..." : statistics?.totalUnclaimed || 0}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-purple-500/5 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-purple-500/10 p-2 rounded-lg">
+                <CheckCircle className="w-6 h-6 text-purple-500" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Scavenger Completed</p>
+                <p className="text-2xl font-['TT_Commons_Pro_ExtraBold'] text-purple-500">
+                  {isLoadingStats ? "..." : statistics?.scavengerStats?.totalCompleted || 0}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
+
+        {/* Detailed Statistics */}
+        {statistics && (
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <h3 className="text-lg font-['TT_Commons_Pro_ExtraBold'] text-gray-800 mb-4">
+              📊 Detailed Statistics
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Claimed by Completion Level */}
+              <div>
+                <h4 className="font-['TT_Commons_Pro_DemiBold'] text-gray-700 mb-3">
+                  🏆 Claimed by Completion Level
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">0/4 Games:</span>
+                    <span className="font-['TT_Commons_Pro_DemiBold'] text-blue-600">
+                      {statistics.claimedByCompletion['0/4'] || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">1/4 Games:</span>
+                    <span className="font-['TT_Commons_Pro_DemiBold'] text-green-600">
+                      {statistics.claimedByCompletion['1/4'] || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">2/4 Games:</span>
+                    <span className="font-['TT_Commons_Pro_DemiBold'] text-yellow-600">
+                      {statistics.claimedByCompletion['2/4'] || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">3/4 Games:</span>
+                    <span className="font-['TT_Commons_Pro_DemiBold'] text-orange-600">
+                      {statistics.claimedByCompletion['3/4'] || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">4/4 Games:</span>
+                    <span className="font-['TT_Commons_Pro_DemiBold'] text-red-600">
+                      {statistics.claimedByCompletion['4/4'] || 0}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Scavenger Hunt Stats */}
+              <div>
+                <h4 className="font-['TT_Commons_Pro_DemiBold'] text-gray-700 mb-3">
+                  🎯 Scavenger Hunt Progress
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Completed (5+):</span>
+                    <span className="font-['TT_Commons_Pro_DemiBold'] text-green-600">
+                      {statistics.scavengerStats?.totalCompleted || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Incomplete:</span>
+                    <span className="font-['TT_Commons_Pro_DemiBold'] text-red-600">
+                      {statistics.scavengerStats?.totalIncomplete || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Avg Progress:</span>
+                    <span className="font-['TT_Commons_Pro_DemiBold'] text-purple-600">
+                      {statistics.scavengerStats?.averageProgress || 0}/11
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Stats */}
+              <div>
+                <h4 className="font-['TT_Commons_Pro_DemiBold'] text-gray-700 mb-3">
+                  📈 Additional Metrics
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Active (24h):</span>
+                    <span className="font-['TT_Commons_Pro_DemiBold'] text-green-600">
+                      {statistics.additionalStats?.recentActivity || 0}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Claim Message */}
         {claimMessage && (
@@ -213,7 +368,10 @@ const AdminPage: React.FC<AdminPageProps> = () => {
           </button>
           
           <button
-            onClick={loadTotalUsers}
+            onClick={() => {
+              loadTotalUsers();
+              loadStatistics();
+            }}
             className="bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors font-['TT_Commons_Pro_DemiBold'] flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
