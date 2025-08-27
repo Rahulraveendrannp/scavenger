@@ -121,19 +121,9 @@ router.post('/generate-voucher', catchAsync(async (req, res) => {
       });
     }
 
-    // Generate unique voucher code using the safe method
-    const voucherCode = await User.generateVoucherCode(user._id);
-    
-    console.log(`🎫 Admin: Generated voucher code for user ${phoneNumber}: ${voucherCode}`);
-
-    res.status(200).json({
-      success: true,
-      data: {
-        voucherCode,
-        phoneNumber: user.phoneNumber,
-        userId: user._id
-      }
-    });
+    // No generation here: voucher codes are created at registration time
+    // If we reach here, this user unexpectedly has no voucher code
+    throw new AppError('User has no voucher code. Voucher codes are created at registration.', 400);
 
   } catch (error) {
     console.error('❌ Admin: Error generating voucher code:', error);
@@ -323,6 +313,28 @@ router.get('/statistics', catchAsync(async (req, res) => {
         : 0
     };
 
+    // Per-game completion counts
+    const perGameCompletions = {
+      lunchboxMatcher: 0,
+      cityRun: 0,
+      talabeats: 0,
+      scavengerHunt: 0
+    };
+
+    // Count by looking up progress docs in one extra pass
+    try {
+      const progresses = await UserProgress.find();
+      progresses.forEach((p) => {
+        if (p.dashboardGames?.lunchboxMatcher?.isCompleted) perGameCompletions.lunchboxMatcher += 1;
+        if (p.dashboardGames?.cityRun?.isCompleted) perGameCompletions.cityRun += 1;
+        if (p.dashboardGames?.talabeats?.isCompleted) perGameCompletions.talabeats += 1;
+        // Scavenger considered completed at 5+ checkpoints
+        if ((p.scavengerHuntProgress?.completedCheckpoints?.length || 0) >= 5) perGameCompletions.scavengerHunt += 1;
+      });
+    } catch (e) {
+      console.error('❌ Admin: Error aggregating per-game completions:', e);
+    }
+
     // Additional statistics
     const additionalStats = {
       usersWithVoucherCodes: users.filter(user => user.voucherCode).length,
@@ -341,7 +353,8 @@ router.get('/statistics', catchAsync(async (req, res) => {
         totalUnclaimed,
         claimedByCompletion,
         scavengerStats,
-        additionalStats
+        additionalStats,
+        perGameCompletions
       }
     });
 

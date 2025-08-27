@@ -224,37 +224,80 @@ const AdminPage: React.FC<AdminPageProps> = () => {
             </div>
           </div>
 
-          <div className="bg-blue-500/5 rounded-xl p-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-blue-500/10 p-2 rounded-lg">
-                <CheckCircle className="w-6 h-6 text-blue-500" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Unclaimed</p>
-                <p className="text-2xl font-['TT_Commons_Pro_ExtraBold'] text-blue-500">
-                  {isLoadingStats ? "..." : statistics?.totalUnclaimed || 0}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-purple-500/5 rounded-xl p-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-purple-500/10 p-2 rounded-lg">
-                <CheckCircle className="w-6 h-6 text-purple-500" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Scavenger Completed</p>
-                <p className="text-2xl font-['TT_Commons_Pro_ExtraBold'] text-purple-500">
-                  {isLoadingStats ? "..." : statistics?.scavengerStats?.totalCompleted || 0}
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* Detailed Statistics */}
+        {/* Claim Message */}
+        {claimMessage && (
+          <div className={`mb-4 p-3 rounded-lg text-center font-['TT_Commons_Pro_DemiBold'] ${
+            claimMessage.includes("✅") 
+              ? "bg-green-100 text-green-700" 
+              : "bg-red-100 text-red-700"
+          }`}>
+            {claimMessage}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <button
+            onClick={() => setShowVoucherInput(true)}
+            className="bg-[#FF5900] text-white py-3 px-4 rounded-lg hover:bg-[#E54D00] transition-colors font-['TT_Commons_Pro_DemiBold'] flex items-center justify-center gap-2 text-sm sm:text-base"
+          >
+            <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline">Claim with Voucher</span>
+            <span className="sm:hidden">Claim</span>
+          </button>
+          
+          <button
+            onClick={() => {
+              loadTotalUsers();
+              loadStatistics();
+            }}
+            className="bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors font-['TT_Commons_Pro_DemiBold'] flex items-center justify-center gap-2 text-sm sm:text-base"
+          >
+            <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline">Refresh Data</span>
+            <span className="sm:hidden">Refresh</span>
+          </button>
+        </div>
+
+        {/* Per-Game Completion Stats - shown below Claim/Refresh */}
         {statistics && (
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <h3 className="text-lg font-['TT_Commons_Pro_ExtraBold'] text-gray-800 mb-4">
+              🎮 Game Completions
+            </h3>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-orange-500/5 rounded-xl p-4">
+                <p className="text-sm text-gray-600">Lunchbox Matcher</p>
+                <p className="text-2xl font-['TT_Commons_Pro_ExtraBold'] text-orange-600">
+                  {statistics.perGameCompletions?.lunchboxMatcher ?? 0}
+                </p>
+              </div>
+              <div className="bg-sky-500/5 rounded-xl p-4">
+                <p className="text-sm text-gray-600">City Run</p>
+                <p className="text-2xl font-['TT_Commons_Pro_ExtraBold'] text-sky-600">
+                  {statistics.perGameCompletions?.cityRun ?? 0}
+                </p>
+              </div>
+              <div className="bg-pink-500/5 rounded-xl p-4">
+                <p className="text-sm text-gray-600">Talabeats</p>
+                <p className="text-2xl font-['TT_Commons_Pro_ExtraBold'] text-pink-600">
+                  {statistics.perGameCompletions?.talabeats ?? 0}
+                </p>
+              </div>
+              <div className="bg-purple-500/5 rounded-xl p-4">
+                <p className="text-sm text-gray-600">Scavenger(5+)</p>
+                <p className="text-2xl font-['TT_Commons_Pro_ExtraBold'] text-purple-600">
+                  {statistics.perGameCompletions?.scavengerHunt ?? 0}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+                {/* Detailed Statistics */}
+                {statistics && (
           <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
             <h3 className="text-lg font-['TT_Commons_Pro_ExtraBold'] text-gray-800 mb-4">
               📊 Detailed Statistics
@@ -344,41 +387,6 @@ const AdminPage: React.FC<AdminPageProps> = () => {
             </div>
           </div>
         )}
-
-        {/* Claim Message */}
-        {claimMessage && (
-          <div className={`mb-4 p-3 rounded-lg text-center font-['TT_Commons_Pro_DemiBold'] ${
-            claimMessage.includes("✅") 
-              ? "bg-green-100 text-green-700" 
-              : "bg-red-100 text-red-700"
-          }`}>
-            {claimMessage}
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          <button
-            onClick={() => setShowVoucherInput(true)}
-            className="bg-[#FF5900] text-white py-3 px-4 rounded-lg hover:bg-[#E54D00] transition-colors font-['TT_Commons_Pro_DemiBold'] flex items-center justify-center gap-2 text-sm sm:text-base"
-          >
-            <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="hidden sm:inline">Claim with Voucher</span>
-            <span className="sm:hidden">Claim</span>
-          </button>
-          
-          <button
-            onClick={() => {
-              loadTotalUsers();
-              loadStatistics();
-            }}
-            className="bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors font-['TT_Commons_Pro_DemiBold'] flex items-center justify-center gap-2 text-sm sm:text-base"
-          >
-            <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="hidden sm:inline">Refresh Data</span>
-            <span className="sm:hidden">Refresh</span>
-          </button>
-        </div>
 
         {/* Users List */}
         <div className="bg-[#F4EDE3] rounded-xl shadow-lg overflow-hidden">
