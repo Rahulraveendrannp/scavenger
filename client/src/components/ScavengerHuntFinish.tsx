@@ -50,36 +50,36 @@ function ScavengerHuntFinish() {
         <div className="space-y-3 ">
           {variant === "all" ? (
             <>
-              <h1 className="text-4xl sm:text-3xl font-heading text-[#411517]">Crushed it!</h1>
-              <p className="text-md w-[90%] mx-auto sm:text-base text-[#411517]">You found all the checkpoints. Fantastic job!</p>
+              <h1 className="text-5xl sm:text-4xl font-heading text-[#411517]">Crushed it!</h1>
+              <p className="text-lg w-[90%] mx-auto sm:text-lg text-[#411517]">You found all the checkpoints. Fantastic job!</p>
               <div className="flex items-center justify-center pt-2">
                 <img src="/star.svg" alt="Star" className="w-32 h-32" />
               </div>
             </>
           ) : variant === "mid" ? (
             <>
-              <h1 className="text-4xl mx-auto w-[80%] sm:text-3xl font-heading text-[#411517]">
+              <h1 className="text-4xl w-full md:w-[80%] mx-auto sm:text-4xl font-heading text-[#411517]">
                 You found {progress?.totalFound}/{progress?.totalCheckpoints} checkpoints!
               </h1>
-              <p className="text-md sm:text-base text-[#411517]">Great job! But there's still more.</p>
+              <p className="text-xl sm:text-lg text-[#411517]">Great job! But there's still more.</p>
               <div className="flex items-center justify-center pt-2">
                 <img src="/thump.svg" alt="Thumb" className="w-20 h-20" />
               </div>
-              <p className="text-md sm:text-sm text-[#411517] mt-8">
-                Are you sure you want to finish?.
+              <p className="mt-8 text-xl sm:text-base text-[#411517]">
+                Are you sure you're done for now? <br /><span className="text-base">You can resume later.</span> 
               </p>
             </>
           ) : (
             <>
-              <h1 className="text-4xl w-[80%] mx-auto sm:text-3xl font-heading text-[#411517]">
+              <h1 className="text-4xl w-full md:w-[80%] mx-auto sm:text-4xl font-heading text-[#411517]">
                 You found {progress?.totalFound}/{progress?.totalCheckpoints} checkpoints!
               </h1>
-              <p className="text-md sm:text-base mt-4 text-[#411517]">You need more to win a prize.</p>
+              <p className="text-xl sm:text-lg mt-4 text-[#411517]">You need more to win a prize.</p>
               <div className="flex items-center justify-center pt-4">
                 <img src="/heart.svg" alt="Heart" className="w-20 h-20" />
               </div>
-              <p className="mt-8 text-md sm:text-sm text-[#411517]">
-                Are you sure you want to finish?
+              <p className="mt-8 text-xl sm:text-base text-[#411517]">
+                Are you sure you're done for now? <br /><span className="text-base">You can resume later.</span> 
               </p>
             </>
           )}
