@@ -93,7 +93,7 @@ const OTPPage: React.FC<OTPPageProps> = ({
             value={otpCode}
             onChange={handleOtpChange}
             
-                            className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-center text-sm tracking-widest font-body ${
+                            className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-center text-[17px] tracking-widest font-body ${
               error ? "border-red-500" : "border-[#FF5900]"
             }`}
             disabled={isLoading}

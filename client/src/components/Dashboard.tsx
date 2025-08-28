@@ -298,6 +298,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [scanSuccess, setScanSuccess] = useState(false);
   const [showClaimQR, setShowClaimQR] = useState(false);
+  const [showConfirmClaim, setShowConfirmClaim] = useState(false);
   const [isClaimed, setIsClaimed] = useState(false);
 
   const completedGames = games.filter((game) => game.isCompleted).length;
@@ -373,7 +374,8 @@ const Dashboard: React.FC<DashboardProps> = ({
       return;
     }
     
-    setShowClaimQR(true);
+    // Show confirmation modal for claim flow
+    setShowConfirmClaim(true);
   };
 
   const closeClaimQR = () => {
@@ -545,6 +547,19 @@ const Dashboard: React.FC<DashboardProps> = ({
         onScanResult={handleQRScanResult}
         onClose={closeQRScanner}
         isSuccess={scanSuccess}
+      />
+    );
+  }
+
+  if (showConfirmClaim) {
+    return (
+      <ConfirmClaimModal
+        allGamesWon={completedGames === games.length}
+        onCancel={() => setShowConfirmClaim(false)}
+        onContinue={() => {
+          setShowConfirmClaim(false);
+          setShowClaimQR(true);
+        }}
       />
     );
   }
@@ -1015,4 +1030,51 @@ const ClaimVoucherModal: React.FC<{
 };
 
 export default Dashboard;
+
+// Confirm Claim Modal Component
+const ConfirmClaimModal: React.FC<{
+  allGamesWon: boolean;
+  onCancel: () => void;
+  onContinue: () => void;
+}> = ({ allGamesWon, onCancel, onContinue }) => {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+      <div className="absolute inset-0 bg-black/60" onClick={onCancel}></div>
+      <div className="relative bg-[#F4EDE3] rounded-xl shadow-2xl w-full max-w-md p-5 sm:p-6 border border-gray-200">
+        <div className="text-center">
+          <div className={`mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full ${allGamesWon ? 'bg-yellow-100' : 'bg-orange-100'}`}>
+            <span className={`text-2xl ${allGamesWon ? 'text-yellow-600' : 'text-orange-600'}`}>{allGamesWon ? '🏆' : '🎮'}</span>
+          </div>
+          <h3 className="text-lg sm:text-xl font-heading text-gray-900 mb-1">Confirm Claim</h3>
+          {allGamesWon ? (
+            <div className="bg-white rounded-lg border border-yellow-100 p-3 text-left">
+              <p className="text-sm sm:text-base text-gray-800 font-heading mb-1">You’ve won it all — time to claim your prize.</p>
+              <p className="text-xs sm:text-sm text-gray-600">You can play again, but no extra rewards.</p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg border border-orange-100 p-3 text-left">
+              <p className="text-sm sm:text-base text-gray-800 font-heading mb-1">You haven’t finished all the games.</p>
+              <p className="text-xs sm:text-sm text-gray-600">Claiming now ends your chance to win more.</p>
+            </div>
+          )}
+          <div className="h-px bg-gray-200 my-4"></div>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={onCancel}
+              className="border border-gray-300 bg-white text-gray-800 py-2.5 px-4 rounded-full hover:bg-gray-50 transition-colors font-body text-sm"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onContinue}
+              className="bg-[#FF5900] text-white py-2.5 px-4 rounded-full hover:bg-[#E54D00] transition-colors font-body text-sm"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
