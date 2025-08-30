@@ -57,7 +57,7 @@ router.get('/all-users', catchAsync(async (req, res) => {
             createdAt: user.createdAt,
             lastQRScanAt: user.lastQRScanAt,
             completedGames: `${completedGames}/4`,
-            scavengerProgress: `${scavengerProgress}/11`,
+            scavengerProgress: `${scavengerProgress}/10`,
             scavengerCompleted: scavengerCompleted,
             isClaimed: user.isClaimed || false,
             voucherCode: user.voucherCode || null
@@ -70,7 +70,7 @@ router.get('/all-users', catchAsync(async (req, res) => {
             createdAt: user.createdAt,
             lastQRScanAt: user.lastQRScanAt,
             completedGames: '0/4',
-            scavengerProgress: '0/11',
+            scavengerProgress: '0/10',
             isClaimed: user.isClaimed || false,
             voucherCode: user.voucherCode || null
           };

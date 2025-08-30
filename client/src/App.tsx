@@ -327,7 +327,7 @@ const ProgressPageWrapper: React.FC = () => {
   return (
     <ProgressPage
       totalFound={3}
-              totalCheckpoints={11}
+              totalCheckpoints={10}
       currentTier="Bronze"
       onContinueHunt={handleContinueHunt}
       onClaimPrize={handleClaimPrize}

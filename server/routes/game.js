@@ -28,7 +28,7 @@ router.get('/progress', authMiddleware, asyncHandler(async (req, res, next) => {
   // Get scavenger hunt progress
   const scavengerProgress = userProgress.scavengerHuntProgress;
   const totalFound = scavengerProgress.completedCheckpoints.length;
-  const totalCheckpoints = scavengerProgress.totalCheckpoints || 11;
+  const totalCheckpoints = scavengerProgress.totalCheckpoints || 10;
 
   // Calculate current tier based on completion
   const completionPercentage = totalCheckpoints > 0 ? (totalFound / totalCheckpoints) * 100 : 0;

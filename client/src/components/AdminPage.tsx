@@ -364,7 +364,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">Avg Progress:</span>
                     <span className="font-['TT_Commons_Pro_DemiBold'] text-purple-600">
-                      {statistics.scavengerStats?.averageProgress || 0}/11
+                      {statistics.scavengerStats?.averageProgress || 0}/10
                     </span>
                   </div>
                 </div>
@@ -442,7 +442,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                       <th className="hidden sm:table-cell text-center py-4 px-6 font-['TT_Commons_Pro_DemiBold'] text-gray-700 text-xs uppercase tracking-wider">
                         Scavenger Hunt
                         <div className="text-xs font-normal text-gray-500 mt-1">
-                          (5/11 = Complete)
+                          (5/10 = Complete)
                         </div>
                       </th>
                                              <th className="text-center py-4 px-6 font-['TT_Commons_Pro_DemiBold'] text-gray-700 text-xs uppercase tracking-wider">
@@ -481,7 +481,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                                 : 'bg-purple-100 text-purple-800'
                             }`}>
                               <span className="font-['TT_Commons_Pro_DemiBold'] text-sm">
-                                {user.scavengerProgress || '0/11'}
+                                {user.scavengerProgress || '0/10'}
                                 {user.scavengerCompleted ? ' ✓' : ''}
                               </span>
                             </div>

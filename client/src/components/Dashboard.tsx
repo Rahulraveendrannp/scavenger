@@ -182,8 +182,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                 ? scavengerProgressResponse.data.totalFound || 0
                 : 0;
             
-            // Check if all 11 checkpoints are completed
-            const allCheckpointsCompleted = completedCount >= 11;
+            // Check if all 10 checkpoints are completed
+            const allCheckpointsCompleted = completedCount >= 10;
             
             // Use the isCompleted field from API if available, otherwise calculate based on 5+ checkpoints
             const scavengerCompleted = 
@@ -209,9 +209,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                 : allCheckpointsCompleted
                 ? `All checkpoints completed!`
                 : scavengerCompleted
-                ? `Prize unlocked! (${completedCount}/11)\nHunt all for bigger prizes!`
+                ? `Prize unlocked! (${completedCount}/10)\nHunt all for bigger prizes!`
                 : scavengerStarted
-                                      ? `Continue your adventure! (${completedCount}/11 completed)`
+                                      ? `Continue your adventure! (${completedCount}/10 completed)`
                   : `Start your treasure hunt adventure!`,
             };
           } else {
@@ -309,7 +309,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const scavengerProgress = scavengerGame?.isStarted 
     ? (() => {
         // Extract progress from description if available
-                 const match = scavengerGame.description.match(/\((\d+)\/11/);
+                 const match = scavengerGame.description.match(/\((\d+)\/10/);
         return match ? parseInt(match[1]) : 0;
       })()
     : 0;
@@ -328,8 +328,8 @@ const Dashboard: React.FC<DashboardProps> = ({
 
 
   const handleClaimClick = () => {
-    // Check if user has completed at least one game
-    if (completedGames === 0) {
+    // Check if user has completed at least two games
+    if (completedGames < 2) {
       // Show user-friendly message
              const message = document.createElement("div");
        message.innerHTML = `
@@ -351,7 +351,7 @@ const Dashboard: React.FC<DashboardProps> = ({
            width: 80%;
            max-width: 400px;
          ">
-           🎮 You need to complete at least one game to claim your reward!
+           🎮 You need to complete at least two games to claim your reward!
          </div>
         <style>
           @keyframes messagePop {
@@ -995,9 +995,9 @@ const ClaimVoucherModal: React.FC<{
                       }`}
                     >
                       {gameStatus.scavengerHunt
-                                                 ? `✓ Completed (${gameStatus.scavengerProgress}/11)`
+                                                 ? `✓ Completed (${gameStatus.scavengerProgress}/10)`
                          : gameStatus.scavengerStarted
-                         ? `${gameStatus.scavengerProgress}/11`
+                         ? `${gameStatus.scavengerProgress}/10`
                         : "✗ Pending"}
                     </span>
                   </div>

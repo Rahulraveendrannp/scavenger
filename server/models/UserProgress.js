@@ -49,7 +49,7 @@ const userProgressSchema = new mongoose.Schema({
     }],
     hintCredits: { type: Number, default: 3 },
     revealedHints: [Number], // Array of checkpoint IDs with revealed hints
-    totalCheckpoints: { type: Number, default: 11 },
+    totalCheckpoints: { type: Number, default: 10 },
     currentCheckpoint: Number, // Last active checkpoint
     startedAt: Date,
     lastActivityAt: Date

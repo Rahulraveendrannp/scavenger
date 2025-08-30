@@ -65,20 +65,29 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
     // Use hash to determine shuffle pattern
     const shuffled = [...checkpoints];
     const patterns = [   
-      [10,9,8,7,6,5,4,3,2,1,0], // reverse
-      [5,6,7,8,9,10,0,1,2,3,4], // middle first
-      [0,2,4,6,8,10,1,3,5,7,9], // even then odd
-      [1,3,5,7,9,0,2,4,6,8,10], // odd then even
-      [5,6,7,8,9,10,0,1,2,3,4], // second half first
-      [2,3,4,5,6,7,8,9,10,0,1], // skip first
-      [8,9,10,0,1,2,3,4,5,6,7], // skip middle
-      [0,1,2,3,4,5,6,7,8,9,10], // original order
+      [9,8,7,6,5,4,3,2,1,0], // reverse
+      [4,5,6,7,8,9,0,1,2,3], // middle first
+      [0,2,4,6,8,1,3,5,7,9], // even then odd
+      [1,3,5,7,9,0,2,4,6,8], // odd then even
+      [4,5,6,7,8,9,0,1,2,3], // second half first
+      [1,2,3,4,5,6,7,8,9,0], // skip first
+      [7,8,9,0,1,2,3,4,5,6], // skip middle
+      [0,1,2,3,4,5,6,7,8,9], // original order
     ];
     
     const patternIndex = Math.abs(hash) % patterns.length;
     const pattern = patterns[patternIndex];
     
-    return pattern.map(index => shuffled[index]);
+    // Safety check: ensure all indices are valid
+    const validPattern = pattern.filter(index => index >= 0 && index < shuffled.length);
+    
+    // If pattern is invalid, return original order
+    if (validPattern.length !== shuffled.length) {
+      console.warn("Invalid shuffle pattern detected, using original order");
+      return shuffled;
+    }
+    
+    return validPattern.map(index => shuffled[index]);
   };
 
   const [checkpoints, setCheckpoints] = useState<ClueItem[]>(() => {
@@ -164,23 +173,21 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
         isCompleted: false,
         isExpanded: false,
       },
-      {
-        id: 11,
-        location: "BONUS ",
-        clue: "A bonus clue for eagle eyes, It moves, it stops - a rare surprise. No need to dash, no need to race, Just catch the cart and scan with grace.",
-        hint: "The **mall taxi** carts carry more than passengers. Watch for the code. Walk, don't run!",
-        isCompleted: false,
-        isExpanded: false,
-      },
     ];
 
     // Shuffle checkpoints based on user's phone number for load distribution
     const phoneNumber = localStorage.getItem("talabat_phone_number");
     if (phoneNumber) {
       const shuffledCheckpoints = shuffleCheckpoints(defaultCheckpoints, phoneNumber);
-      console.log("🔄 Checkpoints shuffled for user:", phoneNumber);
-      console.log("📋 Shuffled order:", shuffledCheckpoints.map(cp => cp.location));
-      return shuffledCheckpoints;
+      // Safety check before logging
+      if (shuffledCheckpoints && Array.isArray(shuffledCheckpoints) && shuffledCheckpoints.length > 0) {
+        console.log("🔄 Checkpoints shuffled for user:", phoneNumber);
+        console.log("📋 Shuffled order:", shuffledCheckpoints.map(cp => cp.location));
+        return shuffledCheckpoints;
+      } else {
+        console.warn("Shuffle failed, using default order");
+        return defaultCheckpoints;
+      }
     }
 
     return defaultCheckpoints;
@@ -190,7 +197,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
     // Initialize with default progress, will be updated from backend
     return {
       totalFound: 0,
-      totalCheckpoints: 11,
+      totalCheckpoints: 10,
       currentTier: "Bronze",
       isCompleted: false,
       hintCredits: hintCredits,
@@ -199,8 +206,12 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
 
   const [expandedId, setExpandedId] = useState<number | null>(() => {
     // Find the first uncompleted checkpoint to expand on load
-    const firstUncompleted = checkpoints.find(cp => !cp.isCompleted);
-    return firstUncompleted ? firstUncompleted.id : null;
+    // Safety check: ensure checkpoints array exists and has items
+    if (checkpoints && Array.isArray(checkpoints) && checkpoints.length > 0) {
+      const firstUncompleted = checkpoints.find(cp => !cp.isCompleted);
+      return firstUncompleted ? firstUncompleted.id : null;
+    }
+    return null;
   });
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [scannerCheckpointId, setScannerCheckpointId] = useState<number | null>(
@@ -247,7 +258,7 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
         const progressData = response.data.progress?.scavengerHuntProgress;
         if (progressData) {
           const totalFound = progressData.completedCheckpoints?.length || 0;
-          const totalCheckpoints = progressData.totalCheckpoints || 11;
+          const totalCheckpoints = progressData.totalCheckpoints || 10;
           const isCompleted = totalFound >= 5;
           
           setProgress({
@@ -454,18 +465,16 @@ const ScavengerHuntPage: React.FC<ScavengerHuntPageProps> = ({
       1: "TALABAT_HUNT_FOOD_ZONE",
       2: "TALABAT_HUNT_MIRROR_MIRROR",
       3: "TALABAT_HUNT_SECOND_GUESS",
-      4: "TALABAT_HUNT_SPORT_MODE",
-      5: "TALABAT_HUNT_BIN_THERE",
+      4: "TALABAT_HUNT_BIN_THERE",
+      5: "TALABAT_HUNT_SPORT_MODE",
       6: "TALABAT_HUNT_MAP_MARTS",
       7: "TALABAT_HUNT_PILLAR_PRESCRIPTION",
       8: "TALABAT_HUNT_ENTRY_POINT",
       9: "TALABAT_HUNT_DESERT_DIRECTIONS",
       10: "TALABAT_HUNT_CROCODILE_HUNT",
-      11: "TALABAT_HUNT_BONUS",
     };
     return qrCodes[id] || "";
   };
-
   const handleScannerResult = async (scannedText: string) => {
     if (!scannerCheckpointId) return;
     const expected = getExpectedQRCode(scannerCheckpointId);
