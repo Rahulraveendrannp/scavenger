@@ -14,15 +14,20 @@ router.get('/', authMiddleware, async (req, res) => {
     // Find user's progress using the safe method
     const user = await User.findOne({ phoneNumber });
     if (!user) {
+      console.log('❌ Progress API: User not found for phone:', phoneNumber);
       return res.status(404).json({
         success: false,
         error: 'User not found'
       });
     }
     
+    console.log('📊 Progress API: User found, getting/creating progress...');
     let progress = await UserProgress.getOrCreateProgress(phoneNumber, user._id);
+    console.log('📊 Progress API: Progress retrieved, populating user data...');
+    
     // Populate user data for response
-    progress = await UserProgress.findOne({ phoneNumber }).populate('userId', 'phoneNumber profile');
+    await progress.populate('userId', 'phoneNumber profile');
+    console.log('📊 Progress API: User data populated, preparing response...');
     
     res.json({
       success: true,
@@ -35,9 +40,11 @@ router.get('/', authMiddleware, async (req, res) => {
     
   } catch (error) {
     console.error('Error fetching user progress:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch user progress'
+      error: 'Failed to fetch user progress',
+      details: error.message
     });
   }
 });

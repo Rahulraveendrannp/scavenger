@@ -89,12 +89,18 @@ const userProgressSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Indexes for performance
+// Indexes for performance optimization
 userProgressSchema.index({ phoneNumber: 1 }, { unique: true }); // Make phoneNumber unique
 userProgressSchema.index({ userId: 1 }, { unique: true }); // Also make userId unique
 userProgressSchema.index({ 'currentState.currentPage': 1 });
 userProgressSchema.index({ 'scavengerHuntProgress.lastActivityAt': -1 });
 userProgressSchema.index({ isGameCompleted: 1 });
+// Comment out problematic indexes for now
+// userProgressSchema.index({ 'dashboardGames.lunchboxMatcher.isCompleted': 1 });
+// userProgressSchema.index({ 'dashboardGames.cityRun.isCompleted': 1 });
+// userProgressSchema.index({ 'dashboardGames.talabeats.isCompleted': 1 });
+// userProgressSchema.index({ 'scavengerHuntProgress.completedCheckpoints': 1 });
+// userProgressSchema.index({ userId: 1, 'scavengerHuntProgress.completedCheckpoints': 1 }); // Compound index
 
 // Virtual for completion percentage
 userProgressSchema.virtual('completionPercentage').get(function() {

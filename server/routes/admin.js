@@ -32,56 +32,119 @@ router.get('/all-users', catchAsync(async (req, res) => {
   console.log('📊 Admin: Getting all users with progress, sorted by recent QR scan activity...');
 
   try {
-    // Get all users sorted by lastQRScanAt (most recent first)
-    const users = await User.find().sort({ lastQRScanAt: -1, createdAt: -1 });
-    console.log(`📊 Admin: Found ${users.length} users`);
+    // Parse pagination and search parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 25; // Default to 25 users per page
+    const search = req.query.search || ''; // Search term for phone number or voucher code
+    const skip = (page - 1) * limit;
+    
+    console.log('📊 Admin: Search parameters:', { page, limit, search, skip });
 
-    const usersWithProgress = await Promise.all(
-      users.map(async (user) => {
-        try {
-          const userProgress = await UserProgress.findOne({ userId: user._id });
-          
-          // Calculate completed games
-          const dashboardGames = userProgress?.dashboardGames || {};
-          const completedGames = Object.values(dashboardGames).filter(game => game?.isCompleted).length;
-          
-          // Get scavenger hunt progress
-          const scavengerProgress = userProgress?.scavengerHuntProgress?.completedCheckpoints?.length || 0;
-          
-          // Check if scavenger hunt is completed (5+ checkpoints = half completion)
-          const scavengerCompleted = scavengerProgress >= 5;
-          
-          return {
-            _id: user._id,
-            phoneNumber: user.phoneNumber,
-            createdAt: user.createdAt,
-            lastQRScanAt: user.lastQRScanAt,
-            completedGames: `${completedGames}/4`,
-            scavengerProgress: `${scavengerProgress}/10`,
-            scavengerCompleted: scavengerCompleted,
-            isClaimed: user.isClaimed || false,
-            voucherCode: user.voucherCode || null
-          };
-        } catch (err) {
-          console.error(`❌ Error loading progress for user ${user._id}:`, err);
-          return {
-            _id: user._id,
-            phoneNumber: user.phoneNumber,
-            createdAt: user.createdAt,
-            lastQRScanAt: user.lastQRScanAt,
-            completedGames: '0/4',
-            scavengerProgress: '0/10',
-            isClaimed: user.isClaimed || false,
-            voucherCode: user.voucherCode || null
-          };
+    // Use aggregation pipeline for efficient data retrieval with pagination
+    const pipeline = [
+      // Add search filter if search term is provided
+      ...(search ? [{
+        $match: {
+          $or: [
+            { phoneNumber: { $regex: search, $options: 'i' } },
+            { voucherCode: { $regex: search, $options: 'i' } }
+          ]
         }
-      })
+      }] : []),
+      {
+        $lookup: {
+          from: 'userprogresses', // MongoDB collection name for UserProgress
+          localField: '_id',
+          foreignField: 'userId',
+          as: 'progress'
+        }
+      },
+      {
+        $addFields: {
+          // Get the first (most recent) progress record, or null if no progress
+          progress: {
+            $cond: [
+              { $gt: [{ $size: '$progress' }, 0] },
+              { $arrayElemAt: ['$progress', 0] },
+              null
+            ]
+          }
+        }
+      },
+      {
+        $addFields: {
+          completedGames: {
+            $size: {
+              $filter: {
+                input: {
+                  $objectToArray: {
+                    $ifNull: ['$progress.dashboardGames', {}]
+                  }
+                },
+                cond: { $eq: ['$$this.v.isCompleted', true] }
+              }
+            }
+          },
+          scavengerProgress: {
+            $size: {
+              $ifNull: ['$progress.scavengerHuntProgress.completedCheckpoints', []]
+            }
+          }
+        }
+      },
+      {
+        $addFields: {
+          scavengerCompleted: { $gte: ['$scavengerProgress', 5] }
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          phoneNumber: 1,
+          createdAt: 1,
+          lastQRScanAt: 1,
+          isClaimed: { $ifNull: ['$isClaimed', false] },
+          voucherCode: 1,
+          completedGames: { $concat: [{ $toString: '$completedGames' }, '/4'] },
+          scavengerProgress: { $concat: [{ $toString: '$scavengerProgress' }, '/10'] },
+          scavengerCompleted: 1
+        }
+      },
+      {
+        $sort: { lastQRScanAt: -1, createdAt: -1 }
+      }
+    ];
+
+    // Get total count for pagination
+    const countPipeline = [...pipeline, { $count: 'total' }];
+    const totalResult = await User.aggregate(countPipeline);
+    const totalUsers = totalResult[0]?.total || 0;
+
+    // Add pagination to main pipeline
+    pipeline.push(
+      { $skip: skip },
+      { $limit: limit }
     );
 
-    console.log('📊 Admin: Successfully loaded all users with progress, sorted by recent QR scan activity');
+    const usersWithProgress = await User.aggregate(pipeline);
+
+    console.log(`📊 Admin: Found ${usersWithProgress.length} users (page ${page}/${Math.ceil(totalUsers / limit)}) with optimized query`);
+    if (search) {
+      console.log(`📊 Admin: Search results for "${search}": ${totalUsers} total matches, showing ${usersWithProgress.length} on this page`);
+    }
+    console.log('📊 Admin: Successfully loaded users with progress, sorted by recent QR scan activity');
+    
     res.status(200).json({
       success: true,
-      users: usersWithProgress
+      users: usersWithProgress,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalUsers / limit),
+        totalUsers: totalUsers,
+        usersPerPage: limit,
+        hasNextPage: page < Math.ceil(totalUsers / limit),
+        hasPrevPage: page > 1
+      }
     });
 
   } catch (error) {
@@ -257,109 +320,319 @@ router.get('/statistics', catchAsync(async (req, res) => {
   console.log('📊 Admin: Getting detailed statistics...');
 
   try {
-    // Get all users with their progress
-    const users = await User.find();
-    const usersWithProgress = await Promise.all(
-      users.map(async (user) => {
-        try {
-          const userProgress = await UserProgress.findOne({ userId: user._id });
-          
-          // Calculate completed games
-          const dashboardGames = userProgress?.dashboardGames || {};
-          const completedGames = Object.values(dashboardGames).filter(game => game?.isCompleted).length;
-          
-          // Get scavenger hunt progress
-          const scavengerProgress = userProgress?.scavengerHuntProgress?.completedCheckpoints?.length || 0;
-          
-          return {
-            _id: user._id,
-            phoneNumber: user.phoneNumber,
-            isClaimed: user.isClaimed || false,
-            completedGames,
-            scavengerProgress
-          };
-        } catch (err) {
-          return {
-            _id: user._id,
-            phoneNumber: user.phoneNumber,
-            isClaimed: user.isClaimed || false,
-            completedGames: 0,
-            scavengerProgress: 0
-          };
+    // Use optimized aggregation pipeline - single query, database-level calculations
+    const pipeline = [
+      {
+        $lookup: {
+          from: 'userprogresses',
+          localField: '_id',
+          foreignField: 'userId',
+          as: 'progress'
         }
-      })
-    );
+      },
+      {
+        $addFields: {
+          // Get the first (and should be only) progress record
+          progress: { $arrayElemAt: ['$progress', 0] }
+        }
+      },
+      {
+        $addFields: {
+          // Calculate completed games count
+          completedGames: {
+            $cond: [
+              { $ne: ['$progress', null] },
+              {
+                $size: {
+                  $filter: {
+                    input: {
+                      $objectToArray: {
+                        $ifNull: ['$progress.dashboardGames', {}]
+                      }
+                    },
+                    cond: { $eq: ['$$this.v.isCompleted', true] }
+                  }
+                }
+              },
+              0
+            ]
+          },
+          // Calculate scavenger progress
+          scavengerProgress: {
+            $cond: [
+              { $ne: ['$progress', null] },
+              {
+                $size: {
+                  $ifNull: ['$progress.scavengerHuntProgress.completedCheckpoints', []]
+                }
+              },
+              0
+            ]
+          },
+          // Check if scavenger hunt is completed (5+ checkpoints)
+          scavengerCompleted: {
+            $and: [
+              { $ne: ['$progress', null] },
+              {
+                $gte: [
+                  {
+                    $size: {
+                      $ifNull: ['$progress.scavengerHuntProgress.completedCheckpoints', []]
+                    }
+                  },
+                  5
+                ]
+              }
+            ]
+          },
+          // Per-game completion flags
+          lunchboxCompleted: {
+            $and: [
+              { $ne: ['$progress', null] },
+              { $ifNull: ['$progress.dashboardGames.lunchboxMatcher.isCompleted', false] }
+            ]
+          },
+          cityRunCompleted: {
+            $and: [
+              { $ne: ['$progress', null] },
+              { $ifNull: ['$progress.dashboardGames.cityRun.isCompleted', false] }
+            ]
+          },
+          talabeatsCompleted: {
+            $and: [
+              { $ne: ['$progress', null] },
+              { $ifNull: ['$progress.dashboardGames.talabeats.isCompleted', false] }
+            ]
+          },
+          // Additional flags
+          hasVoucherCode: { $ne: ['$voucherCode', null] },
+          isRecentActivity: {
+            $and: [
+              { $ne: ['$lastQRScanAt', null] },
+              {
+                $gte: [
+                  '$lastQRScanAt',
+                  new Date(Date.now() - 24 * 60 * 60 * 1000)
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalUsers: { $sum: 1 },
+          totalClaimed: {
+            $sum: { $cond: [{ $ifNull: ['$isClaimed', false] }, 1, 0] }
+          },
+          // Collect data for further processing
+          userData: {
+            $push: {
+              isClaimed: { $ifNull: ['$isClaimed', false] },
+              completedGames: '$completedGames',
+              scavengerProgress: '$scavengerProgress',
+              scavengerCompleted: '$scavengerCompleted',
+              lunchboxCompleted: '$lunchboxCompleted',
+              cityRunCompleted: '$cityRunCompleted',
+              talabeatsCompleted: '$talabeatsCompleted',
+              hasVoucherCode: '$hasVoucherCode',
+              isRecentActivity: '$isRecentActivity'
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          totalUsers: 1,
+          totalClaimed: 1,
+          totalUnclaimed: { $subtract: ['$totalUsers', '$totalClaimed'] },
+          // Calculate claimed by completion level
+          claimedByCompletion: {
+            '0/4': {
+              $size: {
+                $filter: {
+                  input: '$userData',
+                  cond: {
+                    $and: [
+                      '$$this.isClaimed',
+                      { $eq: ['$$this.completedGames', 0] }
+                    ]
+                  }
+                }
+              }
+            },
+            '1/4': {
+              $size: {
+                $filter: {
+                  input: '$userData',
+                  cond: {
+                    $and: [
+                      '$$this.isClaimed',
+                      { $eq: ['$$this.completedGames', 1] }
+                    ]
+                  }
+                }
+              }
+            },
+            '2/4': {
+              $size: {
+                $filter: {
+                  input: '$userData',
+                  cond: {
+                    $and: [
+                      '$$this.isClaimed',
+                      { $eq: ['$$this.completedGames', 2] }
+                    ]
+                  }
+                }
+              }
+            },
+            '3/4': {
+              $size: {
+                $filter: {
+                  input: '$userData',
+                  cond: {
+                    $and: [
+                      '$$this.isClaimed',
+                      { $eq: ['$$this.completedGames', 3] }
+                    ]
+                  }
+                }
+              }
+            },
+            '4/4': {
+              $size: {
+                $filter: {
+                  input: '$userData',
+                  cond: {
+                    $and: [
+                      '$$this.isClaimed',
+                      { $eq: ['$$this.completedGames', 4] }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          // Calculate scavenger hunt stats
+          scavengerStats: {
+            totalCompleted: {
+              $size: {
+                $filter: {
+                  input: '$userData',
+                  cond: '$$this.scavengerCompleted'
+                }
+              }
+            },
+            totalIncomplete: {
+              $size: {
+                $filter: {
+                  input: '$userData',
+                  cond: { $not: '$$this.scavengerCompleted' }
+                }
+              }
+            },
+            averageProgress: {
+              $round: [
+                {
+                  $divide: [
+                    {
+                      $sum: '$userData.scavengerProgress'
+                    },
+                    '$totalUsers'
+                  ]
+                },
+                1
+              ]
+            }
+          },
+          // Calculate per-game completions
+          perGameCompletions: {
+            lunchboxMatcher: {
+              $size: {
+                $filter: {
+                  input: '$userData',
+                  cond: '$$this.lunchboxCompleted'
+                }
+              }
+            },
+            cityRun: {
+              $size: {
+                $filter: {
+                  input: '$userData',
+                  cond: '$$this.cityRunCompleted'
+                }
+              }
+            },
+            talabeats: {
+              $size: {
+                $filter: {
+                  input: '$userData',
+                  cond: '$$this.talabeatsCompleted'
+                }
+              }
+            },
+            scavengerHunt: {
+              $size: {
+                $filter: {
+                  input: '$userData',
+                  cond: '$$this.scavengerCompleted'
+                }
+              }
+            }
+          },
+          // Calculate additional stats
+          additionalStats: {
+            usersWithVoucherCodes: {
+              $size: {
+                $filter: {
+                  input: '$userData',
+                  cond: '$$this.hasVoucherCode'
+                }
+              }
+            },
+            usersWithoutVoucherCodes: {
+              $size: {
+                $filter: {
+                  input: '$userData',
+                  cond: { $not: '$$this.hasVoucherCode' }
+                }
+              }
+            },
+            recentActivity: {
+              $size: {
+                $filter: {
+                  input: '$userData',
+                  cond: '$$this.isRecentActivity'
+                }
+              }
+            }
+          }
+        }
+      }
+    ];
 
-    // Calculate statistics
-    const totalUsers = usersWithProgress.length;
-    const totalClaimed = usersWithProgress.filter(user => user.isClaimed).length;
-    const totalUnclaimed = totalUsers - totalClaimed;
-
-    // Breakdown by completion levels (1/4, 2/4, 3/4, 4/4)
-    const claimedByCompletion = {
-      '1/4': usersWithProgress.filter(user => user.isClaimed && user.completedGames === 1).length,
-      '2/4': usersWithProgress.filter(user => user.isClaimed && user.completedGames === 2).length,
-      '3/4': usersWithProgress.filter(user => user.isClaimed && user.completedGames === 3).length,
-      '4/4': usersWithProgress.filter(user => user.isClaimed && user.completedGames === 4).length,
-      '0/4': usersWithProgress.filter(user => user.isClaimed && user.completedGames === 0).length
+    const result = await User.aggregate(pipeline);
+    const stats = result[0] || {
+      totalUsers: 0,
+      totalClaimed: 0,
+      totalUnclaimed: 0,
+      claimedByCompletion: { '0/4': 0, '1/4': 0, '2/4': 0, '3/4': 0, '4/4': 0 },
+      scavengerStats: { totalCompleted: 0, totalIncomplete: 0, averageProgress: 0 },
+      additionalStats: { usersWithVoucherCodes: 0, usersWithoutVoucherCodes: 0, recentActivity: 0 },
+      perGameCompletions: { lunchboxMatcher: 0, cityRun: 0, talabeats: 0, scavengerHunt: 0 }
     };
-
-    // Scavenger hunt completion statistics
-    const scavengerStats = {
-      totalCompleted: usersWithProgress.filter(user => user.scavengerProgress >= 5).length,
-      totalIncomplete: usersWithProgress.filter(user => user.scavengerProgress < 5).length,
-      averageProgress: usersWithProgress.length > 0 
-        ? Math.round((usersWithProgress.reduce((sum, user) => sum + user.scavengerProgress, 0) / usersWithProgress.length) * 10) / 10
-        : 0
-    };
-
-    // Per-game completion counts
-    const perGameCompletions = {
-      lunchboxMatcher: 0,
-      cityRun: 0,
-      talabeats: 0,
-      scavengerHunt: 0
-    };
-
-    // Count by looking up progress docs in one extra pass
-    try {
-      const progresses = await UserProgress.find();
-      progresses.forEach((p) => {
-        if (p.dashboardGames?.lunchboxMatcher?.isCompleted) perGameCompletions.lunchboxMatcher += 1;
-        if (p.dashboardGames?.cityRun?.isCompleted) perGameCompletions.cityRun += 1;
-        if (p.dashboardGames?.talabeats?.isCompleted) perGameCompletions.talabeats += 1;
-        // Scavenger considered completed at 5+ checkpoints
-        if ((p.scavengerHuntProgress?.completedCheckpoints?.length || 0) >= 5) perGameCompletions.scavengerHunt += 1;
-      });
-    } catch (e) {
-      console.error('❌ Admin: Error aggregating per-game completions:', e);
-    }
-
-    // Additional statistics
-    const additionalStats = {
-      usersWithVoucherCodes: users.filter(user => user.voucherCode).length,
-      usersWithoutVoucherCodes: users.filter(user => !user.voucherCode).length,
-      recentActivity: users.filter(user => user.lastQRScanAt && 
-        new Date(user.lastQRScanAt) > new Date(Date.now() - 24 * 60 * 60 * 1000)).length // Last 24 hours
-    };
-
-    console.log('📊 Admin: Successfully calculated detailed statistics');
 
     res.status(200).json({
       success: true,
-      data: {
-        totalUsers,
-        totalClaimed,
-        totalUnclaimed,
-        claimedByCompletion,
-        scavengerStats,
-        additionalStats,
-        perGameCompletions
-      }
+      data: stats
     });
 
   } catch (error) {
     console.error('❌ Admin: Error getting statistics:', error);
+    console.error('❌ Admin: Error stack:', error.stack);
     throw new AppError('Failed to get statistics', 500);
   }
 }));

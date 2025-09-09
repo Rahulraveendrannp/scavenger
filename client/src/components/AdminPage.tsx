@@ -13,7 +13,9 @@ const AdminPage: React.FC<AdminPageProps> = () => {
   const [usersList, setUsersList] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(25); // Set to 25 users per page
+  const [totalPages, setTotalPages] = useState(0);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [voucherInput, setVoucherInput] = useState("");
   const [showVoucherInput, setShowVoucherInput] = useState(false);
   const [voucherError, setVoucherError] = useState("");
@@ -26,8 +28,10 @@ const AdminPage: React.FC<AdminPageProps> = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      loadTotalUsers();
-      loadStatistics();
+      setIsLoading(true);
+      Promise.all([loadTotalUsers(1, ''), loadStatistics()]).finally(() => {
+        setIsLoading(false);
+      });
     }
   }, [isAuthenticated]);
 
@@ -66,25 +70,31 @@ const AdminPage: React.FC<AdminPageProps> = () => {
     setTimeout(() => setClaimMessage(""), 3000);
   };
 
-  const loadTotalUsers = async () => {
+  const loadTotalUsers = async (page: number = 1, search: string = '') => {
     try {
-      setIsLoading(true);
+      setIsLoadingUsers(true);
       const [totalResponse, usersResponse] = await Promise.all([
         ScavengerAPI.getTotalUsers(),
-        ScavengerAPI.getAllUsers()
+        ScavengerAPI.getAllUsers(page, itemsPerPage, search)
       ]);
       
       if (totalResponse.success) {
+        console.log("📊 Admin: Total users loaded:", totalResponse.data?.totalUsers);
         setTotalUsers(totalResponse.data?.totalUsers || 0);
+      } else {
+        console.error("❌ Admin: Failed to load total users:", totalResponse.error);
       }
       
       if (usersResponse.success) {
-        setUsersList(usersResponse.data || []);
+        setUsersList(usersResponse.data?.users || []);
+        if (usersResponse.data?.pagination) {
+          setTotalPages(usersResponse.data.pagination.totalPages);
+        }
       }
     } catch (error) {
       console.error("Error loading users:", error);
     } finally {
-      setIsLoading(false);
+      setIsLoadingUsers(false);
     }
   };
 
@@ -94,6 +104,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
       const response = await ScavengerAPI.getAdminStatistics();
       
       if (response.success) {
+        console.log("📊 Admin: Statistics loaded:", response.data);
         setStatistics(response.data);
       } else {
         console.error("Failed to load statistics:", response.error);
@@ -124,7 +135,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
         setVoucherError("");
         setShowVoucherInput(false);
         // Refresh both users and statistics
-        loadTotalUsers();
+        loadTotalUsers(currentPage, searchTerm);
         loadStatistics();
         setTimeout(() => setClaimMessage(""), 3000);
       } else {
@@ -159,22 +170,24 @@ const AdminPage: React.FC<AdminPageProps> = () => {
     }
   };
 
-  // Filter users based on search term (phone number and voucher code)
-  const filteredUsers = usersList.filter(user =>
-    user.phoneNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.voucherCode?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Handle page change
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    loadTotalUsers(newPage, searchTerm);
+  };
 
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentUsers = filteredUsers.slice(startIndex, endIndex);
-
-  // Reset to first page when search changes
+  // Handle search with debounce - now using server-side search
   useEffect(() => {
-    setCurrentPage(1);
+    const timeoutId = setTimeout(() => {
+      setCurrentPage(1); // Reset to first page when searching
+      loadTotalUsers(1, searchTerm); // Load users with search term
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
   }, [searchTerm]);
+
+  // Use usersList directly since filtering is now done server-side
+  const filteredUsers = usersList;
 
   // Show login page if not authenticated
   if (!isAuthenticated) {
@@ -204,7 +217,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
               <div>
                 <p className="text-sm text-gray-600">Total Users</p>
                 <p className="text-2xl font-['TT_Commons_Pro_ExtraBold'] text-[#FF5900]">
-                  {isLoading ? "..." : totalUsers}
+                  {isLoading ? "..." : (totalUsers || statistics?.totalUsers || 0)}
                 </p>
               </div>
             </div>
@@ -271,25 +284,25 @@ const AdminPage: React.FC<AdminPageProps> = () => {
               <div className="bg-orange-500/5 rounded-xl p-4">
                 <p className="text-sm text-gray-600">Lunchbox Matcher</p>
                 <p className="text-2xl font-['TT_Commons_Pro_ExtraBold'] text-orange-600">
-                  {statistics.perGameCompletions?.lunchboxMatcher ?? 0}
+                  {statistics?.perGameCompletions?.lunchboxMatcher || 0}
                 </p>
               </div>
               <div className="bg-sky-500/5 rounded-xl p-4">
                 <p className="text-sm text-gray-600">City Run</p>
                 <p className="text-2xl font-['TT_Commons_Pro_ExtraBold'] text-sky-600">
-                  {statistics.perGameCompletions?.cityRun ?? 0}
+                  {statistics?.perGameCompletions?.cityRun || 0}
                 </p>
               </div>
               <div className="bg-pink-500/5 rounded-xl p-4">
                 <p className="text-sm text-gray-600">Talabeats</p>
                 <p className="text-2xl font-['TT_Commons_Pro_ExtraBold'] text-pink-600">
-                  {statistics.perGameCompletions?.talabeats ?? 0}
+                  {statistics?.perGameCompletions?.talabeats || 0}
                 </p>
               </div>
               <div className="bg-purple-500/5 rounded-xl p-4">
                 <p className="text-sm text-gray-600">Scavenger(5+)</p>
                 <p className="text-2xl font-['TT_Commons_Pro_ExtraBold'] text-purple-600">
-                  {statistics.perGameCompletions?.scavengerHunt ?? 0}
+                  {statistics?.perGameCompletions?.scavengerHunt || 0}
                 </p>
               </div>
             </div>
@@ -313,31 +326,31 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">0/4 Games:</span>
                     <span className="font-['TT_Commons_Pro_DemiBold'] text-blue-600">
-                      {statistics.claimedByCompletion['0/4'] || 0}
+                      {statistics?.claimedByCompletion?.['0/4'] || 0}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">1/4 Games:</span>
                     <span className="font-['TT_Commons_Pro_DemiBold'] text-green-600">
-                      {statistics.claimedByCompletion['1/4'] || 0}
+                      {statistics?.claimedByCompletion?.['1/4'] || 0}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">2/4 Games:</span>
                     <span className="font-['TT_Commons_Pro_DemiBold'] text-yellow-600">
-                      {statistics.claimedByCompletion['2/4'] || 0}
+                      {statistics?.claimedByCompletion?.['2/4'] || 0}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">3/4 Games:</span>
                     <span className="font-['TT_Commons_Pro_DemiBold'] text-orange-600">
-                      {statistics.claimedByCompletion['3/4'] || 0}
+                      {statistics?.claimedByCompletion?.['3/4'] || 0}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">4/4 Games:</span>
                     <span className="font-['TT_Commons_Pro_DemiBold'] text-red-600">
-                      {statistics.claimedByCompletion['4/4'] || 0}
+                      {statistics?.claimedByCompletion?.['4/4'] || 0}
                     </span>
                   </div>
                 </div>
@@ -414,12 +427,12 @@ const AdminPage: React.FC<AdminPageProps> = () => {
              </p>
           </div>
 
-          {isLoading ? (
+          {isLoadingUsers ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF5900] mx-auto mb-4"></div>
               <p className="text-gray-600 text-lg">Loading users...</p>
             </div>
-          ) : usersList.length === 0 ? (
+          ) : filteredUsers.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-gray-400 mb-4">
                 <Users className="w-16 h-16 mx-auto" />
@@ -457,7 +470,7 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-[#F4EDE3] divide-y divide-gray-200">
-                    {currentUsers.map((user, index) => (
+                    {filteredUsers.map((user, index) => (
                       <tr key={index} className="hover:bg-gray-50 transition-colors duration-150">
                         <td className="py-4 px-6">
                           <div className="text-sm font-['TT_Commons_Pro_DemiBold'] text-gray-900">
@@ -545,15 +558,14 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                 <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
                   <div className="flex items-center justify-between">
                     <div className="text-sm text-gray-700">
-                      Showing <span className="font-['TT_Commons_Pro_DemiBold']">{startIndex + 1}</span> to{' '}
-                      <span className="font-['TT_Commons_Pro_DemiBold']">{Math.min(endIndex, filteredUsers.length)}</span> of{' '}
-                      <span className="font-['TT_Commons_Pro_DemiBold']">{filteredUsers.length}</span> results
+                      Showing page <span className="font-['TT_Commons_Pro_DemiBold']">{currentPage}</span> of{' '}
+                      <span className="font-['TT_Commons_Pro_DemiBold']">{totalPages}</span> ({totalUsers} total users)
                     </div>
                     
                     <div className="flex items-center space-x-2">
                       <button
-                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                        disabled={currentPage === 1}
+                        onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1 || isLoadingUsers}
                         className="px-3 py-1 text-sm font-['TT_Commons_Pro_DemiBold'] text-gray-500 bg-[#F4EDE3] border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                       >
                         <ChevronLeft className="w-4 h-4 mr-1" />
@@ -576,8 +588,9 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                           return (
                             <button
                               key={pageNum}
-                              onClick={() => setCurrentPage(pageNum)}
-                              className={`px-3 py-1 text-sm font-['TT_Commons_Pro_DemiBold'] rounded-md ${
+                              onClick={() => handlePageChange(pageNum)}
+                              disabled={isLoadingUsers}
+                              className={`px-3 py-1 text-sm font-['TT_Commons_Pro_DemiBold'] rounded-md disabled:opacity-50 disabled:cursor-not-allowed ${
                                 currentPage === pageNum
                                   ? 'bg-[#FF5900] text-white'
                                   : 'text-gray-500 bg-[#F4EDE3] border border-gray-300 hover:bg-gray-50'
@@ -590,8 +603,8 @@ const AdminPage: React.FC<AdminPageProps> = () => {
                       </div>
                       
                       <button
-                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                        disabled={currentPage === totalPages}
+                        onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages || isLoadingUsers}
                         className="px-3 py-1 text-sm font-['TT_Commons_Pro_DemiBold'] text-gray-500 bg-[#F4EDE3] border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                       >
                         Next

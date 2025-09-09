@@ -587,11 +587,12 @@ export class ScavengerAPI {
   }
 
   // Admin API methods (no auth required)
-  static async getAllUsers(): Promise<ApiResponse<any[]>> {
+  static async getAllUsers(page: number = 1, limit: number = 25, search: string = ''): Promise<ApiResponse<any>> {
     try {
-      console.log("📊 API: Getting all users...");
+      console.log("📊 API: Getting all users...", { page, limit, search });
 
-      const response = await fetch(`${API_BASE}/admin/all-users`, {
+      const searchParam = search ? `&search=${encodeURIComponent(search)}` : '';
+      const response = await fetch(`${API_BASE}/admin/all-users?page=${page}&limit=${limit}${searchParam}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -608,7 +609,7 @@ export class ScavengerAPI {
         };
       }
 
-      return { success: true, data: data.users };
+      return { success: true, data: data };
     } catch (error: any) {
       console.error("Failed to load users:", error);
       return { success: false, error: error?.message || "Network error" };

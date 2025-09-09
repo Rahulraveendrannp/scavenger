@@ -100,12 +100,15 @@ const userSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Indexes
+// Indexes for performance optimization
 userSchema.index({ phoneNumber: 1 });
 userSchema.index({ createdAt: -1 });
 userSchema.index({ lastQRScanAt: -1 }); // For sorting by recent QR scans
 userSchema.index({ 'gameStats.bestTime': 1 });
 userSchema.index({ voucherCode: 1 }, { unique: true });
+userSchema.index({ isClaimed: 1 }); // For filtering claimed users
+userSchema.index({ lastQRScanAt: -1, createdAt: -1 }); // Compound index for sorting
+userSchema.index({ phoneNumber: 1, isClaimed: 1 }); // Compound index for admin queries
 
 
 // Pre-save middleware to hash OTP only

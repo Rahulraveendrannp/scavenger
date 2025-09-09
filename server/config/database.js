@@ -6,6 +6,11 @@ const connectDB = async () => {
     const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/talabat_scavenger_hunt', {
       useNewUrlParser: true,
       useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 30000, // 30 seconds
+      connectTimeoutMS: 30000, // 30 seconds
+      socketTimeoutMS: 30000, // 30 seconds
+      retryWrites: true,
+      retryReads: true,
     });
 
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
